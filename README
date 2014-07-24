@@ -1,11 +1,29 @@
 forth supercollider
 -------------------
 
-[forth][forth] [supercollider][sc3], via [haskell][hs] supercollider ([hsc3][hsc3])
+[forth][forth] [supercollider][sc3]
+
+the interpreter is in [haskell][hs] supercollider, [hsc3][hsc3]
+
+a forth answer to the eternal question,
+[why supercollider?](sw/hsc3-graphs/html/why-supercollider.scd.html)
 
 ~~~~
-$ ls sw/hsc3-graphs/gr/*.fs
+: ap 0.05 0 0.05 Rand.ir 2 clone 1 AllpassN ; 0.2 Dust.ar 50 *
+200 3200 Rand.ir 0.003 Resonz 10 clone mix dup 0.046 0.048 DelayN 0.1
+0 0.1 Rand.ir LFNoise1.kr 0.04 * 0.05 + 15 CombL 7 clone mix ap ap ap
+ap ap ap 0.2 * + play
 ~~~~
+
+[![][img]][img]
+
+[img]: sw/hsc3-graphs/svg/why-supercollider.svg
+
+it is very partial
+
+only known to work as far as the translated graphs at [hsc3-graphs](?t=hsc3-graphs)
+
+search for `fs` in the [index](?t=hsc3-graphs&m=md/ix.md)
 
 © [rohan drape][rd], 2014, [gpl][gpl].
 
