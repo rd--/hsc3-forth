@@ -31,6 +31,16 @@
 : min 2dup < if drop else nip then ;
 2 3 min . \ 2
 3 2 min . \ 2
+: five 5 0 do 5 loop ;
+five .s . . . . . \ [5,5,5,5,5] 5 5 5 5 5
+: seven-eleven 11 7 do i . loop ;
+seven-eleven \ 7 8 9 10
+: mtable 11 1 do dup i * . loop drop ;
+5 mtable \ 5 10 15 20 25 30 35 40 45 50
+: n-dup 0 do dup loop ;
+5 4 n-dup .s \ [5,5,5,5,5]
+: n-drop 0 do drop loop ;
+5 n-drop .s \ []
 
 \ ugen forth
 
