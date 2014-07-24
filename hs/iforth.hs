@@ -17,4 +17,4 @@ main :: IO ()
 main = do
   let d :: Dict () Integer
       d = concat [core_dict,show_dict,stack_dict,num_dict,int_dict,cmp_dict bool_int]
-  run (empty_vm () R.readMaybe) {dict = d}
+  repl (empty_vm () R.readMaybe) {dict = d}

@@ -206,5 +206,5 @@ main :: IO ()
 main = do
   let d :: Dict Int UGen
       d = concat [core_dict,show_dict,stack_dict,ugen_dict]
-      vm = (empty_vm 0 parse_constant) {unknown = Just do_ugen}
-  run vm {dict = d}
+      vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen,dict = d}
+  forth_repl vm

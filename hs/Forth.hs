@@ -18,16 +18,20 @@ type Dict w a = [Def w a]
 -- | The machine is either interpreting or compiling.
 data VM_Mode = Interpret | Compile deriving (Eq,Show)
 
+-- | Function from a word (text) into an instruction.
 type Reader w a = String -> Forth w a ()
 
 -- | The machine, /w/ is the type of the world, /a/ is the type of the stack elements.
-data VM w a = VM {stack :: [a]
-                 ,dict :: Dict w a
-                 ,buffer :: String
-                 ,mode :: VM_Mode
-                 ,world :: w
-                 ,literal :: String -> Maybe a
-                 ,unknown :: Maybe (Reader w a)}
+data VM w a =
+    VM {stack :: [a]
+       ,dict :: Dict w a
+       ,buffer :: String
+       ,mode :: VM_Mode
+       ,world :: w
+       ,literal :: String -> Maybe a -- ^ Read function for literal values.
+       ,dynamic :: Maybe (Reader w a) -- ^ Dynamic post-dictionary lookup.
+       ,input_port :: Handle
+       }
 
 -- | An instruction, the implementation of a /word/.
 type Forth w a r = ExceptT String (StateT (VM w a) IO) r
@@ -41,19 +45,21 @@ unknown_error s = throwError ("unknown word: '" ++ s ++ "'")
 
 -- | Make an empty (initial) machine.
 empty_vm :: w -> (String -> Maybe a) -> VM w a
-empty_vm w lit = VM {stack = []
-                    ,buffer = ""
-                    ,mode = Interpret
-                    ,dict = []
-                    ,world = w
-                    ,literal = lit
-                    ,unknown = Nothing}
+empty_vm w lit =
+    VM {stack = []
+       ,buffer = ""
+       ,mode = Interpret
+       ,dict = []
+       ,world = w
+       ,literal = lit
+       ,dynamic = Nothing
+       ,input_port = stdin}
 
--- | Push.
+-- | Push value onto stack.
 push :: a -> Forth w a ()
 push x = modify (\vm -> vm {stack = x : stack vm})
 
--- | Pop.
+-- | Remove value from stack.
 pop :: Forth w a a
 pop = do
   vm <- get
@@ -69,14 +75,15 @@ modify_world f = modify (\vm -> vm {world = f (world vm)})
 delete_until :: Eq a => a -> [a] -> [a]
 delete_until x = tail . dropWhile (/= x)
 
--- | Read a token, comments are discarded.
+-- | Read a token, ANS Forth type comments are discarded.  At /eof/
+-- runs 'exitSuccess'.
 read_token :: Forth w a String
 read_token = do
   vm <- get
   case buffer vm of
     [] -> do eof <- liftIO isEOF
              if eof then liftIO exitSuccess
-                    else do x <- liftIO getLine
+                    else do x <- liftIO (hGetLine (input_port vm))
                             put vm {buffer = x}
                             read_token
     str ->
@@ -98,35 +105,58 @@ parse_token s = do
     Nothing ->
         case literal vm s of
           Just l  -> return (Literal l)
-          Nothing -> case unknown vm of
-                       Just _ -> return (Word s) -- if there is an unknown reader, defer...
-                       Nothing -> throwError ("unknown word: '" ++ s ++ "'")
+          Nothing ->
+              case dynamic vm of
+                Just _ -> return (Word s) -- if there is an dynamic reader, defer...
+                Nothing -> throwError ("unknown word: '" ++ s ++ "'")
 
 -- | 'parse_token' of 'read_token'.
 read_expr :: Forth w a (Expr a)
 read_expr = parse_token =<< read_token
 
+-- | 'lookup_word' in the dictionary, if unknown try 'dynamic'.
 interpret_word :: String -> Forth w a ()
 interpret_word w = do
   vm <- get
   case lookup_word w (dict vm) of
     Just r -> r
-    Nothing -> case unknown vm of
-                 Just f -> f w
-                 Nothing -> throwError ("unknown word: '" ++ w ++ "'")
+    Nothing ->
+        case dynamic vm of
+          Just f -> f w
+          Nothing -> throwError ("unknown word: '" ++ w ++ "'")
 
+-- | Either 'interpret_word' or 'push' literal.
 interpret_expr :: Expr a -> Forth w a ()
 interpret_expr e =
     case e of
       Word w -> interpret_word w
       Literal a -> push a
 
+-- | 'interpret_expr' of 'read_expr'.
 interpret :: Forth w a ()
 interpret = read_expr >>= interpret_expr
 
-interpret_if :: (Eq a,Boolean a) => Forth w a () -> Forth w a () -> Forth w a ()
-interpret_if tb fb = pop >>= \x -> if x /= false then tb else fb
+-- | Apply /f/ at either /true/ or /false/ given 'Bool'.
+apply_if :: (a,a) -> (a -> a) -> Bool -> (a,a)
+apply_if (x,y) f b = if b then (f x,y) else (x,f y)
 
+-- | Consult stack and select either /true/ or /false/.
+interpret_if :: (Eq a,Boolean a) => (Forth w a (),Forth w a ()) -> Forth w a ()
+interpret_if (t,f) = pop >>= \x -> if x /= false then t else f
+
+-- | /if/ in compile context.
+compile_if :: (Eq a,Boolean a) => Forth w a (Forth w a ())
+compile_if =
+    let accumulate a q = do
+          expr <- read_expr
+          case expr of
+            Word "if" -> compile_if >>= \i -> accumulate (apply_if a (>> i) q) q
+            Word "then" -> return (interpret_if a)
+            Word "else" -> accumulate a False
+            e -> accumulate (apply_if a (>> interpret_expr e) q) q
+    in accumulate (return (),return ()) True
+
+-- | Define word and add to dictionary.  The only control structure is /if/.
 compile :: (Eq a,Boolean a) => Forth w a ()
 compile = do
   let accumulate a = do
@@ -140,20 +170,7 @@ compile = do
   modify (\vm -> vm {dict = (name,action) : dict vm
                     ,mode = Interpret})
 
-apply_if :: (a,a) -> (a -> a) -> Bool -> (a,a)
-apply_if (x,y) f b = if b then (f x,y) else (x,f y)
-
-compile_if :: (Eq a,Boolean a) => Forth w a (Forth w a ())
-compile_if =
-    let accumulate a q = do
-          expr <- read_expr
-          case expr of
-            Word "if" -> compile_if >>= \i -> accumulate (apply_if a (>> i) q) q
-            Word "then" -> return (uncurry interpret_if a)
-            Word "else" -> accumulate a False
-            e -> accumulate (apply_if a (>> interpret_expr e) q) q
-    in accumulate (return (),return ()) True
-
+-- | Either 'interpret' or 'compile', depending on 'mode'.
 execute :: (Eq a,Boolean a) => Forth w a ()
 execute = do
   vm <- get
@@ -171,18 +188,21 @@ begin_compile = do
 
 -- * Primitives
 
+-- | Unary stack operation.
 unary_op :: (a -> a) -> Forth w a ()
 unary_op f = pop >>= push . f
 
+-- | Binary stack operation.  The first value on the stack is the RHS.
 binary_op :: (a -> a -> a) -> Forth w a ()
-binary_op f = pop >>= \x -> pop >>= \y -> push (f y x)
+binary_op f = pop >>= \y -> pop >>= \x -> push (f x y)
 
+-- | 'binary_op', /rep/ translates the result so it can be placed onto the stack.
 comparison_op :: (Bool -> a) -> (a -> a -> Bool) -> Forth w a ()
 comparison_op rep f = binary_op (\x y -> rep (f x y))
 
 -- * stdlib
 
--- | Compile word in interpeter context.
+-- | Error of compile word in interpeter context.
 context_err :: String -> Forth w a ()
 context_err nm = do
   let msg = concat ["'",nm,"': compiler word in interpeter context"]
@@ -237,10 +257,11 @@ core_dict =
 
 -- * Operation
 
-run :: (Eq a,Boolean a) => VM w a -> IO ()
-run vm = do
-  (result,newState) <- runStateT (runExceptT execute) vm
-  case result of
-    Left err  -> putStrLn ("error: " ++ err)
-    _ -> return ()
-  run newState
+-- | Read, evaluate, print, loop.  There is no PRINT unless there is an error.
+forth_repl :: (Eq a,Boolean a) => VM w a -> IO ()
+forth_repl vm = do
+  (r,vm') <- runStateT (runExceptT execute) vm
+  case r of
+    Left err -> putStrLn ("ERROR: " ++ err)
+    Right () -> return ()
+  forth_repl vm'
