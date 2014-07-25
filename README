@@ -1,7 +1,7 @@
 forth supercollider
 -------------------
 
-`hsc3-forth` is a very simple [forth][forth] interpreter.
+`hsc3-forth` is a _very_ simple-minded [forth][forth] interpreter.
 
 the only data type is the [supercollider][sc3] `unit generator`.
 
@@ -22,31 +22,29 @@ a forth answer to the eternal question,
 `hsc3-forth` works with the [gforth][gforth] [emacs][emacs] mode, just
 set `forth-program-name`.
 
-`hsc3-forth` follows the [haskell][hs] supercollider ([hsc3][hsc3]) rules.
-
 to build type:
 
 ~~~~
 cd hs ; prefix=~/opt make install
 ~~~~
 
-to hear the above type:
+to hear the above type `C-cC-r` in emacs, or in a shell type:
 
 ~~~~
 hsc3-forth < ~/sw/hsc3-graphs/gr/why-supercollider.fs
 ~~~~
 
-to quieten type:
+to quieten there is the forth word `stop`.
 
-~~~~
-echo stop | hsc3-forth
-~~~~
+`hsc3-forth` is case-sensitive.
 
-it is very partial
+it follows the [haskell][hs] supercollider ([hsc3][hsc3]) rules.
 
-only known to work as far as the translated graphs at [hsc3-graphs](?t=hsc3-graphs)
+it is very partial.
 
-search for `fs` in the [index](?t=hsc3-graphs&m=md/ix.md)
+it is only known to work as far as the translated graphs at [hsc3-graphs](?t=hsc3-graphs).
+
+search for `fs` in the [index](?t=hsc3-graphs&m=md/ix.md).
 
 © [rohan drape][rd], 2014, [gpl][gpl].
 

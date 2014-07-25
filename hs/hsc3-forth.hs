@@ -219,6 +219,7 @@ main = do
   let d :: Dict Int UGen
       d = concat [core_dict,show_dict,stack_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen,dict = d}
+  putStrLn "HSC3-FORTH"
   repl vm
 
 {-
