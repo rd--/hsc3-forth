@@ -148,14 +148,14 @@ do_uop :: U_Reader
 do_uop nm = do
   p <- pop
   let rt = rateOf p
-  push (uop nm rt p)
+  push (ugen_optimise_const_operator (uop nm rt p))
 
 do_binop :: U_Reader
 do_binop nm = do
   p <- pop
   q <- pop
   let rt = max (rateOf p) (rateOf q)
-  push (binop nm rt p q)
+  push (ugen_optimise_const_operator (binop nm rt p q))
 
 -- | Order of lookup: binop, uop, ugen
 do_ugen :: U_Reader
@@ -188,7 +188,9 @@ ugen_dict =
 instance Forth_Type UGen where
     ty_char = toEnum . (floor . u_constant)
     ty_string = show
+    ty_int = floor . u_constant
     ty_from_bool t = if t then -1 else 0
+    ty_from_int = fromIntegral
 
 parse_constant :: String -> Maybe UGen
 parse_constant s =
