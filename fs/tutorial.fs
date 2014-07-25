@@ -45,6 +45,16 @@ seven-eleven \ 7 8 9 10
 tbl \ 10 11 11 12 12 13
 : star 42 emit ;
 star star star \ ***
+: stars 0 do star loop ;
+10 stars \ **********
+: cr 10 emit ;
+: f 5 0 do cr loop ; f \ \n\n\n\n\n
+: box 0 do cr dup stars loop drop ;
+3 3 box \ \n***\n***\n***
+: space 32 emit ;
+: spaces 0 do space loop ;
+: \stars 0 do cr i spaces 10 stars loop ;
+3 \stars
 
 \ ugen forth
 

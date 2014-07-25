@@ -83,20 +83,20 @@ push x = modify (\vm -> vm {stack = x : stack vm})
 pushr :: a -> Forth w a ()
 pushr x = modify (\vm -> vm {rstack = x : rstack vm})
 
-sep_stack :: (VM w a -> [a]) -> Forth w a (VM w a,a,[a])
-sep_stack f = do
+sep_stack :: String -> (VM w a -> [a]) -> Forth w a (VM w a,a,[a])
+sep_stack nm f = do
   vm <- get
   case f vm of
-    [] -> throwError "stack underflow"
+    [] -> throwError (nm ++ "stack underflow")
     x:xs -> return (vm,x,xs)
 
 -- | Remove value from stack.
 pop :: Forth w a a
-pop = sep_stack stack >>= \(vm,x,xs) -> put vm {stack = xs} >> return x
+pop = sep_stack "" stack >>= \(vm,x,xs) -> put vm {stack = xs} >> return x
 
 -- | Remove value from stack.
 popr :: Forth w a a
-popr = sep_stack rstack >>= \(vm,x,xs) -> put vm {rstack = xs} >> return x
+popr = sep_stack "r" rstack >>= \(vm,x,xs) -> put vm {rstack = xs} >> return x
 
 -- | Change the world.
 modify_world :: (w -> w) -> Forth w a ()
@@ -277,14 +277,16 @@ binary_op f = pop >>= \y -> pop >>= \x -> push (f x y)
 comparison_op :: Forth_Type a => (a -> a -> Bool) -> Forth w a ()
 comparison_op f = binary_op (\x y -> ty_from_bool (f x y))
 
+put_str_sp :: String -> IO ()
+put_str_sp s = putStr s >> putChar ' '
+
 -- | Forth word @.s@.
 fw_show_stack :: Forth_Type a => Forth w a ()
 fw_show_stack = do
   vm <- get
   let l = map ty_string (reverse (stack vm))
-      n = " <" ++ show (length l) ++ ">"
-      l' = " " : intersperse " " l
-  liftIO (putStr n >> mapM_ putStr l')
+      n = "<" ++ show (length l) ++ "> "
+  liftIO (putStr n >> mapM_ put_str_sp l)
 
 -- * stdlib
 
@@ -334,7 +336,7 @@ stack_dict =
 show_dict :: Forth_Type a => Dict w a
 show_dict =
     [("emit",liftIO . putChar . ty_char =<< pop)
-    ,(".",liftIO . putStr . (" " ++ ) . ty_string =<< pop)
+    ,(".",liftIO . put_str_sp . ty_string =<< pop)
     ,(".s",fw_show_stack)]
 
 core_dict :: Dict w a
@@ -352,11 +354,11 @@ core_dict =
 
 -- * Operation
 
--- | Read, evaluate, print, loop.  There is no PRINT unless there is an error.
+-- | Read, evaluate, print, loop.  Prints @OK@ at end of line.  Prints
+-- errors.  Clears input buffer and resets mode on error.
 repl :: (Eq a,Forth_Type a) => VM w a -> IO ()
 repl vm = do
   (r,vm') <- runStateT (runExceptT execute) vm
   case r of
-    Left err -> putStrLn (" ERROR: " ++ err)
-    Right () -> when (eol vm') (putStrLn " OK")
-  repl vm'
+    Left err -> putStrLn (" ERROR: " ++ err) >> repl vm {buffer = [],mode = Interpret}
+    Right () -> when (eol vm') (putStrLn " OK") >> repl vm'
