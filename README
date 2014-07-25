@@ -19,6 +19,9 @@ a forth answer to the eternal question,
 
 [img]: sw/hsc3-graphs/svg/why-supercollider.svg
 
+`hsc3-forth` works with the [gforth][gforth] [emacs][emacs] mode, just
+set `forth-program-name`.
+
 `hsc3-forth` follows the [haskell][hs] supercollider ([hsc3][hsc3]) rules.
 
 to build type:
@@ -53,3 +56,5 @@ search for `fs` in the [index](?t=hsc3-graphs&m=md/ix.md)
 [sc3]: http://audiosynth.com/
 [forth]: http://www.forth.org/
 [gpl]: http://gnu.org/copyleft/
+[gforth]: http://www.gnu.org/software/gforth/
+[emacs]: http://www.gnu.org/software/emacs/
