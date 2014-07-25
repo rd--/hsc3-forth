@@ -1,23 +1,25 @@
 forth supercollider
 -------------------
 
-[forth][forth] [supercollider][sc3]
+`hsc3-forth` is a very simple [forth][forth] interpreter.
 
-the interpreter is in [haskell][hs] supercollider, [hsc3][hsc3]
+the only data type is the [supercollider][sc3] `unit generator`.
 
 a forth answer to the eternal question,
 [why supercollider?](sw/hsc3-graphs/html/why-supercollider.scd.html)
 
 ~~~~
-: ap 0.05 0 0.05 Rand.ir 2 clone 1 AllpassN ; 0.2 Dust.ar 50 *
-200 3200 Rand.ir 0.003 Resonz 10 clone mix dup 0.046 0.048 DelayN 0.1
-0 0.1 Rand.ir LFNoise1.kr 0.04 * 0.05 + 15 CombL 7 clone mix ap ap ap
-ap ap ap 0.2 * + play
+: rvb 5 0 do 0.05 0 0.05 Rand.ir 2 clone 1 AllpassN loop ; 0.2 Dust.ar
+50 * 200 3200 Rand.ir 0.003 Resonz 10 clone mix dup 0.046 0.048 DelayN
+0.1 0 0.1 Rand.ir LFNoise1.kr 0.04 * 0.05 + 15 CombL 7 clone mix rvb
+0.2 * + play
 ~~~~
 
 [![][img]][img]
 
 [img]: sw/hsc3-graphs/svg/why-supercollider.svg
+
+`hsc3-forth` follows the [haskell][hs] supercollider ([hsc3][hsc3]) rules.
 
 to build type:
 

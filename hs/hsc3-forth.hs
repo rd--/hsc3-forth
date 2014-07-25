@@ -4,6 +4,7 @@ import Control.Monad.State {- mtl -}
 import Data.Char {- base -}
 import Data.List.Split {- split -}
 import Data.Maybe {- base -}
+import Data.Ratio {- base -}
 import qualified Text.Read as R {- base -}
 
 import Sound.SC3.ID {- hsc3 -}
@@ -150,12 +151,13 @@ do_uop nm = do
   let rt = rateOf p
   push (ugen_optimise_const_operator (uop nm rt p))
 
+-- | This follows the ANS Forth convention, ie. @10 2 /@ is @5@.
 do_binop :: U_Reader
 do_binop nm = do
   p <- pop
   q <- pop
   let rt = max (rateOf p) (rateOf q)
-  push (ugen_optimise_const_operator (binop nm rt p q))
+  push (ugen_optimise_const_operator (binop nm rt q p))
 
 -- | Order of lookup: binop, uop, ugen
 do_ugen :: U_Reader
@@ -185,9 +187,23 @@ ugen_dict =
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= \u -> push_l (mceChannels u))]
 
+-- | Print as integer if integral, else as real.
+real_pp :: (Show a, Real a) => a -> String
+real_pp n =
+    let r = toRational n
+    in if denominator r == 1 then show (numerator r) else show n
+
+-- | Print constants as numbers & primitives as names.
+ugen_pp :: UGen -> String
+ugen_pp u =
+    case u of
+      Constant_U (Constant n) -> real_pp n
+      Primitive_U (Primitive _ nm _ _ sp _ ) -> ugen_user_name nm sp
+      _ -> show u
+
 instance Forth_Type UGen where
     ty_char = toEnum . (floor . u_constant)
-    ty_string = show
+    ty_string = ugen_pp
     ty_int = floor . u_constant
     ty_from_bool t = if t then -1 else 0
     ty_from_int = fromIntegral
