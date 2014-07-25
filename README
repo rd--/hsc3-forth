@@ -19,6 +19,24 @@ ap ap ap 0.2 * + play
 
 [img]: sw/hsc3-graphs/svg/why-supercollider.svg
 
+to build type:
+
+~~~~
+cd hs ; prefix=~/opt make install
+~~~~
+
+to hear the above type:
+
+~~~~
+hsc3-forth < ~/sw/hsc3-graphs/gr/why-supercollider.fs
+~~~~
+
+to quieten type:
+
+~~~~
+echo stop | hsc3-forth
+~~~~
+
 it is very partial
 
 only known to work as far as the translated graphs at [hsc3-graphs](?t=hsc3-graphs)

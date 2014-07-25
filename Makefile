@@ -1,3 +1,6 @@
+clean:
+	(cd hs; make clean)
+
 push-sp:
 	darcs push -a rd@slavepianos.org:sw/hsc3-forth
 
