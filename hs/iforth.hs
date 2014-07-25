@@ -1,7 +1,15 @@
-import Data.Boolean {- Boolean -}
 import qualified Text.Read as R {- base -}
 
 import Forth
+
+main :: IO ()
+main = do
+  let d :: Dict () Integer
+      d = concat [core_dict,show_dict,stack_dict,num_dict,int_dict,cmp_dict]
+  repl (empty_vm () R.readMaybe) {dict = d}
+
+{-
+import Data.Boolean {- Boolean -}
 
 instance Boolean Integer where
   true = -1
@@ -12,9 +20,4 @@ instance Boolean Integer where
 
 bool_int :: Bool -> Integer
 bool_int t = if t then -1 else 0
-
-main :: IO ()
-main = do
-  let d :: Dict () Integer
-      d = concat [core_dict,show_dict,stack_dict,num_dict,int_dict,cmp_dict bool_int]
-  repl (empty_vm () R.readMaybe) {dict = d}
+-}

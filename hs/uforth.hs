@@ -1,7 +1,6 @@
 import Control.Monad {- base -}
 import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
-import Data.Boolean {- Boolean -}
 import Data.Char {- base -}
 import Data.List.Split {- split -}
 import Data.Maybe {- base -}
@@ -186,15 +185,10 @@ ugen_dict =
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= \u -> push_l (mceChannels u))]
 
-instance Boolean UGen where
-  true = -1
-  false = 0
-  notB n = if n /= 0 then 0 else -1
-  p &&* q = if p /= 0 && q /= 0 then -1 else 0
-  p ||* q = if p /= 0 || q /= 0 then -1 else 0
-
-bool_ugen :: Bool -> UGen
-bool_ugen t = if t then -1 else 0
+instance Forth_Type UGen where
+    ty_char = toEnum . (floor . u_constant)
+    ty_string = show
+    ty_from_bool t = if t then -1 else 0
 
 parse_constant :: String -> Maybe UGen
 parse_constant s =
@@ -207,4 +201,19 @@ main = do
   let d :: Dict Int UGen
       d = concat [core_dict,show_dict,stack_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen,dict = d}
-  forth_repl vm
+  repl vm
+
+{-
+import Data.Boolean {- Boolean -}
+
+instance Boolean UGen where
+  true = -1
+  false = 0
+  notB n = if n /= 0 then 0 else -1
+  p &&* q = if p /= 0 && q /= 0 then -1 else 0
+  p ||* q = if p /= 0 || q /= 0 then -1 else 0
+
+bool_ugen :: Bool -> UGen
+bool_ugen t = if t then -1 else 0
+-}
+

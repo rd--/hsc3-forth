@@ -9,12 +9,12 @@
 2 negate . \ -2
 7 3 /mod . . \ 2 1
 1 2 drop . \ 1
-1 2 .s over .s drop drop drop .s \ [1,2] [1,2,1] []
-1 2 .s swap .s drop drop .s \ [1,2] [2,1] []
-1 2 3 .s rot .s drop drop drop .s \ [1,2,3] [2,3,1] []
-1 2 .s nip .s drop .s \ [1,2] [2] []
-1 2 .s tuck .s drop drop drop .s \ [1,2] [2,1,2] []
-1 2 2dup .s . . . . .s \ [1,2,1,2] 2 1 2 1 []
+1 2 .s over .s drop drop drop .s \ <2> 1 2 <3> 1 2 1 <0>
+1 2 .s swap .s drop drop .s \ <2> 1 2 <2> 2 1 <0>
+1 2 3 .s rot .s drop drop drop .s \ <3> 1 2 3 <3> 2 3 1 <0>
+1 2 .s nip .s drop .s \ <2> 1 2 <1> 2 <0>
+1 2 .s tuck .s drop drop drop .s \ <2> 1 2 <3> 2 1 2 <0>
+1 2 2dup .s . . . . .s \ <4> 1 2 1 2 2 1 2 1 <0>
 : squared dup * ;
 5 squared . \ 25
 7 squared . \ 49
@@ -32,15 +32,19 @@
 2 3 min . \ 2
 3 2 min . \ 2
 : five 5 0 do 5 loop ;
-five .s . . . . . \ [5,5,5,5,5] 5 5 5 5 5
+five .s . . . . . \ <5> 5 5 5 5 5 5 5 5 5 5
 : seven-eleven 11 7 do i . loop ;
 seven-eleven \ 7 8 9 10
 : mtable 11 1 do dup i * . loop drop ;
 5 mtable \ 5 10 15 20 25 30 35 40 45 50
 : n-dup 0 do dup loop ;
-5 4 n-dup .s \ [5,5,5,5,5]
+5 4 n-dup .s \ <5> 5 5 5 5 5
 : n-drop 0 do drop loop ;
-5 n-drop .s \ []
+5 n-drop .s \ <0>
+: tbl 3 0 do 12 10 do i j + . loop loop ;
+tbl \ 10 11 11 12 12 13
+: star 42 emit ;
+star star star \ ***
 
 \ ugen forth
 
