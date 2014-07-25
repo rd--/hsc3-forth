@@ -8,9 +8,8 @@ import System.Exit {- base -}
 
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
---import Data.Boolean {- Boolean -}
 
--- | A definition is a named 'Forth'.
+-- | A definition is a named instructions ('Forth's).
 type Def w a = (String,Forth w a ())
 
 -- | A dictionary is a list of definitions.
@@ -22,7 +21,7 @@ data VM_Mode = Interpret | Compile deriving (Eq,Show)
 -- | Function from a word (text) into an instruction.
 type Reader w a = String -> Forth w a ()
 
--- | Class of values that can be elements of 'Forth'.
+-- | Class of values that can constitute a 'Forth'.
 class Forth_Type a where
     ty_char :: a -> Char -- ^ Single character representaton of /a/.
     ty_string :: a -> String -- ^ String representation of /a/.
@@ -39,15 +38,15 @@ instance Forth_Type Integer where
 
 -- | The machine, /w/ is the type of the world, /a/ is the type of the stack elements.
 data VM w a =
-    VM {stack :: [a]
-       ,rstack :: [a]
-       ,dict :: Dict w a
-       ,buffer :: String
-       ,mode :: VM_Mode
-       ,world :: w
+    VM {stack :: [a] -- ^ The data stack, /the/ stack.
+       ,rstack :: [a] -- ^ The return stack.
+       ,dict :: Dict w a -- ^ The dictionary.
+       ,buffer :: String -- ^ The current line of input text.
+       ,mode :: VM_Mode -- ^ Basic state of the machine.
+       ,world :: w -- ^ The world, instance state.
        ,literal :: String -> Maybe a -- ^ Read function for literal values.
        ,dynamic :: Maybe (Reader w a) -- ^ Dynamic post-dictionary lookup.
-       ,eol :: Bool
+       ,eol :: Bool -- ^ End of line, runs printer.
        ,input_port :: Handle
        }
 
@@ -296,12 +295,14 @@ context_err nm = do
   let msg = concat ["'",nm,"': compiler word in interpeter context"]
   throwError msg
 
+-- | 'Num' instance words.
 num_dict :: Num n => Dict w n
 num_dict =
     [("+",binary_op (+))
-    ,("-",binary_op (-))
     ,("*",binary_op (*))
-    ,("negate",unary_op negate)]
+    ,("-",binary_op (-))
+    ,("negate",unary_op negate)
+    ,("abs",unary_op abs)]
 
 -- | Forth word @/mod@.
 fw_div_mod :: Integral a => Forth w a ()
@@ -341,16 +342,16 @@ show_dict =
 
 core_dict :: Dict w a
 core_dict =
-    [("bye",liftIO exitSuccess)
+    [(":",begin_compile)
+    ,(";",context_err ";")
     ,("do",context_err "do")
-    ,("loop",context_err "loop")
     ,("i",context_err "i")
     ,("j",context_err "j")
+    ,("loop",context_err "loop")
     ,("if",context_err "if")
     ,("else",context_err "else")
     ,("then",context_err "then")
-    ,(";",context_err ";")
-    ,(":",begin_compile)]
+    ,("bye",liftIO exitSuccess)]
 
 -- * Operation
 
