@@ -36,10 +36,14 @@ instance Forth_Type Integer where
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 
+-- | A compilation word, for the compilation stack.
+data CW w a = CW_Word String | CW_Forth (Forth w a ())
+
 -- | The machine, /w/ is the type of the world, /a/ is the type of the stack elements.
 data VM w a =
     VM {stack :: [a] -- ^ The data stack, /the/ stack.
        ,rstack :: [a] -- ^ The return stack.
+       ,cstack :: [CW w a] -- ^ The compilation stack.
        ,dict :: Dict w a -- ^ The dictionary.
        ,buffer :: String -- ^ The current line of input text.
        ,mode :: VM_Mode -- ^ Basic state of the machine.
@@ -56,6 +60,23 @@ type Forth w a r = ExceptT String (StateT (VM w a) IO) r
 -- | Expressions are either literals or words.
 data Expr a = Literal a | Word String deriving (Show,Eq)
 
+-- | Tracer.
+trace :: String -> Forth w a ()
+trace = const (return ()) -- liftIO . putStrLn
+
+with_vm :: MonadState a m => (a -> (a,r)) -> m r
+with_vm f = get >>= \vm -> let (vm',r) = f vm in put vm' >> return r
+
+do_with_vm :: MonadState a m => (a -> m a) -> m ()
+do_with_vm f = get >>= \vm -> f vm >>= put
+
+-- | Pretty print 'Expr'.
+expr_pp :: Forth_Type a => Expr a -> String
+expr_pp e =
+    case e of
+      Literal a -> ty_string a
+      Word nm -> nm
+
 -- | Reader that raises an /unknown word/ error.
 unknown_error :: Reader w a
 unknown_error s = throwError ("unknown word: '" ++ s ++ "'")
@@ -65,6 +86,7 @@ empty_vm :: w -> (String -> Maybe a) -> VM w a
 empty_vm w lit =
     VM {stack = []
        ,rstack = []
+       ,cstack = []
        ,buffer = ""
        ,mode = Interpret
        ,dict = []
@@ -74,28 +96,37 @@ empty_vm w lit =
        ,eol = False
        ,input_port = stdin}
 
--- | Push value onto stack.
+-- | Push value onto 'stack'.
 push :: a -> Forth w a ()
 push x = modify (\vm -> vm {stack = x : stack vm})
 
--- | Push value onto rstack.
+-- | Push value onto 'rstack'.
 pushr :: a -> Forth w a ()
 pushr x = modify (\vm -> vm {rstack = x : rstack vm})
 
-sep_stack :: String -> (VM w a -> [a]) -> Forth w a (VM w a,a,[a])
-sep_stack nm f = do
+-- | Push value onto 'cstack'.
+pushc :: CW w a -> Forth w a ()
+pushc x = modify (\vm -> vm {cstack = x : cstack vm})
+
+-- | Pop indicated 'VM' stack.
+pop_vm_stack :: String -> (VM w a -> [r]) -> (VM w a -> [r] -> VM w a) -> Forth w a r
+pop_vm_stack nm f g = do
   vm <- get
   case f vm of
-    [] -> throwError (nm ++ "stack underflow")
-    x:xs -> return (vm,x,xs)
+    [] -> throwError (nm ++ ": stack underflow")
+    x:xs -> put (g vm xs) >> return x
 
--- | Remove value from stack.
+-- | Remove value from 'stack'.
 pop :: Forth w a a
-pop = sep_stack "" stack >>= \(vm,x,xs) -> put vm {stack = xs} >> return x
+pop = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
 
--- | Remove value from stack.
+-- | Remove value from 'rstack'.
 popr :: Forth w a a
-popr = sep_stack "r" rstack >>= \(vm,x,xs) -> put vm {rstack = xs} >> return x
+popr = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s})
+
+-- | Remove value from 'cstack'.
+popc :: Forth w a (CW w a)
+popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
 
 -- | Change the world.
 modify_world :: (w -> w) -> Forth w a ()
@@ -166,26 +197,6 @@ interpret_expr e =
 interpret :: Forth w a ()
 interpret = read_expr >>= interpret_expr
 
--- | Apply /f/ at either /true/ or /false/ given 'Bool'.
-apply_if :: (a,a) -> (a -> a) -> Bool -> (a,a)
-apply_if (x,y) f b = if b then (f x,y) else (x,f y)
-
--- | Consult stack and select either /true/ or /false/.
-interpret_if :: (Eq a,Forth_Type a) => (Forth w a (),Forth w a ()) -> Forth w a ()
-interpret_if (t,f) = pop >>= \x -> if x /= ty_from_bool False then t else f
-
--- | /if/ in compile context.
-compile_if :: (Eq a,Forth_Type a) => Forth w a (Forth w a ())
-compile_if =
-    let accumulate a q = do
-          expr <- read_expr
-          case expr of
-            Word "if" -> compile_if >>= \i -> accumulate (apply_if a (>> i) q) q
-            Word "then" -> return (interpret_if a)
-            Word "else" -> accumulate a False
-            e -> accumulate (apply_if a (>> interpret_expr e) q) q
-    in accumulate (return (),return ()) True
-
 -- | A loop ends when the two elements at the top of the rstack are equal.
 loop_end :: Eq a => Forth w a Bool
 loop_end = do
@@ -217,34 +228,81 @@ fw_j = do {x <- popr; y <- popr; z <- popr
           ;pushr z; pushr y; pushr x
           ;push z}
 
--- | /do/ in compile context.
-compile_do :: (Eq a,Forth_Type a) => Forth w a (Forth w a ())
-compile_do =
-    let accum a = do
-          expr <- read_expr
-          case expr of
-            Word "do" -> compile_do >>= \r -> accum (a >> r)
-            Word "loop" -> return a
-            Word "i" -> accum (a >> popr >>= \x -> pushr x >> push x)
-            Word "j" -> accum (a >> fw_j)
-            e -> accum (a >> interpret_expr e)
-    in do code <- accum (return ())
-          return (interpret_do code)
+-- | Get instruction at 'CW' or raise an error.
+cw_instr :: CW w a -> Forth w a ()
+cw_instr cw =
+    case cw of
+      CW_Word w -> throwError ("cw_instr: WORD: " ++ w)
+      CW_Forth f -> f
+
+-- | foldl1 of '>>'.
+forth_block :: [Forth w a ()] -> Forth w a ()
+forth_block = foldl1 (>>)
+
+-- | Compile ';' statement.
+end_compilation :: Forth w a ()
+end_compilation = do
+  vm <- get
+  case reverse (cstack vm) of
+    CW_Word nm : cw ->
+        let w = forth_block (map cw_instr cw)
+        in do trace ("END DEFINITION: " ++ nm)
+              put (vm {cstack = []
+                      ,dict = (nm,w) : dict vm
+                      ,mode = Interpret})
+    _ -> throwError "CSTACK"
+  return ()
+
+-- | Predicate to see if 'CW' is a particular 'CW_Word'.
+cw_is_word :: String -> CW w a -> Bool
+cw_is_word w cw =
+    case cw of
+      CW_Word w' -> w == w'
+      _ -> False
+
+-- | Unwind the 'cstack' to the indicated control word.  The result is
+-- the code block, in sequence.  The control word is also removed from
+-- the cstack.
+unwind_cstack_to :: String -> Forth w a [CW w a]
+unwind_cstack_to w = do
+  with_vm (\vm -> let (r,c) = break (cw_is_word w) (cstack vm)
+                  in (vm {cstack = tail c},reverse r))
+
+-- | Compile @loop@ statement, end of do block.
+end_do :: (Eq a,Forth_Type a) => Forth w a ()
+end_do = do
+  cw <- unwind_cstack_to "do"
+  let w = forth_block (map cw_instr cw)
+  pushc (CW_Forth (interpret_do w))
+
+-- | Consult stack and select either /true/ or /false/.
+interpret_if :: (Eq a,Forth_Type a) => (Forth w a (),Forth w a ()) -> Forth w a ()
+interpret_if (t,f) = pop >>= \x -> if x /= ty_from_bool False then t else f
+
+-- | Compile @then@ statement, end of @if@ block.
+end_if :: (Eq a,Forth_Type a) => Forth w a ()
+end_if = do
+  cw <- unwind_cstack_to "if"
+  let f = forth_block . map cw_instr
+  case break (cw_is_word "else") cw of
+    (tb,[]) -> pushc (CW_Forth (interpret_if (f tb,return ())))
+    (tb,fb) -> pushc (CW_Forth (interpret_if (f tb,f (tail fb))))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
 compile :: (Eq a,Forth_Type a) => Forth w a ()
 compile = do
-  let accumulate a = do
-            expr <- read_expr
-            case expr of
-              Word ";" -> return a
-              Word "do" -> compile_do >>= \i -> accumulate (a >> i)
-              Word "if" -> compile_if >>= \i -> accumulate (a >> i)
-              e -> accumulate (a >> interpret_expr e)
-  name <- read_token
-  action <- accumulate (return ())
-  modify (\vm -> vm {dict = (name,action) : dict vm
-                    ,mode = Interpret})
+  expr <- read_expr
+  trace ("COMPILE: " ++ expr_pp expr)
+  case expr of
+    Word ";" -> end_compilation
+    Word "do" -> pushc (CW_Word "do")
+    Word "i" -> pushc (CW_Forth (popr >>= \x -> pushr x >> push x))
+    Word "j" -> pushc (CW_Forth fw_j)
+    Word "loop" -> end_do
+    Word "if" -> pushc (CW_Word "if")
+    Word "else" -> pushc (CW_Word "else")
+    Word "then" -> end_if
+    e -> pushc (CW_Forth (interpret_expr e))
 
 -- | Either 'interpret' or 'compile', depending on 'mode'.
 execute :: (Eq a,Forth_Type a) => Forth w a ()
@@ -254,13 +312,16 @@ execute = do
     Interpret -> interpret
     Compile -> compile
 
--- | Enter compile phase, ie. ':'.
+-- | Enter compile phase, ie. ':', the word name is pushed onto the /empty/ 'cstack'.
 begin_compile :: Forth w a ()
 begin_compile = do
-  vm <- get
-  case mode vm of
-    Interpret -> put vm {mode = Compile}
-    _ -> throwError "begin_compile: ':' in compiler context"
+  nm <- read_token
+  trace ("DEFINE: " ++ nm)
+  let edit vm = do
+        when (mode vm == Compile) (throwError "':' in compiler context")
+        when (not (null (cstack vm))) (throwError "':' cstack not empty")
+        return (vm {mode = Compile, cstack = [CW_Word nm]})
+  do_with_vm edit
 
 -- * Primitives
 
@@ -276,6 +337,7 @@ binary_op f = pop >>= \y -> pop >>= \x -> push (f x y)
 comparison_op :: Forth_Type a => (a -> a -> Bool) -> Forth w a ()
 comparison_op f = binary_op (\x y -> ty_from_bool (f x y))
 
+-- | Put string and then space.
 put_str_sp :: String -> IO ()
 put_str_sp s = putStr s >> putChar ' '
 
