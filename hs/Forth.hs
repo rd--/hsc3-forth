@@ -63,8 +63,8 @@ data Expr a = Literal a | Word String deriving (Show,Eq)
 
 -- | Tracer.
 trace :: String -> Forth w a ()
---trace = const (return ())
-trace = liftIO . putStrLn
+trace = const (return ())
+--trace = liftIO . putStrLn
 
 -- | Function with 'VM'.
 with_vm :: MonadState a m => (a -> (a,r)) -> m r
@@ -300,6 +300,7 @@ end_if = do
     (tb,[]) -> pushc (CW_Forth (interpret_if (f tb,return ())))
     (tb,fb) -> pushc (CW_Forth (interpret_if (f tb,f (tail fb))))
 
+-- | Generate a LOCAL instruction with name as argument (not on stack).
 gen_local :: String -> Forth w a ()
 gen_local nm = do
   vm <- get
@@ -307,9 +308,15 @@ gen_local nm = do
     e : s' -> put vm {stack = s',locals = (nm,push e) : locals vm}
     _ -> throwError ("LOCAL: STACK UNDERFLOW: " ++ nm)
 
+-- | Clear the 'locals' dictionary, this instruction is appended to
+-- words that introduce locals.
 clear_locals :: Forth w a ()
 clear_locals = with_vm (\vm -> (vm {locals = []},()))
 
+-- | 'locals' is used both during compilation and interpretation.  In
+-- compilation the RHS is undefined, it is used to for name lookup and
+-- to know if 'clear_locals' must be called on exit.  In
+-- interpretation it is a secondary dictionary, consulted first.
 def_locals :: Forth_Type a => Forth w a ()
 def_locals = do
   let get_names r = do
@@ -319,9 +326,6 @@ def_locals = do
   trace ("DEFINE-LOCALS: " ++ intercalate " " nm)
   with_vm (\vm -> (vm {locals = locals vm ++ zip nm (repeat (return ()))},()))
   pushc (CW_Forth (forth_block (map gen_local nm)))
-
--- resolve_local :: String -> Forth w a (Maybe a)
--- resolve_local tok = do
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
 compile :: (Eq a,Forth_Type a) => Forth w a ()
