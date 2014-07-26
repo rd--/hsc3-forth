@@ -64,9 +64,11 @@ data Expr a = Literal a | Word String deriving (Show,Eq)
 trace :: String -> Forth w a ()
 trace = const (return ()) -- liftIO . putStrLn
 
+-- | Function with 'VM'.
 with_vm :: MonadState a m => (a -> (a,r)) -> m r
 with_vm f = get >>= \vm -> let (vm',r) = f vm in put vm' >> return r
 
+-- | Procedure with 'VM'.
 do_with_vm :: MonadState a m => (a -> m a) -> m ()
 do_with_vm f = get >>= \vm -> f vm >>= put
 
@@ -383,7 +385,11 @@ frac_dict =
 cmp_dict :: (Forth_Type a,Ord a) => Dict w a
 cmp_dict =
     [("=",comparison_op (==))
-    ,("<",comparison_op (<))]
+    ,("<",comparison_op (<))
+    ,("<=",comparison_op (<=))
+    ,(">",comparison_op (>))
+    ,(">=",comparison_op (>=))
+    ]
 
 stack_dict :: Dict w a
 stack_dict =

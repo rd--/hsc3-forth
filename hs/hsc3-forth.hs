@@ -6,6 +6,7 @@ import Data.List.Split {- split -}
 import Data.Maybe {- base -}
 import Data.Ratio {- base -}
 import qualified Text.Read as R {- base -}
+-- import System.IO {- base -}
 
 import Sound.SC3.ID {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
@@ -112,11 +113,12 @@ ugen_io u =
 --
 -- Max is a UGen (SLUGens) and a binop...
 
--- > map is_uop ["Abs","MIDICPS","-","Rand"]
+-- > map is_uop (words "Abs MIDICPS Neg")
+-- > map is_uop (words "- Rand")
 is_uop :: String -> Bool
 is_uop s = s `notElem` ["-","Rand"] && isJust (unaryIndex s)
 
--- > map is_binop ["Trunc"]
+-- > map is_binop (words "== > % Trunc")
 is_binop :: String -> Bool
 is_binop s = s `notElem` [] && isJust (binaryIndex s)
 
@@ -198,7 +200,7 @@ ugen_pp :: UGen -> String
 ugen_pp u =
     case u of
       Constant_U (Constant n) -> real_pp n
-      Primitive_U (Primitive _ nm _ _ sp _ ) -> ugen_user_name nm sp
+      Primitive_U (Primitive _ nm _ _ sp _ ) -> "UGEN: " ++ ugen_user_name nm sp
       _ -> show u
 
 instance Forth_Type UGen where
@@ -219,6 +221,8 @@ main = do
   let d :: Dict Int UGen
       d = concat [core_dict,show_dict,stack_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen,dict = d}
+  -- hSetBuffering stdin NoBuffering
+  -- hSetBuffering stdout NoBuffering
   putStrLn "HSC3-FORTH"
   repl vm
 
