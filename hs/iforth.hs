@@ -1,11 +1,13 @@
+import qualified Data.Map as M {- containers -}
 import qualified Text.Read as R {- base -}
+import System.IO {- base -}
 
 import Forth
 
 main :: IO ()
 main = do
   let d :: Dict () Integer
-      d = concat [core_dict,show_dict,stack_dict,num_dict,int_dict,cmp_dict]
+      d = M.unions [core_dict,show_dict,stack_dict,num_dict,int_dict,cmp_dict]
   repl (empty_vm () R.readMaybe) {dict = d,input_port = Just stdin}
 
 {-

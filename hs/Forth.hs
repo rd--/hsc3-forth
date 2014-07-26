@@ -3,17 +3,15 @@ module Forth where
 import Control.Monad {- base -}
 import Data.Char {- base -}
 import Data.List {- base -}
+import qualified Data.Map as M {- containers -}
 import System.IO {- base -}
 import System.Exit {- base -}
 
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
 
--- | A definition is a named instructions ('Forth's).
-type Def w a = (String,Forth w a ())
-
--- | A dictionary is a list of definitions.
-type Dict w a = [Def w a]
+-- | A dictionary is a map of named instructions ('Forth's).
+type Dict w a = M.Map String (Forth w a ())
 
 -- | The machine is either interpreting or compiling.
 data VM_Mode = Interpret | Compile deriving (Eq,Show)
@@ -92,8 +90,8 @@ empty_vm w lit =
        ,cstack = []
        ,buffer = ""
        ,mode = Interpret
-       ,dict = []
-       ,locals = []
+       ,dict = M.empty
+       ,locals = M.empty
        ,world = w
        ,literal = lit
        ,dynamic = Nothing
@@ -189,14 +187,17 @@ read_token = do
     Nothing -> fill_buffer >> read_token
 
 -- | Dictionary lookup.
-lookup_word :: String -> Dict w a -> Maybe (Forth w a ())
-lookup_word w d = fmap snd (find ((w ==) . fst) d)
+lookup_word :: String -> VM w a -> Maybe (Forth w a ())
+lookup_word k vm =
+    case M.lookup k (locals vm) of
+      Nothing -> M.lookup k (dict vm)
+      r -> r
 
 -- | Parse a token string to an expression.
 parse_token :: String -> Forth w a (Expr a)
 parse_token s = do
   vm <- get
-  case lookup_word s (locals vm ++ dict vm) of
+  case lookup_word s vm of
     Just _  -> return (Word s)
     Nothing ->
         case literal vm s of
@@ -214,7 +215,7 @@ read_expr = parse_token =<< read_token
 interpret_word :: String -> Forth w a ()
 interpret_word w = do
   vm <- get
-  case lookup_word w (locals vm ++ dict vm) of
+  case lookup_word w vm of
     Just r -> r
     Nothing ->
         case dynamic vm of
@@ -275,12 +276,12 @@ end_compilation = do
   case reverse (cstack vm) of
     CW_Word nm : cw ->
         let instr = (map cw_instr cw)
-            instr' = if null (locals vm) then instr else instr ++ [clear_locals]
+            instr' = if M.null (locals vm) then instr else instr ++ [clear_locals]
             w = forth_block instr'
         in do trace 2 ("END DEFINITION: " ++ nm)
               put (vm {cstack = []
-                      ,locals = []
-                      ,dict = (nm,w) : dict vm
+                      ,locals = M.empty
+                      ,dict = M.insert nm w (dict vm)
                       ,mode = Interpret})
     _ -> throwError "CSTACK"
   return ()
@@ -323,7 +324,7 @@ end_if = do
 -- | Clear the 'locals' dictionary, this instruction is appended to
 -- words that introduce locals.
 clear_locals :: Forth w a ()
-clear_locals = with_vm (\vm -> (vm {locals = []},()))
+clear_locals = with_vm (\vm -> (vm {locals = M.empty},()))
 
 -- | 'locals' is used both during compilation and interpretation.  In
 -- compilation the RHS is undefined, it is used for name lookup and
@@ -336,7 +337,9 @@ def_locals = do
                if w == "}" then return r else get_names (w : r)
   nm <- get_names []
   trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
-  with_vm (\vm -> (vm {locals = locals vm ++ zip nm (repeat (return ()))},()))
+  with_vm (\vm -> let locals' = M.fromList (zip nm (repeat (return ())))
+                  in (vm {locals = M.union (locals vm) locals'}
+                     ,()))
   pushc (CW_Forth (forth_block (map fw_local' nm)))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
@@ -397,7 +400,7 @@ fw_local' :: String -> Forth w a ()
 fw_local' nm = do
   vm <- get
   case stack vm of
-    e : s' -> put vm {stack = s',locals = (nm,push e) : locals vm}
+    e : s' -> put vm {stack = s',locals = M.insert nm (push e) (locals vm)}
     _ -> throwError ("(LOCAL): STACK UNDERFLOW: " ++ nm)
 
 execute_buffer :: (Forth_Type a, Eq a) => VM w a -> IO (VM w a)
@@ -499,6 +502,7 @@ fw_bye = liftIO exitSuccess
 -- | 'Num' instance words.
 num_dict :: Num n => Dict w n
 num_dict =
+    M.fromList
     [("+",binary_op (+))
     ,("*",binary_op (*))
     ,("-",binary_op (-))
@@ -507,16 +511,19 @@ num_dict =
 
 int_dict :: Integral n => Dict w n
 int_dict =
+    M.fromList
     [("mod",binary_op mod)
     ,("/",binary_op div)
     ,("/mod",fw_div_mod)]
 
 frac_dict :: Fractional n => Dict w n
 frac_dict =
+    M.fromList
     [("f/",binary_op (/))]
 
 cmp_dict :: (Forth_Type a,Ord a) => Dict w a
 cmp_dict =
+    M.fromList
     [("=",comparison_op (==))
     ,("<",comparison_op (<))
     ,("<=",comparison_op (<=))
@@ -526,6 +533,7 @@ cmp_dict =
 
 stack_dict :: Forth_Type a => Dict w a
 stack_dict =
+    M.fromList
     [("drop",fw_drop)
     ,("dup",fw_dup)
     ,("over",fw_over)
@@ -536,12 +544,14 @@ stack_dict =
 
 show_dict :: Forth_Type a => Dict w a
 show_dict =
+    M.fromList
     [("emit",fw_emit)
     ,(".",fw_dot)
     ,(".s",fw_dot_s)]
 
 core_dict :: Dict w a
 core_dict =
+    M.fromList
     [(":",fw_colon)
     ,(";",context_err ";")
     ,("do",context_err "do")

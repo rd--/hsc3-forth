@@ -4,6 +4,7 @@ import Control.Monad.State {- mtl -}
 import Data.Char {- base -}
 import Data.List {- base -}
 import Data.List.Split {- split -}
+import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
 import Data.Ratio {- base -}
 import qualified Text.Read as R {- base -}
@@ -188,6 +189,7 @@ do_ugen u = do
 
 ugen_dict :: Dict Int UGen
 ugen_dict =
+    M.fromList
     [("clone",pop_int >>= \n -> pop >>= \u -> incr_id >>= \z -> push (uclone z n u))
     ,("draw",pop >>= \u -> assert_empty >> liftIO (draw (out 0 u)))
     ,("mce",pop_int >>= \n -> pop_n n >>= \u -> push (mce (reverse u)))
@@ -230,7 +232,7 @@ parse_constant s =
 main :: IO ()
 main = do
   let d :: Dict Int UGen
-      d = concat [core_dict,show_dict,stack_dict,ugen_dict]
+      d = M.unions [core_dict,show_dict,stack_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen
                                        ,dict = d}
   dir <- lookupEnv "HSC3_FORTH_DIR"
