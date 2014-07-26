@@ -2,13 +2,16 @@ import Control.Monad {- base -}
 import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
 import Data.Char {- base -}
+import Data.List {- base -}
 import Data.List.Split {- split -}
 import Data.Maybe {- base -}
 import Data.Ratio {- base -}
 import qualified Text.Read as R {- base -}
 -- import System.IO {- base -}
 
+import Sound.OSC {- hosc -}
 import Sound.SC3.ID {- hsc3 -}
+import Sound.SC3.UGen.MCE {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
@@ -48,6 +51,9 @@ push_l = mapM_ push
 pop_int :: Forth w UGen Int
 pop_int = fmap (floor . u_constant) pop
 
+pop_double :: Forth w UGen Double
+pop_double = fmap (realToFrac . u_constant) pop
+
 -- | Get counter and store increment.
 incr_id :: Forth Int a Int
 incr_id = do
@@ -66,13 +72,13 @@ assert_empty = do
 
 -- * UGen
 
--- | Requires mce is last input.
+-- | Requires mce is last input.  FAKED...
 --
--- > map u_halts_mce ["Drand"]
+-- > map u_halts_mce (words "Drand EnvGen Out")
 u_halts_mce :: String -> Bool
 u_halts_mce u =
     case DB.uLookup u of
-      Just r -> isJust (DB.ugen_mce_input r)
+      Just r -> isJust (DB.ugen_mce_input r) || u `elem` ["EnvGen"]
       _ -> False
 
 -- > halt_mce_transform [1,2,mce2 3 4] == [1,2,3,4]
@@ -187,7 +193,8 @@ ugen_dict =
     ,("mrg",pop_int >>= \n -> pop_n n >>= \u -> push (mrg (reverse u)))
     ,("play",pop >>= \u -> assert_empty >> liftIO (audition (out 0 u)))
     ,("stop",liftIO (withSC3 reset))
-    ,("unmce",pop >>= \u -> push_l (mceChannels u))]
+    ,("unmce",pop >>= \u -> push_l (mceChannels u))
+    ,("pause",pop_double >>= \t -> pauseThread t)]
 
 -- | Print as integer if integral, else as real.
 real_pp :: (Show a, Real a) => a -> String
@@ -201,6 +208,8 @@ ugen_pp u =
     case u of
       Constant_U (Constant n) -> real_pp n
       Primitive_U (Primitive _ nm _ _ sp _ ) -> "UGEN: " ++ ugen_user_name nm sp
+      MCE_U (MCE_Unit u') -> ugen_pp u'
+      MCE_U (MCE_Vector v) -> "[" ++ intercalate " " (map ugen_pp v) ++ "]"
       _ -> show u
 
 instance Forth_Type UGen where

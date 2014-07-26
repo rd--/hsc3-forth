@@ -45,6 +45,7 @@ data VM w a =
        ,rstack :: [a] -- ^ The return stack.
        ,cstack :: [CW w a] -- ^ The compilation stack.
        ,dict :: Dict w a -- ^ The dictionary.
+       ,locals :: Dict w a -- ^ The locals dictionary.
        ,buffer :: String -- ^ The current line of input text.
        ,mode :: VM_Mode -- ^ Basic state of the machine.
        ,world :: w -- ^ The world, instance state.
@@ -62,7 +63,8 @@ data Expr a = Literal a | Word String deriving (Show,Eq)
 
 -- | Tracer.
 trace :: String -> Forth w a ()
-trace = const (return ()) -- liftIO . putStrLn
+--trace = const (return ())
+trace = liftIO . putStrLn
 
 -- | Function with 'VM'.
 with_vm :: MonadState a m => (a -> (a,r)) -> m r
@@ -92,6 +94,7 @@ empty_vm w lit =
        ,buffer = ""
        ,mode = Interpret
        ,dict = []
+       ,locals = []
        ,world = w
        ,literal = lit
        ,dynamic = Nothing
@@ -159,11 +162,21 @@ read_token = do
 lookup_word :: String -> Dict w a -> Maybe (Forth w a ())
 lookup_word w d = fmap snd (find ((w ==) . fst) d)
 
+{-
+lookup_word_seq w d =
+    case d of
+      [] -> Nothing
+      d0 : d' ->
+          case lookup_word w d0 of
+            Nothing -> lookup_word_seq w d'
+            Just r -> Just r
+-}
+
 -- | Parse a token string to an expression.
 parse_token :: String -> Forth w a (Expr a)
 parse_token s = do
   vm <- get
-  case lookup_word s (dict vm) of
+  case lookup_word s (locals vm ++ dict vm) of
     Just _  -> return (Word s)
     Nothing ->
         case literal vm s of
@@ -181,7 +194,7 @@ read_expr = parse_token =<< read_token
 interpret_word :: String -> Forth w a ()
 interpret_word w = do
   vm <- get
-  case lookup_word w (dict vm) of
+  case lookup_word w (locals vm ++ dict vm) of
     Just r -> r
     Nothing ->
         case dynamic vm of
@@ -224,12 +237,6 @@ interpret_do code = do
         if not r then step >> loop else popr >> popr >> return ()
   loop
 
--- | Forth word @j@.
-fw_j :: Forth w a ()
-fw_j = do {x <- popr; y <- popr; z <- popr
-          ;pushr z; pushr y; pushr x
-          ;push z}
-
 -- | Get instruction at 'CW' or raise an error.
 cw_instr :: CW w a -> Forth w a ()
 cw_instr cw =
@@ -247,9 +254,12 @@ end_compilation = do
   vm <- get
   case reverse (cstack vm) of
     CW_Word nm : cw ->
-        let w = forth_block (map cw_instr cw)
+        let instr = (map cw_instr cw)
+            instr' = if null (locals vm) then instr else instr ++ [clear_locals]
+            w = forth_block instr'
         in do trace ("END DEFINITION: " ++ nm)
               put (vm {cstack = []
+                      ,locals = []
                       ,dict = (nm,w) : dict vm
                       ,mode = Interpret})
     _ -> throwError "CSTACK"
@@ -290,6 +300,29 @@ end_if = do
     (tb,[]) -> pushc (CW_Forth (interpret_if (f tb,return ())))
     (tb,fb) -> pushc (CW_Forth (interpret_if (f tb,f (tail fb))))
 
+gen_local :: String -> Forth w a ()
+gen_local nm = do
+  vm <- get
+  case stack vm of
+    e : s' -> put vm {stack = s',locals = (nm,push e) : locals vm}
+    _ -> throwError ("LOCAL: STACK UNDERFLOW: " ++ nm)
+
+clear_locals :: Forth w a ()
+clear_locals = with_vm (\vm -> (vm {locals = []},()))
+
+def_locals :: Forth_Type a => Forth w a ()
+def_locals = do
+  let get_names r = do
+               w <- read_token
+               if w == "}" then return r else get_names (w : r)
+  nm <- get_names []
+  trace ("DEFINE-LOCALS: " ++ intercalate " " nm)
+  with_vm (\vm -> (vm {locals = locals vm ++ zip nm (repeat (return ()))},()))
+  pushc (CW_Forth (forth_block (map gen_local nm)))
+
+-- resolve_local :: String -> Forth w a (Maybe a)
+-- resolve_local tok = do
+
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
 compile :: (Eq a,Forth_Type a) => Forth w a ()
 compile = do
@@ -298,12 +331,13 @@ compile = do
   case expr of
     Word ";" -> end_compilation
     Word "do" -> pushc (CW_Word "do")
-    Word "i" -> pushc (CW_Forth (popr >>= \x -> pushr x >> push x))
+    Word "i" -> pushc (CW_Forth fw_i)
     Word "j" -> pushc (CW_Forth fw_j)
     Word "loop" -> end_do
     Word "if" -> pushc (CW_Word "if")
     Word "else" -> pushc (CW_Word "else")
     Word "then" -> end_if
+    Word "{" -> def_locals
     e -> pushc (CW_Forth (interpret_expr e))
 
 -- | Either 'interpret' or 'compile', depending on 'mode'.
@@ -313,17 +347,6 @@ execute = do
   case mode vm of
     Interpret -> interpret
     Compile -> compile
-
--- | Enter compile phase, ie. ':', the word name is pushed onto the /empty/ 'cstack'.
-begin_compile :: Forth w a ()
-begin_compile = do
-  nm <- read_token
-  trace ("DEFINE: " ++ nm)
-  let edit vm = do
-        when (mode vm == Compile) (throwError "':' in compiler context")
-        when (not (null (cstack vm))) (throwError "':' cstack not empty")
-        return (vm {mode = Compile, cstack = [CW_Word nm]})
-  do_with_vm edit
 
 -- * Primitives
 
@@ -343,14 +366,6 @@ comparison_op f = binary_op (\x y -> ty_from_bool (f x y))
 put_str_sp :: String -> IO ()
 put_str_sp s = putStr s >> putChar ' '
 
--- | Forth word @.s@.
-fw_show_stack :: Forth_Type a => Forth w a ()
-fw_show_stack = do
-  vm <- get
-  let l = map ty_string (reverse (stack vm))
-      n = "<" ++ show (length l) ++ "> "
-  liftIO (putStr n >> mapM_ put_str_sp l)
-
 -- * stdlib
 
 -- | Error of compile word in interpeter context.
@@ -358,6 +373,81 @@ context_err :: String -> Forth w a ()
 context_err nm = do
   let msg = concat ["'",nm,"': compiler word in interpeter context"]
   throwError msg
+
+-- * Forth words
+
+fw_i :: Forth w a ()
+fw_i = popr >>= \x -> pushr x >> push x
+
+-- | Forth word @j@.
+fw_j :: Forth w a ()
+fw_j = do {x <- popr; y <- popr; z <- popr
+          ;pushr z; pushr y; pushr x
+          ;push z}
+
+-- | Enter compile phase, the word name is pushed onto the /empty/ 'cstack'.
+fw_colon :: Forth w a ()
+fw_colon = do
+  nm <- read_token
+  trace ("DEFINE: " ++ nm)
+  let edit vm = do
+        when (mode vm == Compile) (throwError "':' in compiler context")
+        when (not (null (cstack vm))) (throwError "':' cstack not empty")
+        return (vm {mode = Compile, cstack = [CW_Word nm]})
+  do_with_vm edit
+
+-- | Forth word @/mod@.
+fw_div_mod :: Integral a => Forth w a ()
+fw_div_mod = pop >>= \p -> pop >>= \q -> let (r,s) = q `divMod` p in push s >> push r
+
+-- | ( p q -- q p )
+fw_swap :: Forth w a ()
+fw_swap = pop >>= \p -> pop >>= \q -> push p >> push q
+
+-- | ( p -- )
+fw_drop :: Forth w a ()
+fw_drop = pop >> return ()
+
+-- | ( p q -- p q p )
+fw_over :: Forth w a ()
+fw_over = pop >>= \p -> pop >>= \q -> push q >> push p >> push q
+
+-- | ( xu ... x1 x0 u -- xu ... x1 x0 xu )
+fw_pick :: Forth_Type a => Forth w a ()
+fw_pick = do
+  vm <- get
+  case stack vm of
+    n : s' -> let n' = ty_int n
+                  e = s' !! n'
+              in put vm {stack = e : s'}
+    _ -> throwError "PICK"
+
+fw_dup :: Forth w a ()
+fw_dup = pop >>= \e -> push e >> push e
+
+fw_rot :: Forth w a ()
+fw_rot = pop >>= \p -> pop >>= \q -> pop >>= \r -> push q >> push p >> push r
+
+fw_2dup :: Forth w a ()
+fw_2dup = pop >>= \p -> pop >>= \q -> push q >> push p >> push q >> push p
+
+fw_emit :: Forth_Type a => Forth w a ()
+fw_emit = liftIO . putChar . ty_char =<< pop
+
+fw_dot :: Forth_Type a => Forth w a ()
+fw_dot = liftIO . put_str_sp . ty_string =<< pop
+
+fw_dot_s :: Forth_Type a => Forth w a ()
+fw_dot_s = do
+  vm <- get
+  let l = map ty_string (reverse (stack vm))
+      n = "<" ++ show (length l) ++ "> "
+  liftIO (putStr n >> mapM_ put_str_sp l)
+
+fw_bye :: Forth w a ()
+fw_bye = liftIO exitSuccess
+
+-- * Dictionaries
 
 -- | 'Num' instance words.
 num_dict :: Num n => Dict w n
@@ -367,10 +457,6 @@ num_dict =
     ,("-",binary_op (-))
     ,("negate",unary_op negate)
     ,("abs",unary_op abs)]
-
--- | Forth word @/mod@.
-fw_div_mod :: Integral a => Forth w a ()
-fw_div_mod = pop >>= \p -> pop >>= \q -> let (r,s) = q `divMod` p in push s >> push r
 
 int_dict :: Integral n => Dict w n
 int_dict =
@@ -391,26 +477,25 @@ cmp_dict =
     ,(">=",comparison_op (>=))
     ]
 
-stack_dict :: Dict w a
+stack_dict :: Forth_Type a => Dict w a
 stack_dict =
-    [("drop",pop >> return ())
-    ,("dup",pop >>= \e -> push e >> push e)
-    ,("nip",pop >>= \p -> pop >>= \_ -> push p)
-    ,("over",pop >>= \p -> pop >>= \q -> push q >> push p >> push q)
-    ,("rot",pop >>= \p -> pop >>= \q -> pop >>= \r -> push q >> push p >> push r)
-    ,("swap",pop >>= \p -> pop >>= \q -> push p >> push q)
-    ,("tuck",pop >>= \p -> pop >>= \q -> push p >> push q >> push p)
-    ,("2dup",pop >>= \p -> pop >>= \q -> push q >> push p >> push q >> push p)]
+    [("drop",fw_drop)
+    ,("dup",fw_dup)
+    ,("over",fw_over)
+    ,("pick",fw_pick)
+    ,("rot",fw_rot)
+    ,("swap",fw_swap)
+    ,("2dup",fw_2dup)]
 
 show_dict :: Forth_Type a => Dict w a
 show_dict =
-    [("emit",liftIO . putChar . ty_char =<< pop)
-    ,(".",liftIO . put_str_sp . ty_string =<< pop)
-    ,(".s",fw_show_stack)]
+    [("emit",fw_emit)
+    ,(".",fw_dot)
+    ,(".s",fw_dot_s)]
 
 core_dict :: Dict w a
 core_dict =
-    [(":",begin_compile)
+    [(":",fw_colon)
     ,(";",context_err ";")
     ,("do",context_err "do")
     ,("i",context_err "i")
@@ -419,7 +504,9 @@ core_dict =
     ,("if",context_err "if")
     ,("else",context_err "else")
     ,("then",context_err "then")
-    ,("bye",liftIO exitSuccess)]
+    ,("{",context_err "{")
+    ,("}",context_err "}")
+    ,("bye",fw_bye)]
 
 -- * Operation
 

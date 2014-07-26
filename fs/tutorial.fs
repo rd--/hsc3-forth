@@ -1,4 +1,4 @@
-\ EMACS
+\ EMACS FORTH
 
 \ M-x set-variable forth-program-name "hsc3-forth"
 \ M-x run-forth
@@ -14,7 +14,6 @@
 2 1 - . \ 1 \
 3 4 + 5 * . \ 35 \
 3 4 5 * + . \ 23 \
-: negate Neg ;
 2 negate . \ -2 \
 
 \ FRACTIONAL FORTH
@@ -34,23 +33,17 @@
 
 \ INTEGRAL FORTH
 
-: div IDiv ;
 10 2 div . \ 5 \
 7 3 mod . \ 1 \
 7 3 /mod . . \ 2 1 \
 
-\ STDLIB FORTH
+\ EQ FORTH
 
-( In ANS Forth true is -1.  In SC3 true is 1. )
-
-: true 1 ;
-: false 0 ;
-
-\ EQ & ORD FORTH
-
-: = == ;
 0 1 = . \ false \
 1 1 = . \ true \
+
+\ ORD FORTH
+
 1 2 < . \ true \
 2 1 < . \ false \
 1 1 < . \ false \
@@ -65,6 +58,7 @@
 1 2 .s nip .s drop .s \ <2> 1 2 <1> 2 <0> \
 1 2 .s tuck .s drop drop drop .s \ <2> 1 2 <3> 2 1 2 <0> \
 1 2 2dup .s . . . . .s \ <4> 1 2 1 2 2 1 2 1 <0> \
+1 2 3 4 5 2 pick .s . . . . . . .s \ <6> 1 2 3 4 5 3 3 5 4 3 2 1 <0> \
 
 \ BLOCK FORTH
 
@@ -78,11 +72,9 @@
 
 \ CONDITIONAL FORTH
 
-: abs dup 0 < if negate then ;
 5 abs . \ 5
 -5 abs . \ 5
 
-: min 2dup < if drop else nip then ;
 2 3 min . \ 2
 3 2 min . \ 2
 
@@ -104,14 +96,20 @@ tbl \ 10 11 11 12 12 13 \
 star star star \ *** \
 : stars 0 do star loop ;
 10 stars \ ********** \
-: cr 10 emit ;
 : f 5 0 do cr loop ; f \ \n\n\n\n\n \
 : box 0 do cr dup stars loop drop ;
 3 3 box \ \n***\n***\n*** \
-: space 32 emit ;
-: spaces 0 do space loop ;
 : \stars 0 do cr i spaces 10 stars loop ;
 3 \stars
+
+\ LOCALS FORTH
+
+: swap' { a b } b a ;
+1 2 swap' . . \ 1 2 \
+: anon { a b c } a b c b c b a ;
+1 2 3 anon . . . . . . . \ 1 2 3 2 3 2 1 \
+: anon { a } 2 { b } a b a ;
+1 anon . . . \ 1 2 1 \
 
 \ UGEN FORTH
 
@@ -125,3 +123,21 @@ stop
 
 WhiteNoise.ar 0.1 * dup - draw \ silence \
 WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
+
+\ RANDOM FORTH
+
+: random-sine 1900 2100 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
+: anon 5 0 do random-sine play loop ; anon
+stop
+
+\ ENVELOPED FORTH
+
+: with-env { dur lvl } 1 1 0 1 remove-synth dur lvl env-tri EnvGen.kr * ;
+WhiteNoise.ar 10 0.1 with-env play
+random-sine 5 0.1 with-env play
+stop
+
+\ TEMPORAL FORTH
+
+: anon 11 1 do i 4 / dup . cr pause random-sine 3 0.1 with-env play loop ;
+anon 3 pause stop
