@@ -242,7 +242,8 @@ main = do
       putStrLn "HSC3-FORTH"
       vm' <- exec_err vm (fw_included' (dir' </> "stdlib.fs"))
       vm'' <- exec_err vm' (fw_included' (dir' </> "hsc3.fs"))
-      repl vm'' {input_port = Just stdin}
+      vm''' <- exec_err vm'' (fw_included' (dir' </> "overlap-texture.fs"))
+      repl vm''' {input_port = Just stdin}
 
 {-
 import Data.Boolean {- Boolean -}

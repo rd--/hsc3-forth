@@ -42,8 +42,9 @@ data VM w a =
     VM {stack :: [a] -- ^ The data stack, /the/ stack.
        ,rstack :: [a] -- ^ The return stack.
        ,cstack :: [CW w a] -- ^ The compilation stack.
+       ,strings :: M.Map Int String -- ^ The string store, addressed.
        ,dict :: Dict w a -- ^ The dictionary.
-       ,locals :: Dict w a -- ^ The locals dictionary.
+       ,locals :: [Dict w a] -- ^ The stack of locals dictionaries.
        ,buffer :: String -- ^ The current line of input text.
        ,mode :: VM_Mode -- ^ Basic state of the machine.
        ,world :: w -- ^ The world, instance state.
@@ -52,6 +53,17 @@ data VM w a =
        ,eol :: Bool -- ^ End of line, runs printer.
        ,input_port :: Maybe Handle
        }
+
+vm_pp :: Forth_Type a => VM w a -> String
+vm_pp vm =
+    concat ["\n DATA STACK: ",unwords (map ty_string (stack vm))
+           ,"\n RETURN STACK: ",unwords (map ty_string (rstack vm))
+           ,"\n COMPILE STACK DEPTH: ",show (length (cstack vm))
+           ,"\n STRINGS: ",show (strings vm)
+           ,"\n DICT: ",unwords (M.keys (dict vm))
+           ,"\n LOCALS: ",intercalate "," (map (unwords . M.keys) (locals vm))
+           ,"\n MODE: ",show (mode vm)
+           ,"\n BUFFER: ",buffer vm]
 
 -- | An instruction, the implementation of a /word/.
 type Forth w a r = ExceptT String (StateT (VM w a) IO) r
@@ -88,10 +100,11 @@ empty_vm w lit =
     VM {stack = []
        ,rstack = []
        ,cstack = []
+       ,strings = M.empty
        ,buffer = ""
        ,mode = Interpret
        ,dict = M.empty
-       ,locals = M.empty
+       ,locals = []
        ,world = w
        ,literal = lit
        ,dynamic = Nothing
@@ -142,12 +155,37 @@ popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
 modify_world :: (w -> w) -> Forth w a ()
 modify_world f = modify (\vm -> vm {world = f (world vm)})
 
--- | Delete until /x/ is seen, discarding /x/, or @[]@.
+next_string_id :: VM w a -> Int
+next_string_id vm =
+    let m = strings vm
+    in if M.null m then 0 else fst (M.findMax m) + 1
+
+get_string :: Forth_Type a => Forth w a (Maybe String)
+get_string = do
+  _ <- pop
+  k <- fmap ty_int pop
+  vm <- get
+  return (M.lookup k (strings vm))
+
+-- | Read until /x/ is seen, discarding /x/, RHS may be @[]@.
+--
+-- > break_on ')' "comment ) WORD" == ("comment "," WORD")
+break_on :: Eq a => a -> [a] -> ([a],[a])
+break_on x l =
+    case break (== x) l of
+      (lhs,[]) -> (lhs,[])
+      (lhs,_ : rhs) -> (lhs,rhs)
+
+scan_until :: Forth_Type a => Char -> Forth w a String
+scan_until c = do
+  vm <- get
+  let (str,buffer') = break_on c (buffer vm)
+  put vm {buffer = buffer'}
+  return str
+
+-- | 'snd' of 'break_on'.
 delete_until :: Eq a => a -> [a] -> [a]
-delete_until x l =
-    case dropWhile (/= x) l of
-      [] -> []
-      _ : r -> r
+delete_until x = snd . break_on x
 
 -- | Scan a token from 'buffer', ANS Forth type comments are
 -- discarded.  Although 'buffer' is filled by 'hGetLine' it may
@@ -189,9 +227,11 @@ read_token = do
 -- | Dictionary lookup.
 lookup_word :: String -> VM w a -> Maybe (Forth w a ())
 lookup_word k vm =
-    case M.lookup k (locals vm) of
-      Nothing -> M.lookup k (dict vm)
-      r -> r
+    case locals vm of
+      [] -> M.lookup k (dict vm)
+      l:_ -> case M.lookup k l of
+               Nothing -> M.lookup k (dict vm)
+               r -> r
 
 -- | Parse a token string to an expression.
 parse_token :: String -> Forth w a (Expr a)
@@ -269,18 +309,31 @@ cw_instr cw =
 forth_block :: [Forth w a ()] -> Forth w a ()
 forth_block = foldl1 (>>)
 
--- | Compile ';' statement.
+-- | Add a 'locals' frame.
+begin_locals :: Forth w a ()
+begin_locals = with_vm (\vm -> (vm {locals = M.empty : locals vm},()))
+
+-- | Remove a 'locals' frame.
+end_locals :: Forth w a ()
+end_locals = with_vm (\vm -> (vm {locals = tail (locals vm)},()))
+
+bracketed :: (a, a) -> [a] -> [a]
+bracketed (l,r) x = l : x ++ [r]
+
+-- | Compile ';' statement.  There is always a compile 'locals' frame to be removed.
 end_compilation :: Forth w a ()
 end_compilation = do
   vm <- get
   case reverse (cstack vm) of
     CW_Word nm : cw ->
         let instr = (map cw_instr cw)
-            instr' = if M.null (locals vm) then instr else instr ++ [clear_locals]
+            instr' = if M.null (head (locals vm))
+                     then instr
+                     else bracketed (begin_locals,end_locals) instr
             w = forth_block instr'
         in do trace 2 ("END DEFINITION: " ++ nm)
               put (vm {cstack = []
-                      ,locals = M.empty
+                      ,locals = tail (locals vm)
                       ,dict = M.insert nm w (dict vm)
                       ,mode = Interpret})
     _ -> throwError "CSTACK"
@@ -321,15 +374,18 @@ end_if = do
     (tb,[]) -> pushc (CW_Forth (interpret_if (f tb,return ())))
     (tb,fb) -> pushc (CW_Forth (interpret_if (f tb,f (tail fb))))
 
--- | Clear the 'locals' dictionary, this instruction is appended to
--- words that introduce locals.
-clear_locals :: Forth w a ()
-clear_locals = with_vm (\vm -> (vm {locals = M.empty},()))
+-- | Function over current locals 'Dict'.
+at_current_locals :: (Dict w a -> Dict w a) -> VM w a -> VM w a
+at_current_locals f vm =
+    case locals vm of
+      l : l' -> vm {locals = f l : l'}
+      _ -> error "at_current_locals"
 
 -- | 'locals' is used both during compilation and interpretation.  In
--- compilation the RHS is undefined, it is used for name lookup and
--- to know if 'clear_locals' must be called on exit.  In
--- interpretation it is a secondary dictionary, consulted first.
+-- compilation the RHS is undefined, it is used for name lookup and to
+-- know if an interpreter 'locals' frame must be made.  In
+-- interpretation, if required, it is a secondary dictionary,
+-- consulted first.
 def_locals :: Forth_Type a => Forth w a ()
 def_locals = do
   let get_names r = do
@@ -337,10 +393,17 @@ def_locals = do
                if w == "}" then return r else get_names (w : r)
   nm <- get_names []
   trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
-  with_vm (\vm -> let locals' = M.fromList (zip nm (repeat (return ())))
-                  in (vm {locals = M.union (locals vm) locals'}
-                     ,()))
+  let locals' = M.fromList (zip nm (repeat undefined))
+  with_vm (\vm -> (at_current_locals (M.union locals') vm,()))
   pushc (CW_Forth (forth_block (map fw_local' nm)))
+
+compile_s_quote :: Forth_Type a => Forth w a ()
+compile_s_quote = do
+  str <- scan_until '"'
+  vm <- get
+  let k = next_string_id vm
+  put vm {strings = M.insert k str (strings vm)}
+  pushc (CW_Forth (push (ty_from_int k) >> push (ty_from_int (length str))))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
 compile :: (Eq a,Forth_Type a) => Forth w a ()
@@ -357,6 +420,7 @@ compile = do
     Word "else" -> pushc (CW_Word "else")
     Word "then" -> end_if
     Word "{" -> def_locals
+    Word "s\"" -> compile_s_quote
     e -> pushc (CW_Forth (interpret_expr e))
 
 -- | Either 'interpret' or 'compile', depending on 'mode'.
@@ -385,14 +449,6 @@ comparison_op f = binary_op (\x y -> ty_from_bool (f x y))
 put_str_sp :: String -> IO ()
 put_str_sp s = putStr s >> putChar ' '
 
--- * stdlib
-
--- | Error of compile word in interpeter context.
-context_err :: String -> Forth w a ()
-context_err nm = do
-  let msg = concat ["'",nm,"': compiler word in interpeter context"]
-  throwError msg
-
 -- * Forth words
 
 -- | Variant on @(local)@, argument not on stack.
@@ -400,7 +456,10 @@ fw_local' :: String -> Forth w a ()
 fw_local' nm = do
   vm <- get
   case stack vm of
-    e : s' -> put vm {stack = s',locals = M.insert nm (push e) (locals vm)}
+    e : s' -> put vm {stack = s'
+                     ,locals = case locals vm of
+                                 [] -> error "NO LOCALS FRAME"
+                                 l : l' -> M.insert nm (push e) l : l'}
     _ -> throwError ("(LOCAL): STACK UNDERFLOW: " ++ nm)
 
 execute_buffer :: (Forth_Type a, Eq a) => VM w a -> IO (VM w a)
@@ -426,6 +485,13 @@ fw_included' nm = do
   str <- liftIO (readFile nm)
   fw_evaluate' str
 
+fw_included :: (Eq a,Forth_Type a) => Forth w a ()
+fw_included = do
+  r <- get_string
+  case r of
+    Nothing -> throwError "INCLUDED"
+    Just str -> fw_included' str
+
 fw_i :: Forth w a ()
 fw_i = popr >>= \x -> pushr x >> push x
 
@@ -435,7 +501,8 @@ fw_j = do {x <- popr; y <- popr; z <- popr
           ;pushr z; pushr y; pushr x
           ;push z}
 
--- | Enter compile phase, the word name is pushed onto the /empty/ 'cstack'.
+-- | Enter compile phase, the word name is pushed onto the /empty/
+-- 'cstack', and a 'locals' frame is added.
 fw_colon :: Forth w a ()
 fw_colon = do
   nm <- read_token
@@ -443,7 +510,9 @@ fw_colon = do
   let edit vm = do
         when (mode vm == Compile) (throwError "':' in compiler context")
         when (not (null (cstack vm))) (throwError "':' cstack not empty")
-        return (vm {mode = Compile, cstack = [CW_Word nm]})
+        return (vm {mode = Compile
+                   ,cstack = [CW_Word nm]
+                   ,locals = M.empty : locals vm})
   do_with_vm edit
 
 -- | Forth word @/mod@.
@@ -497,43 +566,53 @@ fw_dot_s = do
 fw_bye :: Forth w a ()
 fw_bye = liftIO exitSuccess
 
+fw_s_quote_interpet :: Forth_Type a => Forth w a ()
+fw_s_quote_interpet = do
+  vm <- get
+  let (str,buffer') = break_on '"' (buffer vm)
+  put vm {stack = ty_from_int (length str) : ty_from_int (-1) : stack vm
+         ,strings = M.insert (-1) str (strings vm)
+         ,buffer = buffer'}
+
+fw_type :: Forth_Type a => Forth w a ()
+fw_type = do
+  r <- get_string
+  case r of
+    Nothing -> throwError "TYPE: UNKNOWN STRING-ID"
+    Just str -> liftIO (put_str_sp str)
+
+fw_vmstat :: Forth_Type a => Forth w a ()
+fw_vmstat = do
+  vm <- get
+  liftIO (putStrLn (vm_pp vm))
+
 -- * Dictionaries
 
 -- | 'Num' instance words.
 num_dict :: Num n => Dict w n
-num_dict =
-    M.fromList
+num_dict = M.fromList
     [("+",binary_op (+))
     ,("*",binary_op (*))
     ,("-",binary_op (-))
     ,("negate",unary_op negate)
     ,("abs",unary_op abs)]
 
-int_dict :: Integral n => Dict w n
-int_dict =
-    M.fromList
+integral_dict :: Integral n => Dict w n
+integral_dict = M.fromList
     [("mod",binary_op mod)
     ,("/",binary_op div)
     ,("/mod",fw_div_mod)]
 
-frac_dict :: Fractional n => Dict w n
-frac_dict =
-    M.fromList
-    [("f/",binary_op (/))]
-
-cmp_dict :: (Forth_Type a,Ord a) => Dict w a
-cmp_dict =
-    M.fromList
+ord_dict :: (Forth_Type a,Ord a) => Dict w a
+ord_dict = M.fromList
     [("=",comparison_op (==))
     ,("<",comparison_op (<))
     ,("<=",comparison_op (<=))
     ,(">",comparison_op (>))
-    ,(">=",comparison_op (>=))
-    ]
+    ,(">=",comparison_op (>=))]
 
 stack_dict :: Forth_Type a => Dict w a
-stack_dict =
-    M.fromList
+stack_dict = M.fromList
     [("drop",fw_drop)
     ,("dup",fw_dup)
     ,("over",fw_over)
@@ -543,26 +622,30 @@ stack_dict =
     ,("2dup",fw_2dup)]
 
 show_dict :: Forth_Type a => Dict w a
-show_dict =
-    M.fromList
+show_dict = M.fromList
     [("emit",fw_emit)
     ,(".",fw_dot)
-    ,(".s",fw_dot_s)]
+    ,(".s",fw_dot_s)
+    ,("vmstat",fw_vmstat)]
 
-core_dict :: Dict w a
+core_dict :: (Eq a,Forth_Type a) => Dict w a
 core_dict =
-    M.fromList
+    let err nm = throwError (concat ["'",nm,"': compiler word in interpeter context"])
+    in M.fromList
     [(":",fw_colon)
-    ,(";",context_err ";")
-    ,("do",context_err "do")
-    ,("i",context_err "i")
-    ,("j",context_err "j")
-    ,("loop",context_err "loop")
-    ,("if",context_err "if")
-    ,("else",context_err "else")
-    ,("then",context_err "then")
-    ,("{",context_err "{")
-    ,("}",context_err "}")
+    ,(";",err ";")
+    ,("s\"",fw_s_quote_interpet)
+    ,("included",fw_included)
+    ,("type",fw_type)
+    ,("do",err "do")
+    ,("i",err "i")
+    ,("j",err "j")
+    ,("loop",err "loop")
+    ,("if",err "if")
+    ,("else",err "else")
+    ,("then",err "then")
+    ,("{",err "{")
+    ,("}",err "}")
     ,("bye",fw_bye)]
 
 -- * Operation

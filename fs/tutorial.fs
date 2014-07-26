@@ -141,3 +141,9 @@ stop
 
 : anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-env play loop ;
 anon 5 pause stop
+
+\ TEXTURAL FORTH
+
+random-sine 2 3 5 xfade-texture
+
+random-sine 2 3 6 12 overlap-texture
