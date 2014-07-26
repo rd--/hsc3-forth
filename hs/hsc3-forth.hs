@@ -7,7 +7,9 @@ import Data.List.Split {- split -}
 import Data.Maybe {- base -}
 import Data.Ratio {- base -}
 import qualified Text.Read as R {- base -}
--- import System.IO {- base -}
+import System.Environment {- base -}
+import System.FilePath {- filepath -}
+import System.IO {- base -}
 
 import Sound.OSC {- hosc -}
 import Sound.SC3.ID {- hsc3 -}
@@ -229,11 +231,16 @@ main :: IO ()
 main = do
   let d :: Dict Int UGen
       d = concat [core_dict,show_dict,stack_dict,ugen_dict]
-      vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen,dict = d}
-  -- hSetBuffering stdin NoBuffering
-  -- hSetBuffering stdout NoBuffering
-  putStrLn "HSC3-FORTH"
-  repl vm
+      vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen
+                                       ,dict = d}
+  dir <- lookupEnv "HSC3_FORTH_DIR"
+  case dir of
+    Nothing -> error "HSC3_FORTH_DIR NOT SET"
+    Just dir' -> do
+      putStrLn "HSC3-FORTH"
+      vm' <- exec_err vm (fw_included' (dir' </> "stdlib.fs"))
+      vm'' <- exec_err vm' (fw_included' (dir' </> "hsc3.fs"))
+      repl vm'' {input_port = Just stdin}
 
 {-
 import Data.Boolean {- Boolean -}

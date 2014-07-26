@@ -1,4 +1,4 @@
-: nip (p q -- q ) swap drop ;
+: nip ( p q -- q ) swap drop ;
 : tuck ( p q -- q p q ) swap over ;
 
 : 1+ 1 + ;

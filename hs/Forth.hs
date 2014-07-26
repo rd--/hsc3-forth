@@ -52,7 +52,7 @@ data VM w a =
        ,literal :: String -> Maybe a -- ^ Read function for literal values.
        ,dynamic :: Maybe (Reader w a) -- ^ Dynamic post-dictionary lookup.
        ,eol :: Bool -- ^ End of line, runs printer.
-       ,input_port :: Handle
+       ,input_port :: Maybe Handle
        }
 
 -- | An instruction, the implementation of a /word/.
@@ -61,10 +61,9 @@ type Forth w a r = ExceptT String (StateT (VM w a) IO) r
 -- | Expressions are either literals or words.
 data Expr a = Literal a | Word String deriving (Show,Eq)
 
--- | Tracer.
-trace :: String -> Forth w a ()
-trace = const (return ())
---trace = liftIO . putStrLn
+-- | Tracer, levels are 0 = HIGH, 1 = MEDIUM, 2 = LOW
+trace :: Int -> String -> Forth w a ()
+trace k msg = when (k < 0) (liftIO (putStrLn msg))
 
 -- | Function with 'VM'.
 with_vm :: MonadState a m => (a -> (a,r)) -> m r
@@ -99,7 +98,15 @@ empty_vm w lit =
        ,literal = lit
        ,dynamic = Nothing
        ,eol = False
-       ,input_port = stdin}
+       ,input_port = Nothing}
+
+-- | Reset 'VM', on error.
+vm_reset :: VM w a -> VM w a
+vm_reset vm =
+    let e = empty_vm (world vm) (literal vm)
+    in e {dict = dict vm
+         ,dynamic = dynamic vm
+         ,input_port = input_port vm}
 
 -- | Push value onto 'stack'.
 push :: a -> Forth w a ()
@@ -137,40 +144,53 @@ popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
 modify_world :: (w -> w) -> Forth w a ()
 modify_world f = modify (\vm -> vm {world = f (world vm)})
 
--- | Delete until /x/ is seen, discard /x/.
+-- | Delete until /x/ is seen, discarding /x/, or @[]@.
 delete_until :: Eq a => a -> [a] -> [a]
-delete_until x = tail . dropWhile (/= x)
+delete_until x l =
+    case dropWhile (/= x) l of
+      [] -> []
+      _ : r -> r
 
--- | Read a token, ANS Forth type comments are discarded.  At /eof/
--- runs 'exitSuccess'.
-read_token :: Forth w a String
-read_token = do
+-- | Scan a token from 'buffer', ANS Forth type comments are
+-- discarded.  Although 'buffer' is filled by 'hGetLine' it may
+-- contain newline characters because we may include a file.
+scan_token :: Forth w a (Maybe String)
+scan_token = do
   vm <- get
   case buffer vm of
-    [] -> do eof <- liftIO isEOF
-             if eof then liftIO exitSuccess
-                    else do x <- liftIO (hGetLine (input_port vm))
-                            put vm {buffer = x}
-                            read_token
+    [] -> return Nothing
     str ->
         case break isSpace (dropWhile isSpace str) of
-          ("\\",_) -> put vm {buffer = [],eol = True} >> read_token
-          ("(",r) -> put vm {buffer = delete_until ')' r} >> read_token
-          (e,r) -> put vm {buffer = r,eol = null r} >> if null e then read_token else return e
+          ("\\",r) -> put vm {buffer = delete_until '\n' r} >> scan_token
+          ("(",r) -> put vm {buffer = delete_until ')' r} >> scan_token
+          (e,r) -> put vm {buffer = r,eol = null r} >>
+                   if null e then scan_token else return (Just e)
+
+-- | Read line from 'input_port' to 'buffer'.  There are two
+-- /exceptions/ thrown here, "EOF" if an input port is given but
+-- returns EOF, and "NO-INPUT" if there is no input port.
+fill_buffer :: Forth w a ()
+fill_buffer = do
+  vm <- get
+  case input_port vm of
+    Nothing -> throwError "NO-INPUT"
+    Just h -> do
+      eof <- liftIO (hIsEOF h)
+      when eof (throwError "EOF")
+      x <- liftIO (hGetLine h)
+      put (vm {buffer = x,eol = True})
+
+-- | If 'scan_token' is 'Nothing', then 'fill_buffer' and retry.
+read_token :: Forth w a String
+read_token = do
+  r <- scan_token
+  case r of
+    Just str -> return str
+    Nothing -> fill_buffer >> read_token
 
 -- | Dictionary lookup.
 lookup_word :: String -> Dict w a -> Maybe (Forth w a ())
 lookup_word w d = fmap snd (find ((w ==) . fst) d)
-
-{-
-lookup_word_seq w d =
-    case d of
-      [] -> Nothing
-      d0 : d' ->
-          case lookup_word w d0 of
-            Nothing -> lookup_word_seq w d'
-            Just r -> Just r
--}
 
 -- | Parse a token string to an expression.
 parse_token :: String -> Forth w a (Expr a)
@@ -257,7 +277,7 @@ end_compilation = do
         let instr = (map cw_instr cw)
             instr' = if null (locals vm) then instr else instr ++ [clear_locals]
             w = forth_block instr'
-        in do trace ("END DEFINITION: " ++ nm)
+        in do trace 2 ("END DEFINITION: " ++ nm)
               put (vm {cstack = []
                       ,locals = []
                       ,dict = (nm,w) : dict vm
@@ -300,21 +320,13 @@ end_if = do
     (tb,[]) -> pushc (CW_Forth (interpret_if (f tb,return ())))
     (tb,fb) -> pushc (CW_Forth (interpret_if (f tb,f (tail fb))))
 
--- | Generate a LOCAL instruction with name as argument (not on stack).
-gen_local :: String -> Forth w a ()
-gen_local nm = do
-  vm <- get
-  case stack vm of
-    e : s' -> put vm {stack = s',locals = (nm,push e) : locals vm}
-    _ -> throwError ("LOCAL: STACK UNDERFLOW: " ++ nm)
-
 -- | Clear the 'locals' dictionary, this instruction is appended to
 -- words that introduce locals.
 clear_locals :: Forth w a ()
 clear_locals = with_vm (\vm -> (vm {locals = []},()))
 
 -- | 'locals' is used both during compilation and interpretation.  In
--- compilation the RHS is undefined, it is used to for name lookup and
+-- compilation the RHS is undefined, it is used for name lookup and
 -- to know if 'clear_locals' must be called on exit.  In
 -- interpretation it is a secondary dictionary, consulted first.
 def_locals :: Forth_Type a => Forth w a ()
@@ -323,15 +335,15 @@ def_locals = do
                w <- read_token
                if w == "}" then return r else get_names (w : r)
   nm <- get_names []
-  trace ("DEFINE-LOCALS: " ++ intercalate " " nm)
+  trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
   with_vm (\vm -> (vm {locals = locals vm ++ zip nm (repeat (return ()))},()))
-  pushc (CW_Forth (forth_block (map gen_local nm)))
+  pushc (CW_Forth (forth_block (map fw_local' nm)))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
 compile :: (Eq a,Forth_Type a) => Forth w a ()
 compile = do
   expr <- read_expr
-  trace ("COMPILE: " ++ expr_pp expr)
+  trace 2 ("COMPILE: " ++ expr_pp expr)
   case expr of
     Word ";" -> end_compilation
     Word "do" -> pushc (CW_Word "do")
@@ -380,6 +392,37 @@ context_err nm = do
 
 -- * Forth words
 
+-- | Variant on @(local)@, argument not on stack.
+fw_local' :: String -> Forth w a ()
+fw_local' nm = do
+  vm <- get
+  case stack vm of
+    e : s' -> put vm {stack = s',locals = (nm,push e) : locals vm}
+    _ -> throwError ("(LOCAL): STACK UNDERFLOW: " ++ nm)
+
+execute_buffer :: (Forth_Type a, Eq a) => VM w a -> IO (VM w a)
+execute_buffer vm = do
+  (r,vm') <- runStateT (runExceptT execute) vm
+  case r of
+    Left err -> case err of
+                  "NO-INPUT" -> return vm'
+                  _ -> error err
+    Right () -> execute_buffer vm'
+
+fw_evaluate' :: (Eq a,Forth_Type a) => String -> Forth w a ()
+fw_evaluate' str = do
+  vm <- get
+  let buf = buffer vm
+      ip = input_port vm
+  vm' <- liftIO (execute_buffer (vm {buffer = str, input_port = Nothing}))
+  put (vm' {buffer = buf, input_port = ip})
+
+-- | Variant on @included@, argument not on stack.
+fw_included' :: (Eq a,Forth_Type a) => FilePath -> Forth w a ()
+fw_included' nm = do
+  str <- liftIO (readFile nm)
+  fw_evaluate' str
+
 fw_i :: Forth w a ()
 fw_i = popr >>= \x -> pushr x >> push x
 
@@ -393,7 +436,7 @@ fw_j = do {x <- popr; y <- popr; z <- popr
 fw_colon :: Forth w a ()
 fw_colon = do
   nm <- read_token
-  trace ("DEFINE: " ++ nm)
+  trace 0 ("DEFINE: " ++ nm)
   let edit vm = do
         when (mode vm == Compile) (throwError "':' in compiler context")
         when (not (null (cstack vm))) (throwError "':' cstack not empty")
@@ -514,11 +557,21 @@ core_dict =
 
 -- * Operation
 
+exec_err :: VM w a -> Forth w a () -> IO (VM w a)
+exec_err vm fw = do
+  (r,vm') <- runStateT (runExceptT fw) vm
+  case r of
+    Left err -> error err
+    Right () -> return vm'
+
 -- | Read, evaluate, print, loop.  Prints @OK@ at end of line.  Prints
--- errors.  Clears input buffer and resets mode on error.
+-- error message and runs 'vm_reset' on error.
 repl :: (Eq a,Forth_Type a) => VM w a -> IO ()
 repl vm = do
   (r,vm') <- runStateT (runExceptT execute) vm
   case r of
-    Left err -> putStrLn (" ERROR: " ++ err) >> repl vm {buffer = [],mode = Interpret}
+    Left err -> case err of
+                  "EOF" -> putStrLn "BYE" >> liftIO exitSuccess
+                  "NO-INPUT" -> liftIO exitSuccess
+                  _ -> putStrLn (" ERROR: " ++ err) >> repl (vm_reset vm)
     Right () -> when (eol vm') (putStrLn " OK") >> repl vm'

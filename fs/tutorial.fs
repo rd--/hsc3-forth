@@ -139,5 +139,5 @@ stop
 
 \ TEMPORAL FORTH
 
-: anon 11 1 do i 4 / dup . cr pause random-sine 3 0.1 with-env play loop ;
-anon 3 pause stop
+: anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-env play loop ;
+anon 5 pause stop
