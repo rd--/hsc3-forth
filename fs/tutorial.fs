@@ -4,6 +4,15 @@
 \ M-x run-forth
 \ M-x forth-send-paragraph
 
+\ HELP FORTH
+
+? SinOsc \ SinOsc [AR,KR] freq=440.0 phase=0.0
+
+? ENVGEN
+
+\ EnvGen [AR,KR] *envelope=0 gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0
+\     MCE INPUT: #5, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction
+
 \ LITERAL FORTH
 
 1 2 3 . . . \ 3 2 1 \

@@ -66,11 +66,14 @@ vm_pp vm =
            ,"\n RETURN STACK: ",unwords (map ty_string (rstack vm))
            ,"\n COMPILE STACK DEPTH: ",show (length (cstack vm))
            ,"\n STRINGS: ",show (strings vm)
+           ,"\n THREADS: ",intercalate "," (map show (M.keys (threads vm)))
            ,"\n DICT: ",unwords (M.keys (dict vm))
            ,"\n LOCALS: ",intercalate "," (map (unwords . M.keys) (locals vm))
-           ,"\n THREADS: ",intercalate "," (map show (M.keys (threads vm)))
+           ,"\n BUFFER: ",buffer vm
            ,"\n MODE: ",show (mode vm)
-           ,"\n BUFFER: ",buffer vm]
+           ,"\n DYMAMIC: ",maybe "NO" (const "YES") (dynamic vm)
+           ,"\n INPUT PORT: ",maybe "NO" (const "YES") (input_port vm)
+           ]
 
 -- | An instruction, the implementation of a /word/.
 type Forth w a r = ExceptT {- String -} VM_Signal (StateT (VM w a) IO) r
@@ -265,7 +268,8 @@ parse_token s = do
 read_expr :: Forth w a (Expr a)
 read_expr = parse_token =<< read_token
 
--- | 'lookup_word' in the dictionary, if unknown try 'dynamic'.
+-- | 'lookup_word' in the dictionary, if unknown try 'dynamic', if
+-- dynamic gives a word then add it to the dictionary.
 interpret_word :: String -> Forth w a ()
 interpret_word w = do
   vm <- get
@@ -273,7 +277,7 @@ interpret_word w = do
     Just r -> r
     Nothing ->
         case dynamic vm of
-          Just f -> f w
+          Just f -> let d_r = f w in put vm {dict = M.insert w d_r (dict vm)} >> d_r
           Nothing -> throw_error ("unknown word: '" ++ w ++ "'")
 
 -- | Either 'interpret_word' or 'push' literal.

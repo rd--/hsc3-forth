@@ -114,7 +114,7 @@ ugen_io u =
     case DB.uLookup u of
       Just r -> Just (length (DB.ugen_inputs r)
                      ,case lookup u DB.meta_nc_input of
-                        Nothing -> Just (DB.ugen_outputs r)
+                        Nothing -> DB.ugen_outputs r
                         Just _ -> Nothing)
       _ -> Nothing
 
@@ -198,6 +198,13 @@ sched t u =
         b1 = bundle t [s_new nm (-1) AddToHead 1 []]
     in withSC3 (sendBundle b0 >> sendBundle b1)
 
+help :: Forth w a ()
+help = do
+  nm <- read_token
+  case DB.ugenSummary' True nm of
+    Nothing -> throw_error ("?: NO HELP: " ++ nm)
+    Just h -> liftIO (putStrLn h)
+
 ugen_dict :: Dict Int UGen
 ugen_dict =
     M.fromList
@@ -211,7 +218,8 @@ ugen_dict =
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= \u -> push_l (mceChannels u))
     ,("pause",pop_double >>= \t -> pauseThread t)
-    ,("time",liftIO time >>= \t -> push (constant t))]
+    ,("time",liftIO time >>= \t -> push (constant t))
+    ,("?",help)]
 
 -- | Print as integer if integral, else as real.
 real_pp :: (Show a, Real a) => a -> String
