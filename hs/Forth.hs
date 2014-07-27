@@ -1,7 +1,9 @@
 module Forth where
 
+import Control.Concurrent {- base -}
 import Control.Monad {- base -}
 import Data.Char {- base -}
+import Data.Hashable {- hashable -}
 import Data.List {- base -}
 import qualified Data.Map as M {- containers -}
 import System.IO {- base -}
@@ -43,6 +45,7 @@ data VM w a =
        ,rstack :: [a] -- ^ The return stack.
        ,cstack :: [CW w a] -- ^ The compilation stack.
        ,strings :: M.Map Int String -- ^ The string store, addressed.
+       ,threads :: M.Map Int ThreadId
        ,dict :: Dict w a -- ^ The dictionary.
        ,locals :: [Dict w a] -- ^ The stack of locals dictionaries.
        ,buffer :: String -- ^ The current line of input text.
@@ -54,6 +57,9 @@ data VM w a =
        ,input_port :: Maybe Handle
        }
 
+-- | Signals (exceptions) from 'VM'.
+data VM_Signal = VM_EOF | VM_No_Input | VM_Error String deriving (Eq,Show)
+
 vm_pp :: Forth_Type a => VM w a -> String
 vm_pp vm =
     concat ["\n DATA STACK: ",unwords (map ty_string (stack vm))
@@ -62,11 +68,12 @@ vm_pp vm =
            ,"\n STRINGS: ",show (strings vm)
            ,"\n DICT: ",unwords (M.keys (dict vm))
            ,"\n LOCALS: ",intercalate "," (map (unwords . M.keys) (locals vm))
+           ,"\n THREADS: ",intercalate "," (map show (M.keys (threads vm)))
            ,"\n MODE: ",show (mode vm)
            ,"\n BUFFER: ",buffer vm]
 
 -- | An instruction, the implementation of a /word/.
-type Forth w a r = ExceptT String (StateT (VM w a) IO) r
+type Forth w a r = ExceptT {- String -} VM_Signal (StateT (VM w a) IO) r
 
 -- | Expressions are either literals or words.
 data Expr a = Literal a | Word String deriving (Show,Eq)
@@ -90,9 +97,12 @@ expr_pp e =
       Literal a -> ty_string a
       Word nm -> nm
 
+throw_error :: MonadIO m => String -> ExceptT VM_Signal m a
+throw_error = throwError . VM_Error
+
 -- | Reader that raises an /unknown word/ error.
 unknown_error :: Reader w a
-unknown_error s = throwError ("unknown word: '" ++ s ++ "'")
+unknown_error s = throw_error ("unknown word: '" ++ s ++ "'")
 
 -- | Make an empty (initial) machine.
 empty_vm :: w -> (String -> Maybe a) -> VM w a
@@ -101,6 +111,7 @@ empty_vm w lit =
        ,rstack = []
        ,cstack = []
        ,strings = M.empty
+       ,threads = M.empty
        ,buffer = ""
        ,mode = Interpret
        ,dict = M.empty
@@ -114,10 +125,13 @@ empty_vm w lit =
 -- | Reset 'VM', on error.
 vm_reset :: VM w a -> VM w a
 vm_reset vm =
-    let e = empty_vm (world vm) (literal vm)
-    in e {dict = dict vm
-         ,dynamic = dynamic vm
-         ,input_port = input_port vm}
+    vm {stack = []
+       ,rstack = []
+       ,cstack = []
+       ,buffer = ""
+       ,mode = Interpret
+       ,locals = []
+       ,eol = False}
 
 -- | Push value onto 'stack'.
 push :: a -> Forth w a ()
@@ -136,7 +150,7 @@ pop_vm_stack :: String -> (VM w a -> [r]) -> (VM w a -> [r] -> VM w a) -> Forth 
 pop_vm_stack nm f g = do
   vm <- get
   case f vm of
-    [] -> throwError (nm ++ ": stack underflow")
+    [] -> throw_error (nm ++ ": stack underflow")
     x:xs -> put (g vm xs) >> return x
 
 -- | Remove value from 'stack'.
@@ -203,26 +217,26 @@ scan_token = do
                    if null e then scan_token else return (Just e)
 
 -- | Read line from 'input_port' to 'buffer'.  There are two
--- /exceptions/ thrown here, "EOF" if an input port is given but
--- returns EOF, and "NO-INPUT" if there is no input port.
-fill_buffer :: Forth w a ()
-fill_buffer = do
+-- /exceptions/ thrown here, 'VM_EOF' if an input port is given but
+-- returns EOF, and 'VM_No_Input' if there is no input port.
+fw_refill :: Forth w a ()
+fw_refill = do
   vm <- get
   case input_port vm of
-    Nothing -> throwError "NO-INPUT"
+    Nothing -> throwError VM_No_Input
     Just h -> do
       eof <- liftIO (hIsEOF h)
-      when eof (throwError "EOF")
+      when eof (throwError VM_EOF)
       x <- liftIO (hGetLine h)
       put (vm {buffer = x,eol = True})
 
--- | If 'scan_token' is 'Nothing', then 'fill_buffer' and retry.
+-- | If 'scan_token' is 'Nothing', then 'fw_refill' and retry.
 read_token :: Forth w a String
 read_token = do
   r <- scan_token
   case r of
     Just str -> return str
-    Nothing -> fill_buffer >> read_token
+    Nothing -> fw_refill >> read_token
 
 -- | Dictionary lookup.
 lookup_word :: String -> VM w a -> Maybe (Forth w a ())
@@ -245,7 +259,7 @@ parse_token s = do
           Nothing ->
               case dynamic vm of
                 Just _ -> return (Word s) -- if there is an dynamic reader, defer...
-                Nothing -> throwError ("unknown word: '" ++ s ++ "'")
+                Nothing -> throw_error ("unknown word: '" ++ s ++ "'")
 
 -- | 'parse_token' of 'read_token'.
 read_expr :: Forth w a (Expr a)
@@ -260,7 +274,7 @@ interpret_word w = do
     Nothing ->
         case dynamic vm of
           Just f -> f w
-          Nothing -> throwError ("unknown word: '" ++ w ++ "'")
+          Nothing -> throw_error ("unknown word: '" ++ w ++ "'")
 
 -- | Either 'interpret_word' or 'push' literal.
 interpret_expr :: Expr a -> Forth w a ()
@@ -279,7 +293,7 @@ loop_end = do
   vm <- get
   case rstack vm of
     p:q:_ -> return (p == q)
-    _ -> throwError "loop_end: illegal rstack"
+    _ -> throw_error "loop_end: illegal rstack"
 
 -- | /code/ is the expressions between @do@ and @loop@.
 interpret_do :: (Forth_Type a,Eq a) => Forth w a () -> Forth w a ()
@@ -302,7 +316,7 @@ interpret_do code = do
 cw_instr :: CW w a -> Forth w a ()
 cw_instr cw =
     case cw of
-      CW_Word w -> throwError ("cw_instr: WORD: " ++ w)
+      CW_Word w -> throw_error ("cw_instr: WORD: " ++ w)
       CW_Forth f -> f
 
 -- | foldl1 of '>>'.
@@ -336,7 +350,7 @@ end_compilation = do
                       ,locals = tail (locals vm)
                       ,dict = M.insert nm w (dict vm)
                       ,mode = Interpret})
-    _ -> throwError "CSTACK"
+    _ -> throw_error "CSTACK"
   return ()
 
 -- | Predicate to see if 'CW' is a particular 'CW_Word'.
@@ -412,6 +426,7 @@ compile = do
   trace 2 ("COMPILE: " ++ expr_pp expr)
   case expr of
     Word ";" -> end_compilation
+    Word ":" -> throw_error ": IN COMPILE CONTEXT"
     Word "do" -> pushc (CW_Word "do")
     Word "i" -> pushc (CW_Forth fw_i)
     Word "j" -> pushc (CW_Forth fw_j)
@@ -460,15 +475,15 @@ fw_local' nm = do
                      ,locals = case locals vm of
                                  [] -> error "NO LOCALS FRAME"
                                  l : l' -> M.insert nm (push e) l : l'}
-    _ -> throwError ("(LOCAL): STACK UNDERFLOW: " ++ nm)
+    _ -> throw_error ("(LOCAL): STACK UNDERFLOW: " ++ nm)
 
 execute_buffer :: (Forth_Type a, Eq a) => VM w a -> IO (VM w a)
 execute_buffer vm = do
   (r,vm') <- runStateT (runExceptT execute) vm
   case r of
     Left err -> case err of
-                  "NO-INPUT" -> return vm'
-                  _ -> error err
+                  VM_No_Input -> return vm'
+                  _ -> error (show err)
     Right () -> execute_buffer vm'
 
 fw_evaluate' :: (Eq a,Forth_Type a) => String -> Forth w a ()
@@ -481,15 +496,13 @@ fw_evaluate' str = do
 
 -- | Variant on @included@, argument not on stack.
 fw_included' :: (Eq a,Forth_Type a) => FilePath -> Forth w a ()
-fw_included' nm = do
-  str <- liftIO (readFile nm)
-  fw_evaluate' str
+fw_included' nm = liftIO (readFile nm) >>= fw_evaluate'
 
 fw_included :: (Eq a,Forth_Type a) => Forth w a ()
 fw_included = do
   r <- get_string
   case r of
-    Nothing -> throwError "INCLUDED"
+    Nothing -> throw_error "INCLUDED"
     Just str -> fw_included' str
 
 fw_i :: Forth w a ()
@@ -506,10 +519,11 @@ fw_j = do {x <- popr; y <- popr; z <- popr
 fw_colon :: Forth w a ()
 fw_colon = do
   nm <- read_token
+  let reserved = M.keys (core_dict :: Dict w Integer)
   trace 0 ("DEFINE: " ++ nm)
   let edit vm = do
-        when (mode vm == Compile) (throwError "':' in compiler context")
-        when (not (null (cstack vm))) (throwError "':' cstack not empty")
+        when (nm `elem` reserved) (throw_error ("':' RESERVED NAME: " ++ nm))
+        when (not (null (cstack vm))) (throw_error ("':' CSTACK NOT EMPTY: " ++ nm))
         return (vm {mode = Compile
                    ,cstack = [CW_Word nm]
                    ,locals = M.empty : locals vm})
@@ -519,17 +533,14 @@ fw_colon = do
 fw_div_mod :: Integral a => Forth w a ()
 fw_div_mod = pop >>= \p -> pop >>= \q -> let (r,s) = q `divMod` p in push s >> push r
 
--- | ( p q -- q p )
-fw_swap :: Forth w a ()
+-- | dup:( p -- p p ) swap:( p q -- q p ) drop:( p -- ) over:( p q -- p q p )
+fw_dup,fw_swap,fw_drop,fw_over,fw_rot,fw_2dup :: Forth w a ()
+fw_dup = pop >>= \e -> push e >> push e
 fw_swap = pop >>= \p -> pop >>= \q -> push p >> push q
-
--- | ( p -- )
-fw_drop :: Forth w a ()
 fw_drop = pop >> return ()
-
--- | ( p q -- p q p )
-fw_over :: Forth w a ()
 fw_over = pop >>= \p -> pop >>= \q -> push q >> push p >> push q
+fw_rot = pop >>= \p -> pop >>= \q -> pop >>= \r -> push q >> push p >> push r
+fw_2dup = pop >>= \p -> pop >>= \q -> push q >> push p >> push q >> push p
 
 -- | ( xu ... x1 x0 u -- xu ... x1 x0 xu )
 fw_pick :: Forth_Type a => Forth w a ()
@@ -539,21 +550,10 @@ fw_pick = do
     n : s' -> let n' = ty_int n
                   e = s' !! n'
               in put vm {stack = e : s'}
-    _ -> throwError "PICK"
+    _ -> throw_error "PICK"
 
-fw_dup :: Forth w a ()
-fw_dup = pop >>= \e -> push e >> push e
-
-fw_rot :: Forth w a ()
-fw_rot = pop >>= \p -> pop >>= \q -> pop >>= \r -> push q >> push p >> push r
-
-fw_2dup :: Forth w a ()
-fw_2dup = pop >>= \p -> pop >>= \q -> push q >> push p >> push q >> push p
-
-fw_emit :: Forth_Type a => Forth w a ()
+fw_emit,fw_dot :: Forth_Type a => Forth w a ()
 fw_emit = liftIO . putChar . ty_char =<< pop
-
-fw_dot :: Forth_Type a => Forth w a ()
 fw_dot = liftIO . put_str_sp . ty_string =<< pop
 
 fw_dot_s :: Forth_Type a => Forth w a ()
@@ -578,13 +578,39 @@ fw_type :: Forth_Type a => Forth w a ()
 fw_type = do
   r <- get_string
   case r of
-    Nothing -> throwError "TYPE: UNKNOWN STRING-ID"
+    Nothing -> throw_error "TYPE: UNKNOWN STRING-ID"
     Just str -> liftIO (put_str_sp str)
 
 fw_vmstat :: Forth_Type a => Forth w a ()
-fw_vmstat = do
+fw_vmstat = get >>= liftIO . putStrLn . vm_pp
+
+fw_fork :: Forth_Type a => Forth w a ()
+fw_fork = do
+  nm <- read_token
   vm <- get
-  liftIO (putStrLn (vm_pp vm))
+  case lookup_word nm vm of
+    Just fw -> do th <- liftIO (forkIO (exec_err vm fw >> return ()))
+                  let k = hash th :: Int
+                  put vm {stack = ty_from_int k : stack vm
+                         ,threads = M.insert k th (threads vm)}
+    Nothing -> throw_error ("FORK: UNKNOWN WORD: " ++ nm)
+
+fw_kill :: Forth_Type a => Forth w a ()
+fw_kill = do
+  k <- pop
+  vm <- get
+  let k' = ty_int k
+      threads' = threads vm
+  case M.lookup k' threads' of
+    Nothing -> throw_error ("KILL: UNKNOWN THREAD: " ++ show k')
+    Just th -> liftIO (killThread th) >> put vm {threads = M.delete k' threads'}
+
+fw_kill_all :: Forth w a ()
+fw_kill_all = do
+  vm <- get
+  let th = M.elems (threads vm)
+  liftIO (mapM_ killThread th)
+  put vm {threads = M.empty}
 
 -- * Dictionaries
 
@@ -611,26 +637,9 @@ ord_dict = M.fromList
     ,(">",comparison_op (>))
     ,(">=",comparison_op (>=))]
 
-stack_dict :: Forth_Type a => Dict w a
-stack_dict = M.fromList
-    [("drop",fw_drop)
-    ,("dup",fw_dup)
-    ,("over",fw_over)
-    ,("pick",fw_pick)
-    ,("rot",fw_rot)
-    ,("swap",fw_swap)
-    ,("2dup",fw_2dup)]
-
-show_dict :: Forth_Type a => Dict w a
-show_dict = M.fromList
-    [("emit",fw_emit)
-    ,(".",fw_dot)
-    ,(".s",fw_dot_s)
-    ,("vmstat",fw_vmstat)]
-
 core_dict :: (Eq a,Forth_Type a) => Dict w a
 core_dict =
-    let err nm = throwError (concat ["'",nm,"': compiler word in interpeter context"])
+    let err nm = throw_error (concat ["'",nm,"': compiler word in interpeter context"])
     in M.fromList
     [(":",fw_colon)
     ,(";",err ";")
@@ -646,7 +655,25 @@ core_dict =
     ,("then",err "then")
     ,("{",err "{")
     ,("}",err "}")
-    ,("bye",fw_bye)]
+    ,("fork",fw_fork)
+    ,("kill",fw_kill)
+    ,("killall",fw_kill_all)
+    ,("bye",fw_bye)
+    -- STACK
+    ,("drop",fw_drop)
+    ,("dup",fw_dup)
+    ,("over",fw_over)
+    ,("pick",fw_pick)
+    ,("rot",fw_rot)
+    ,("swap",fw_swap)
+    ,("2dup",fw_2dup)
+     -- IO
+    ,("emit",fw_emit)
+    ,(".",fw_dot)
+    ,(".s",fw_dot_s)
+    ,("key",liftIO getChar >>= \c -> push (ty_from_int (fromEnum c)))
+    -- DEBUG
+    ,("vmstat",fw_vmstat)]
 
 -- * Operation
 
@@ -654,7 +681,7 @@ exec_err :: VM w a -> Forth w a () -> IO (VM w a)
 exec_err vm fw = do
   (r,vm') <- runStateT (runExceptT fw) vm
   case r of
-    Left err -> error err
+    Left err -> error (show err)
     Right () -> return vm'
 
 -- | Read, evaluate, print, loop.  Prints @OK@ at end of line.  Prints
@@ -664,7 +691,13 @@ repl vm = do
   (r,vm') <- runStateT (runExceptT execute) vm
   case r of
     Left err -> case err of
-                  "EOF" -> putStrLn "BYE" >> liftIO exitSuccess
-                  "NO-INPUT" -> liftIO exitSuccess
-                  _ -> putStrLn (" ERROR: " ++ err) >> repl (vm_reset vm)
+                  VM_EOF -> putStrLn "BYE" >> liftIO exitSuccess
+                  VM_No_Input -> liftIO exitSuccess
+                  VM_Error msg -> putStrLn (" ERROR: " ++ msg) >> repl (vm_reset vm)
     Right () -> when (eol vm') (putStrLn " OK") >> repl vm'
+
+load_files :: (Eq a,Forth_Type a) => [String] -> VM w a -> IO (VM w a)
+load_files nm vm =
+    case nm of
+      [] -> return vm
+      f : nm' -> exec_err vm (fw_included' f) >>= load_files nm'

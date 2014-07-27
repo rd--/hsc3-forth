@@ -7,7 +7,8 @@ import Forth
 main :: IO ()
 main = do
   let d :: Dict () Integer
-      d = M.unions [core_dict,show_dict,stack_dict,num_dict,integral_dict,ord_dict]
+      d = M.unions [core_dict,num_dict,integral_dict,ord_dict]
+  putStrLn "IFORTH"
   repl (empty_vm () R.readMaybe) {dict = d,input_port = Just stdin}
 
 {-

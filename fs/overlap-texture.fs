@@ -3,7 +3,7 @@
 
 : with-env { sus trans } 1 1 0 1 remove-synth trans sus trans env-asr EnvGen.kr * ;
 
-: spawn { ugen iot rep } rep 0 do ugen play iot pause loop ;
+: spawn-texture { ugen iot rep } rep 0 do ugen play iot pause loop ;
 
 : xfade-texture { ugen sus trans rep }
   rep 0 do ugen sus trans with-env play sus trans + pause loop ;

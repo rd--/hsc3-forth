@@ -71,7 +71,7 @@ assert_empty = do
   vm <- get
   case stack vm of
     [] -> return ()
-    l -> throwError (show ("assert_empty",l))
+    l -> throw_error (show ("assert_empty",l))
 
 -- * UGen
 
@@ -185,7 +185,15 @@ do_ugen u = do
                     case rt of
                       Just rt' -> do_oscil nm rt' inp outp
                       Nothing -> do_filter nm inp outp
-                Nothing -> throwError (show ("do_ugen: unknown UGen",u))
+                Nothing -> throw_error (show ("do_ugen: unknown UGen",u))
+
+sched :: Time -> UGen -> IO ()
+sched t u =
+    let nm = show (hashUGen u)
+        sy = synthdef nm (out 0 u)
+        b0 = bundle immediately [d_recv sy]
+        b1 = bundle t [s_new nm (-1) AddToHead 1 []]
+    in withSC3 (sendBundle b0 >> sendBundle b1)
 
 ugen_dict :: Dict Int UGen
 ugen_dict =
@@ -196,9 +204,11 @@ ugen_dict =
     ,("mix",pop >>= push . mix)
     ,("mrg",pop_int >>= \n -> pop_n n >>= \u -> push (mrg (reverse u)))
     ,("play",pop >>= \u -> assert_empty >> liftIO (audition (out 0 u)))
+    ,("sched",pop_double >>= \t -> pop >>= \u -> assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= \u -> push_l (mceChannels u))
-    ,("pause",pop_double >>= \t -> pauseThread t)]
+    ,("pause",pop_double >>= \t -> pauseThread t)
+    ,("time",liftIO time >>= \t -> push (constant t))]
 
 -- | Print as integer if integral, else as real.
 real_pp :: (Show a, Real a) => a -> String
@@ -232,30 +242,14 @@ parse_constant s =
 main :: IO ()
 main = do
   let d :: Dict Int UGen
-      d = M.unions [core_dict,show_dict,stack_dict,ugen_dict]
+      d = M.unions [core_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen
                                        ,dict = d}
   dir <- lookupEnv "HSC3_FORTH_DIR"
   case dir of
     Nothing -> error "HSC3_FORTH_DIR NOT SET"
     Just dir' -> do
+      let nm = map (dir' </>) ["stdlib.fs","hsc3.fs","overlap-texture.fs"]
+      vm' <- load_files nm vm
       putStrLn "HSC3-FORTH"
-      vm' <- exec_err vm (fw_included' (dir' </> "stdlib.fs"))
-      vm'' <- exec_err vm' (fw_included' (dir' </> "hsc3.fs"))
-      vm''' <- exec_err vm'' (fw_included' (dir' </> "overlap-texture.fs"))
-      repl vm''' {input_port = Just stdin}
-
-{-
-import Data.Boolean {- Boolean -}
-
-instance Boolean UGen where
-  true = -1
-  false = 0
-  notB n = if n /= 0 then 0 else -1
-  p &&* q = if p /= 0 && q /= 0 then -1 else 0
-  p ||* q = if p /= 0 || q /= 0 then -1 else 0
-
-bool_ugen :: Bool -> UGen
-bool_ugen t = if t then -1 else 0
--}
-
+      repl vm' {input_port = Just stdin}

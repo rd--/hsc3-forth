@@ -106,10 +106,10 @@ star star star \ *** \
 
 : swap' { a b } b a ;
 1 2 swap' . . \ 1 2 \
-: anon { a b c } a b c b c b a ;
-1 2 3 anon . . . . . . . \ 1 2 3 2 3 2 1 \
-: anon { a } 2 { b } a b a ;
-1 anon . . . \ 1 2 1 \
+: pattern { a b c } a b c b c b a ;
+1 2 3 pattern . . . . . . . \ 1 2 3 2 3 2 1 \
+: f { a } 2 { b } a b a ;
+1 f . . . \ 1 2 1 \
 
 \ UGEN FORTH
 
@@ -126,8 +126,8 @@ WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
 \ RANDOM FORTH
 
-: random-sine 1900 2100 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
-: anon 5 0 do random-sine play loop ; anon
+: random-sine 1900 2300 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
+: _ 5 0 do random-sine play loop ; _
 stop
 
 \ ENVELOPED FORTH
@@ -137,13 +137,28 @@ WhiteNoise.ar 10 0.1 with-env play
 random-sine 5 0.1 with-env play
 stop
 
-\ TEMPORAL FORTH
+\ PAUSE FORTH
 
 : anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-env play loop ;
 anon 5 pause stop
 
+\ SCHEDULE FORTH
+
+( random-sine takes time, audible scattering )
+: _ 25 0 do random-sine play loop ; _
+stop
+
+( forward scheduling for precise alignment )
+: _ time 0.1 + { t } 25 0 do random-sine t sched loop ; _
+stop
+
 \ TEXTURAL FORTH
 
 random-sine 2 3 5 xfade-texture
-
 random-sine 2 3 6 12 overlap-texture
+
+\ FORK FORTH
+
+: endless inf 0 do s" MSG" type cr 1 pause loop ;
+fork endless
+kill

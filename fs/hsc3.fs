@@ -56,7 +56,7 @@
 \ LOOP ENUMERATION
 
 : no-loop 0 ;
-: loop 1 ;
+: with-loop 1 ;
 
 \ WARP ENUMERATION
 

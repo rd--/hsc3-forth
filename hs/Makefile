@@ -2,7 +2,7 @@ prefix=$(HOME)/opt
 cmd=hsc3-forth
 
 % : %.hs Forth.hs
-	ghc -Wall -fno-warn-orphans --make $<
+	ghc -Wall -O2 -fno-warn-orphans --make $<
 
 all: $(cmd)
 
