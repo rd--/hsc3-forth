@@ -33,7 +33,7 @@
 : f. . ;
 1.1e0 2.2e0 3.3e0 f. f. f. \ 3.3 2.2 1.1 \
 
-( SC3 has only floating point numbers & only one stack )
+( SC3 has only floating point numbers & only one data stack )
 
 1.1 2.2 3.3 . . . \ 3.3 2.2 1.1 \
 
@@ -172,7 +172,11 @@ random-sine 2 3 6 12 overlap-texture
 fork endless
 kill
 
+\ INCLUSIVE FORTH
+
+s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
+
 \ TROUBLE FORTH
 
 vmstat \ PRINT VM STATUS
-0 trace \ SET TRACE LEVEL, 0 = HIGH PRIORITY, 1 = MEDIUM, 2 = LOW (DEFAULT = -1, NO TRACING)
+0 trace \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)

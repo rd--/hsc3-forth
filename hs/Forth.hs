@@ -6,8 +6,9 @@ import Data.Char {- base -}
 import Data.Hashable {- hashable -}
 import Data.List {- base -}
 import qualified Data.Map as M {- containers -}
-import System.IO {- base -}
+import System.Directory {- directory -}
 import System.Exit {- base -}
+import System.IO {- base -}
 
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
@@ -420,9 +421,16 @@ def_locals = do
   with_vm (\vm -> (at_current_locals (M.union locals') vm,()))
   pushc (CW_Forth (forth_block (map fw_local' nm)))
 
+clear_s_quote :: String -> Forth w a String
+clear_s_quote str = do
+  case str of
+    [] -> return []
+    ' ' : str' -> return str'
+    _ -> throw_error "S\""
+
 compile_s_quote :: Forth_Type a => Forth w a ()
 compile_s_quote = do
-  str <- scan_until '"'
+  str <- scan_until '"' >>= clear_s_quote
   vm <- get
   let k = next_string_id vm
   put vm {strings = M.insert k str (strings vm)}
@@ -505,13 +513,16 @@ fw_evaluate' str = do
 
 -- | Variant on @included@, argument not on stack.
 fw_included' :: (Eq a,Forth_Type a) => FilePath -> Forth w a ()
-fw_included' nm = liftIO (readFile nm) >>= fw_evaluate'
+fw_included' nm = do
+  x <- liftIO (doesFileExist nm)
+  when (not x) (throw_error ("INCLUDED': FILE MISSING: '" ++ nm ++ "'"))
+  liftIO (readFile nm) >>= fw_evaluate'
 
 fw_included :: (Eq a,Forth_Type a) => Forth w a ()
 fw_included = do
   r <- get_string
   case r of
-    Nothing -> throw_error "INCLUDED"
+    Nothing -> throw_error "INCLUDED: NO STRING"
     Just str -> fw_included' str
 
 fw_i :: Forth w a ()
@@ -578,7 +589,8 @@ fw_bye = liftIO exitSuccess
 fw_s_quote_interpet :: Forth_Type a => Forth w a ()
 fw_s_quote_interpet = do
   vm <- get
-  let (str,buffer') = break_on '"' (buffer vm)
+  let (sq,buffer') = break_on '"' (buffer vm)
+  str <- clear_s_quote sq
   put vm {stack = ty_from_int (length str) : ty_from_int (-1) : stack vm
          ,strings = M.insert (-1) str (strings vm)
          ,buffer = buffer'}

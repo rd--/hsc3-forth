@@ -40,7 +40,10 @@ sep_last =
 
 -- * Forth
 
+-- | hsc3-forth word.
 type U_Forth r = Forth Int UGen r
+
+-- | hsc3-forth reader.
 type U_Reader = String -> U_Forth ()
 
 -- | 'replicateM' of 'pop'.
@@ -67,42 +70,44 @@ incr_id = do
   return w
 
 -- | Assert that the stack is empty.
-assert_empty :: Show a => Forth w a ()
-assert_empty = do
+fw_assert_empty :: Forth_Type a => Forth w a ()
+fw_assert_empty = do
   vm <- get
   case stack vm of
     [] -> return ()
-    l -> throw_error (show ("assert_empty",l))
+    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map ty_string l))
 
 -- * UGen
 
--- | Requires mce is last input.  FAKED...
+-- | Predicate to see if UGen has an MCE input.
 --
 -- > map u_halts_mce (words "Drand EnvGen Out")
 u_halts_mce :: String -> Bool
 u_halts_mce u =
     case DB.uLookup u of
-      Just r -> isJust (DB.ugen_mce_input r) || u `elem` ["EnvGen"]
+      Just r -> isJust (DB.ugen_mce_input r)
       _ -> False
 
+-- | The halt MCE transform, requires mce is last input.
+--
 -- > halt_mce_transform [1,2,mce2 3 4] == [1,2,3,4]
 halt_mce_transform :: [UGen] -> [UGen]
 halt_mce_transform l =
-    let (l',e) = fromMaybe (error "halt_mce_transform") (sep_last l)
+    let (l',e) = fromMaybe (error "HALT MCE TRANSFORM FAILED") (sep_last l)
     in l' ++ mceChannels e
 
--- > is_nondet "LFNoise0"
 is_nondet :: String -> Bool
 is_nondet = flip elem DB.meta_nondet
 
--- > ugen_sep "SinOsc.ar" == ("SinOsc",Just AR)
--- > ugen_sep "LPF" == ("LPF",Nothing)
+-- | UGen names are given with rate suffixes if oscillators, without if filters.
+--
+-- > map ugen_sep (words "SinOsc.ar LPF") == [("SinOsc",Just AR),("LPF",Nothing)]
 ugen_sep :: String -> (String,Maybe Rate)
 ugen_sep u =
     case splitOn "." u of
       [nm,rt] -> (nm,rate_parse (map toUpper rt))
       [nm] -> (nm,Nothing)
-      _ -> error "ugen_sep"
+      _ -> error "UGEN NAME RATE SEPARATOR FAILED"
 
 -- > ugen_io "SinOsc" == Just (2,Just 1)
 -- > mapMaybe ugen_io ["Out","ResonZ","Pan2","Drand"]
@@ -118,26 +123,25 @@ ugen_io u =
                         Just _ -> Nothing)
       _ -> Nothing
 
--- there are name overlaps
+-- | SC3 has name overlaps.  '-' is suppressed as a uop (see 'negate')
+-- in prefence to the binop ('-').  Likewise 'Rand' is suppressed as a
+-- uop and allowed as a UGen.
 --
--- - is a uop (negate) and a binop (minus)
--- Rand is a UGen and a uop
---
--- Max is a UGen (SLUGens) and a binop...
-
 -- > map is_uop (words "Abs MIDICPS Neg")
 -- > map is_uop (words "- Rand")
 is_uop :: String -> Bool
 is_uop s = s `notElem` ["-","Rand"] && isJust (unaryIndex s)
 
--- > map is_binop (words "== > % Trunc")
+-- | Max is a UGen (SLUGens) and a binop, we look for binops first.
+--
+-- > map is_binop (words "== > % Trunc Max")
 is_binop :: String -> Bool
 is_binop s = s `notElem` [] && isJust (binaryIndex s)
 
 -- * UForth
 
-do_oscil :: String -> Rate -> Int -> Maybe Int -> U_Forth ()
-do_oscil nm rt inp nc = do
+gen_osc :: String -> Rate -> Int -> Maybe Int -> U_Forth ()
+gen_osc nm rt inp nc = do
   nc' <- case nc of
            Just n -> return n
            Nothing -> pop_int
@@ -147,8 +151,8 @@ do_oscil nm rt inp nc = do
   let gen = if is_nondet nm then nondet nm (UId z) else ugen nm
   push (gen rt i' nc')
 
-do_filter :: String -> Int -> Maybe Int -> U_Forth ()
-do_filter nm inp nc = do
+gen_filter :: String -> Int -> Maybe Int -> U_Forth ()
+gen_filter nm inp nc = do
   nc' <- case nc of
            Just n -> return n
            Nothing -> pop_int
@@ -159,36 +163,36 @@ do_filter nm inp nc = do
       gen = if is_nondet nm then nondet nm (UId z) else ugen nm
   push (gen rt i' nc')
 
-do_uop :: U_Reader
-do_uop nm = do
+gen_uop :: U_Reader
+gen_uop nm = do
   p <- pop
   let rt = rateOf p
   push (ugen_optimise_const_operator (uop nm rt p))
 
 -- | This follows the ANS Forth convention, ie. @10 2 /@ is @5@.
-do_binop :: U_Reader
-do_binop nm = do
+gen_binop :: U_Reader
+gen_binop nm = do
   p <- pop
   q <- pop
   let rt = max (rateOf p) (rateOf q)
   push (ugen_optimise_const_operator (binop nm rt q p))
 
 -- | Order of lookup: binop, uop, ugen
-do_ugen :: U_Reader
-do_ugen u = do
+gen_ugen :: U_Reader
+gen_ugen u = do
   let (nm,rt) = ugen_sep u
   case is_binop nm of
-    True -> do_binop nm
+    True -> gen_binop nm
     False ->
         case is_uop nm of
-          True -> do_uop nm
+          True -> gen_uop nm
           False ->
               case ugen_io nm of
                 Just (inp,outp) ->
                     case rt of
-                      Just rt' -> do_oscil nm rt' inp outp
-                      Nothing -> do_filter nm inp outp
-                Nothing -> throw_error (show ("do_ugen: unknown UGen",u))
+                      Just rt' -> gen_osc nm rt' inp outp
+                      Nothing -> gen_filter nm inp outp
+                Nothing -> throw_error (show "UNKNOWN UGEN: " ++ nm)
 
 sched :: Time -> UGen -> IO ()
 sched t u =
@@ -209,12 +213,12 @@ ugen_dict :: Dict Int UGen
 ugen_dict =
     M.fromList
     [("clone",pop_int >>= \n -> pop >>= \u -> incr_id >>= \z -> push (uclone z n u))
-    ,("draw",pop >>= \u -> assert_empty >> liftIO (draw (out 0 u)))
+    ,("draw",pop >>= \u -> fw_assert_empty >> liftIO (draw (out 0 u)))
     ,("mce",pop_int >>= \n -> pop_n n >>= \u -> push (mce (reverse u)))
     ,("mix",pop >>= push . mix)
     ,("mrg",pop_int >>= \n -> pop_n n >>= \u -> push (mrg (reverse u)))
-    ,("play",pop >>= \u -> assert_empty >> liftIO (audition (out 0 u)))
-    ,("sched",pop_double >>= \t -> pop >>= \u -> assert_empty >> liftIO (sched t u))
+    ,("play",pop >>= \u -> fw_assert_empty >> liftIO (audition (out 0 u)))
+    ,("sched",pop_double >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= \u -> push_l (mceChannels u))
     ,("pause",pop_double >>= \t -> pauseThread t)
@@ -254,7 +258,7 @@ main :: IO ()
 main = do
   let d :: Dict Int UGen
       d = M.unions [core_dict,ugen_dict]
-      vm = (empty_vm 0 parse_constant) {dynamic = Just do_ugen
+      vm = (empty_vm 0 parse_constant) {dynamic = Just gen_ugen
                                        ,dict = d}
   dir <- lookupEnv "HSC3_FORTH_DIR"
   case dir of
