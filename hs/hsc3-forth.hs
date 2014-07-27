@@ -18,6 +18,7 @@ import Sound.SC3.UGen.MCE {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
+import qualified Sound.SC3.UGen.DB.Meta as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
 
 import Sound.SC3.UGen.Dot {- hsc3-dot -}
@@ -92,7 +93,7 @@ halt_mce_transform l =
 
 -- > is_nondet "LFNoise0"
 is_nondet :: String -> Bool
-is_nondet = flip elem ["BrownNoise","CoinGate","Drand","Dseq","Dust","LFNoise0","LFNoise1","Rand","TExpRand","WhiteNoise"]
+is_nondet = flip elem DB.meta_nondet
 
 -- > ugen_sep "SinOsc.ar" == ("SinOsc",Just AR)
 -- > ugen_sep "LPF" == ("LPF",Nothing)
@@ -103,7 +104,7 @@ ugen_sep u =
       [nm] -> (nm,Nothing)
       _ -> error "ugen_sep"
 
--- > ugen_io "SinOsc" == Just (2,1)
+-- > ugen_io "SinOsc" == Just (2,Just 1)
 -- > mapMaybe ugen_io ["Out","ResonZ","Pan2","Drand"]
 -- > mapMaybe ugen_io ["BrownNoise","Dust","LFNoise0","LFNoise1","Rand"]
 -- > mapMaybe ugen_io ["Max"]
@@ -112,7 +113,9 @@ ugen_io :: String -> Maybe (Int,Maybe Int)
 ugen_io u =
     case DB.uLookup u of
       Just r -> Just (length (DB.ugen_inputs r)
-                     ,either Just (const Nothing) (DB.ugen_outputs r))
+                     ,case lookup u DB.meta_nc_input of
+                        Nothing -> Just (DB.ugen_outputs r)
+                        Just _ -> Nothing)
       _ -> Nothing
 
 -- there are name overlaps
