@@ -171,3 +171,8 @@ random-sine 2 3 6 12 overlap-texture
 : endless inf 0 do s" MSG" type cr 1 pause loop ;
 fork endless
 kill
+
+\ TROUBLE FORTH
+
+vmstat \ PRINT VM STATUS
+0 trace \ SET TRACE LEVEL, 0 = HIGH PRIORITY, 1 = MEDIUM, 2 = LOW (DEFAULT = -1, NO TRACING)

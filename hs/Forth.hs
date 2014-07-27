@@ -55,6 +55,7 @@ data VM w a =
        ,dynamic :: Maybe (Reader w a) -- ^ Dynamic post-dictionary lookup.
        ,eol :: Bool -- ^ End of line, runs printer.
        ,input_port :: Maybe Handle
+       ,tracing :: Int
        }
 
 -- | Signals (exceptions) from 'VM'.
@@ -73,6 +74,7 @@ vm_pp vm =
            ,"\n MODE: ",show (mode vm)
            ,"\n DYMAMIC: ",maybe "NO" (const "YES") (dynamic vm)
            ,"\n INPUT PORT: ",maybe "NO" (const "YES") (input_port vm)
+           ,"\n TRACING: ",show (tracing vm)
            ]
 
 -- | An instruction, the implementation of a /word/.
@@ -83,7 +85,9 @@ data Expr a = Literal a | Word String deriving (Show,Eq)
 
 -- | Tracer, levels are 0 = HIGH, 1 = MEDIUM, 2 = LOW
 trace :: Int -> String -> Forth w a ()
-trace k msg = when (k < 0) (liftIO (putStrLn msg))
+trace k msg = do
+  vm <- get
+  when (k <= tracing vm) (liftIO (putStrLn msg))
 
 -- | Function with 'VM'.
 with_vm :: MonadState a m => (a -> (a,r)) -> m r
@@ -123,7 +127,8 @@ empty_vm w lit =
        ,literal = lit
        ,dynamic = Nothing
        ,eol = False
-       ,input_port = Nothing}
+       ,input_port = Nothing
+       ,tracing = -1}
 
 -- | Reset 'VM', on error.
 vm_reset :: VM w a -> VM w a
@@ -677,7 +682,8 @@ core_dict =
     ,(".s",fw_dot_s)
     ,("key",liftIO getChar >>= \c -> push (ty_from_int (fromEnum c)))
     -- DEBUG
-    ,("vmstat",fw_vmstat)]
+    ,("vmstat",fw_vmstat)
+    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_int k},())))]
 
 -- * Operation
 
