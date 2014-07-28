@@ -113,13 +113,13 @@ ugen_io u =
        Just _ -> Nothing)
 
 -- | SC3 has name overlaps.  '-' is suppressed as a uop (see 'negate')
--- in prefence to the binop ('-').  Likewise 'Rand' is suppressed as a
--- uop and allowed as a UGen.
+-- in prefence to the binop ('-').  Likewise 'Rand' & 'LinRand' are
+-- suppressed as a uop and allowed as a UGen.
 --
 -- > map is_uop (words "Abs MIDICPS Neg")
 -- > map is_uop (words "- Rand")
 is_uop :: String -> Bool
-is_uop s = s `notElem` ["-","Rand"] && isJust (unaryIndex s)
+is_uop s = s `notElem` ["-","Rand","LinRand"] && isJust (unaryIndex s)
 
 -- | Max is a UGen (SLUGens) and a binop, we look for binops first.
 --
@@ -249,6 +249,7 @@ ugen_pp u =
       Primitive_U (Primitive _ nm _ _ sp _ ) -> "UGEN:" ++ ugen_user_name nm sp
       MCE_U (MCE_Unit u') -> ugen_pp u'
       MCE_U (MCE_Vector v) -> "[" ++ intercalate " " (map ugen_pp v) ++ "]"
+      MRG_U (MRG l r) -> "MRG (LEFT:" ++ ugen_pp l ++ " RIGHT:" ++ ugen_pp r ++ ")"
       _ -> show u
 
 instance Forth_Type UGen where

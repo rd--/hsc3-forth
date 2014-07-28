@@ -81,3 +81,11 @@
 : MulAdd { m a } m * a + ; ( Not in hsc3-db )
 
 : LinLin LinLin_muladd MulAdd ;
+
+\ LOCAL BUFFERS
+
+: as-local-buf { arr }
+    arr chan { len }
+    1 len LocalBuf.ir { buf }
+    buf 0 len arr SetBuf.ir { set }
+    buf set 2 mrg ;
