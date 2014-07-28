@@ -8,9 +8,9 @@
 (require 'thingatpt)
 
 (defun hsc3-forth-send-string (s)
-  (if (comint-check-proc "*forth*")
+  (if (comint-check-proc forth-process-buffer)
       (comint-send-string (forth-proc) (concat s "\n"))
-    (error "no HSC3-FORTH process running?")))
+    (error "HSC3-FORTH not running?")))
 
 (defun hsc3-forth-word-at-point (word post q-str)
   "If POST then WORD <POINT>, else <POINT> WORD.  If Q-STR quote <POINT> as string."
@@ -49,10 +49,16 @@
   (hsc3-forth-send-string (region-string)))
 
 (defun hsc3-forth-see-forth ()
- "Show forth output."
+ "Start and see HSC3-FORTH."
  (interactive)
- (run-forth forth-program-name)
+ (save-selected-window (run-forth forth-program-name))
  (forth-split))
+
+(defun hsc3-forth-interrupt ()
+  "Interrupt HSC3-FORTH"
+  (interactive)
+  (with-current-buffer forth-process-buffer
+    (interrupt-process (get-buffer-process (current-buffer)))))
 
 (defvar hsc3-forth-mode-map nil
   "Forth SuperCollider keymap.")
@@ -67,6 +73,7 @@
   (define-key map [?\C-c ?\C-c] 'hsc3-forth-send-line)
   (define-key map [?\C-c ?\C-d] 'hsc3-forth-send-region)
   (define-key map [?\C-c ?\C-k] 'hsc3-forth-stop)
+  (define-key map [?\C-c ?\C-i] 'hsc3-forth-interrupt)
   (define-key map [?\C-c ?\C-q] 'hsc3-forth-bye)
   (define-key map [?\C-c ?\C-u] 'hsc3-forth-help))
 

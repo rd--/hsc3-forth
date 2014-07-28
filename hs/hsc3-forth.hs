@@ -243,14 +243,16 @@ real_pp n =
 -- | Print constants as numbers & primitives as names.
 ugen_pp :: UGen -> String
 ugen_pp u =
-    case u of
-      Constant_U (Constant n) -> real_pp n
-      Label_U (Label s) -> show s
-      Primitive_U (Primitive _ nm _ _ sp _ ) -> "UGEN:" ++ ugen_user_name nm sp
-      MCE_U (MCE_Unit u') -> ugen_pp u'
-      MCE_U (MCE_Vector v) -> "[" ++ intercalate " " (map ugen_pp v) ++ "]"
-      MRG_U (MRG l r) -> "MRG (LEFT:" ++ ugen_pp l ++ " RIGHT:" ++ ugen_pp r ++ ")"
-      _ -> show u
+    let prim_pp (Primitive _ nm _ _ sp _) = "UGEN:" ++ ugen_user_name nm sp
+    in case u of
+         Constant_U (Constant n) -> real_pp n
+         Label_U (Label s) -> show s
+         Primitive_U p -> prim_pp p
+         Proxy_U (Proxy p n) -> prim_pp p ++ "@" ++ show n
+         MCE_U (MCE_Unit u') -> ugen_pp u'
+         MCE_U (MCE_Vector v) -> "[" ++ intercalate " " (map ugen_pp v) ++ "]"
+         MRG_U (MRG l r) -> "MRG (LEFT:" ++ ugen_pp l ++ " RIGHT:" ++ ugen_pp r ++ ")"
+         _ -> show u
 
 instance Forth_Type UGen where
     ty_show = ugen_pp
