@@ -570,7 +570,8 @@ fw_colon = do
 fw_div_mod :: Integral a => Forth w a ()
 fw_div_mod = pop >>= \p -> pop >>= \q -> let (r,s) = q `divMod` p in push s >> push r
 
--- | dup:( p -- p p ) swap:( p q -- q p ) drop:( p -- ) over:( p q -- p q p )
+-- | dup : ( p -- p p ) swap : ( p q -- q p ) drop : ( p -- ) over : (
+-- p q -- p q p ) rot : ( p q r -- q r p ) 2dup : ( p q -- p q p q )
 fw_dup,fw_swap,fw_drop,fw_over,fw_rot,fw_2dup :: Forth w a ()
 fw_dup = pop' >>= \e -> push' e >> push' e
 fw_swap = pop' >>= \p -> pop' >>= \q -> push' p >> push' q

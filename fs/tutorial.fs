@@ -230,6 +230,13 @@ stop
 
 s" LABEL" label . \ "LABEL"
 
+( FIBONACCI FORTH )
+
+: fib 0 1 rot 0 do over + swap loop drop ;
+: fibs 0 do i fib . loop ;
+50 fibs \ 0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 ...
+.s
+
 ( TROUBLE FORTH )
 
 vmstat \ PRINT VM STATUS
