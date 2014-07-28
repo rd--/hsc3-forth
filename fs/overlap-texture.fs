@@ -12,3 +12,5 @@
 
 : overlap-texture { ugen sus trans overs rep }
   rep 0 do ugen sus trans with-texture-env play sus trans overs overlaps-iot pause loop ;
+
+: texture-post-proc { f } 0 2 In.ar f execute 0 swap Out -1 add-to-tail 1 play-at ;

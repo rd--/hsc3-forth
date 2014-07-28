@@ -77,7 +77,7 @@ fw_assert_empty = do
   vm <- get
   case stack vm of
     [] -> return ()
-    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map ty_show l))
+    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map dc_show l))
 
 -- * UGen
 
@@ -184,7 +184,7 @@ gen_ugen w = do
           True -> gen_uop nm
           False ->
               case ugen_rec nm of
-                Nothing -> throw_error (show "UNKNOWN UGEN: '" ++ nm ++ "'")
+                Nothing -> throw_error (show "DYNAMIC FAILED: UNKNOWN UGEN: '" ++ nm ++ "'")
                 Just u ->
                     case rt of
                       Just rt' -> gen_osc u rt'
@@ -198,9 +198,9 @@ sched t u =
         b1 = bundle t [s_new nm (-1) AddToHead 1 []]
     in withSC3 (sendBundle b0 >> sendBundle b1)
 
-fw_help :: Forth w a ()
+fw_help :: Forth_Type a => Forth w a ()
 fw_help = do
-  (nm,_) <- fmap ugen_sep read_token
+  (nm,_) <- fmap ugen_sep pop_string
   case DB.ugenSummary' True nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
@@ -212,7 +212,7 @@ fw_play_at = do
   nid <- pop_int
   u <- pop
   fw_assert_empty
-  liftIO (audition_at (nid,toEnum act,grp) (out 0 u))
+  liftIO (audition_at (nid,toEnum act,grp) u)
 
 ugen_dict :: Dict Int UGen
 ugen_dict =

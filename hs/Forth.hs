@@ -35,15 +35,17 @@ instance Forth_Type Integer where
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 
--- | A compilation word, for the compilation stack.
-data CW w a = CW_Word String | CW_Forth (Forth w a ())
+-- | A data cell, for the data stacks.
+data DC a = DC a | DC_String String | DC_XT String
+
+-- | A compilation cell, for the compilation stack.
+data CC w a = CC_Word String | CC_Forth (Forth w a ())
 
 -- | The machine, /w/ is the type of the world, /a/ is the type of the stack elements.
 data VM w a =
-    VM {stack :: [a] -- ^ The data stack, /the/ stack.
-       ,rstack :: [a] -- ^ The return stack.
-       ,cstack :: [CW w a] -- ^ The compilation stack.
-       ,strings :: M.Map Int String -- ^ The string store, addressed.
+    VM {stack :: [DC a] -- ^ The data stack, /the/ stack.
+       ,rstack :: [DC a] -- ^ The return stack.
+       ,cstack :: [CC w a] -- ^ The compilation stack.
        ,threads :: M.Map Int ThreadId
        ,dict :: Dict w a -- ^ The dictionary.
        ,locals :: [Dict w a] -- ^ The stack of locals dictionaries.
@@ -60,12 +62,18 @@ data VM w a =
 -- | Signals (exceptions) from 'VM'.
 data VM_Signal = VM_EOF | VM_No_Input | VM_Error String deriving (Eq,Show)
 
+dc_show :: Forth_Type a => DC a -> String
+dc_show dc =
+    case dc of
+      DC a -> ty_show a
+      DC_String str -> "STRING:" ++ str
+      DC_XT str -> "XT:" ++ str
+
 vm_pp :: Forth_Type a => VM w a -> String
 vm_pp vm =
-    concat ["\n DATA STACK: ",unwords (map ty_show (stack vm))
-           ,"\n RETURN STACK: ",unwords (map ty_show (rstack vm))
+    concat ["\n DATA STACK: ",unwords (map dc_show (stack vm))
+           ,"\n RETURN STACK: ",unwords (map dc_show (rstack vm))
            ,"\n COMPILE STACK DEPTH: ",show (length (cstack vm))
-           ,"\n STRINGS: ",show (strings vm)
            ,"\n THREADS: ",intercalate "," (map show (M.keys (threads vm)))
            ,"\n DICT: ",unwords (M.keys (dict vm))
            ,"\n LOCALS: ",intercalate "," (map (unwords . M.keys) (locals vm))
@@ -117,7 +125,6 @@ empty_vm w lit =
     VM {stack = []
        ,rstack = []
        ,cstack = []
-       ,strings = M.empty
        ,threads = M.empty
        ,buffer = ""
        ,mode = Interpret
@@ -141,16 +148,19 @@ vm_reset vm =
        ,locals = []
        ,eol = False}
 
+push' :: DC a -> Forth w a ()
+push' x = modify (\vm -> vm {stack = x : stack vm})
+
 -- | Push value onto 'stack'.
 push :: a -> Forth w a ()
-push x = modify (\vm -> vm {stack = x : stack vm})
+push = push' . DC
 
 -- | Push value onto 'rstack'.
 pushr :: a -> Forth w a ()
-pushr x = modify (\vm -> vm {rstack = x : rstack vm})
+pushr x = modify (\vm -> vm {rstack = DC x : rstack vm})
 
 -- | Push value onto 'cstack'.
-pushc :: CW w a -> Forth w a ()
+pushc :: CC w a -> Forth w a ()
 pushc x = modify (\vm -> vm {cstack = x : cstack vm})
 
 -- | Pop indicated 'VM' stack.
@@ -161,37 +171,38 @@ pop_vm_stack nm f g = do
     [] -> throw_error (nm ++ ": stack underflow")
     x:xs -> put (g vm xs) >> return x
 
+dc_plain :: DC a -> Forth w a a
+dc_plain dc =
+    case dc of
+      DC a -> return a
+      _ -> throw_error "DC-NOT-VALUE-CELL"
+
+pop' :: Forth w a (DC a)
+pop' = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
+
 -- | Remove value from 'stack'.
 pop :: Forth w a a
-pop = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
+pop = pop' >>= dc_plain
 
 -- | Remove value from 'rstack'.
 popr :: Forth w a a
-popr = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s})
+popr = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s}) >>= dc_plain
 
 -- | Remove value from 'cstack'.
-popc :: Forth w a (CW w a)
+popc :: Forth w a (CC w a)
 popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
 
 -- | Change the world.
 modify_world :: (w -> w) -> Forth w a ()
 modify_world f = modify (\vm -> vm {world = f (world vm)})
 
-next_string_id :: VM w a -> Int
-next_string_id vm =
-    let m = strings vm
-    in if M.null m then 0 else fst (M.findMax m) + 1
-
-pop_string' :: Forth_Type a => Forth w a (Maybe String)
-pop_string' = do
-  _ <- pop
-  k <- fmap ty_to_int pop
-  vm <- get
-  return (M.lookup k (strings vm))
-
 -- | ( id len -- )
 pop_string :: Forth_Type a => Forth w a String
-pop_string = pop_string' >>= maybe (throw_error "NO STRING?") return
+pop_string = do
+  vm <- get
+  case stack vm of
+    DC _ : DC_String str : s' -> put vm {stack = s'} >> return str
+    _ -> throw_error "NOT-STRING?"
 
 -- | Read until /x/ is seen, discarding /x/, RHS may be @[]@.
 --
@@ -300,16 +311,16 @@ interpret_expr e =
       Literal a -> push a
 
 -- | 'interpret_expr' of 'read_expr'.
-interpret :: Forth w a ()
-interpret = read_expr >>= interpret_expr
+vm_interpret :: Forth w a ()
+vm_interpret = read_expr >>= interpret_expr
 
 -- | A loop ends when the two elements at the top of the rstack are equal.
 loop_end :: Eq a => Forth w a Bool
 loop_end = do
   vm <- get
   case rstack vm of
-    p:q:_ -> return (p == q)
-    _ -> throw_error "loop_end: illegal rstack"
+    DC p : DC q : _ -> return (p == q)
+    _ -> throw_error "LOOP-END: ILLEGAL RSTACK"
 
 -- | /code/ is the expressions between @do@ and @loop@.
 interpret_do :: (Forth_Type a,Eq a) => Forth w a () -> Forth w a ()
@@ -328,12 +339,12 @@ interpret_do code = do
         if not r then step >> loop else popr >> popr >> return ()
   loop
 
--- | Get instruction at 'CW' or raise an error.
-cw_instr :: CW w a -> Forth w a ()
+-- | Get instruction at 'CC' or raise an error.
+cw_instr :: CC w a -> Forth w a ()
 cw_instr cw =
     case cw of
-      CW_Word w -> throw_error ("cw_instr: WORD: " ++ w)
-      CW_Forth f -> f
+      CC_Word w -> throw_error ("cw_instr: WORD: " ++ w)
+      CC_Forth f -> f
 
 -- | foldl1 of '>>'.
 forth_block :: [Forth w a ()] -> Forth w a ()
@@ -355,7 +366,7 @@ end_compilation :: Forth w a ()
 end_compilation = do
   vm <- get
   case reverse (cstack vm) of
-    CW_Word nm : cw ->
+    CC_Word nm : cw ->
         let instr = (map cw_instr cw)
             instr' = if M.null (head (locals vm))
                      then instr
@@ -370,17 +381,17 @@ end_compilation = do
     _ -> throw_error "CSTACK"
   return ()
 
--- | Predicate to see if 'CW' is a particular 'CW_Word'.
-cw_is_word :: String -> CW w a -> Bool
+-- | Predicate to see if 'CC' is a particular 'CC_Word'.
+cw_is_word :: String -> CC w a -> Bool
 cw_is_word w cw =
     case cw of
-      CW_Word w' -> w == w'
+      CC_Word w' -> w == w'
       _ -> False
 
 -- | Unwind the 'cstack' to the indicated control word.  The result is
 -- the code block, in sequence.  The control word is also removed from
 -- the cstack.
-unwind_cstack_to :: String -> Forth w a [CW w a]
+unwind_cstack_to :: String -> Forth w a [CC w a]
 unwind_cstack_to w = do
   with_vm (\vm -> let (r,c) = break (cw_is_word w) (cstack vm)
                   in (vm {cstack = tail c},reverse r))
@@ -390,7 +401,7 @@ end_do :: (Eq a,Forth_Type a) => Forth w a ()
 end_do = do
   cw <- unwind_cstack_to "do"
   let w = forth_block (map cw_instr cw)
-  pushc (CW_Forth (interpret_do w))
+  pushc (CC_Forth (interpret_do w))
 
 -- | Consult stack and select either /true/ or /false/.
 interpret_if :: (Eq a,Forth_Type a) => (Forth w a (),Forth w a ()) -> Forth w a ()
@@ -402,8 +413,8 @@ end_if = do
   cw <- unwind_cstack_to "if"
   let f = forth_block . map cw_instr
   case break (cw_is_word "else") cw of
-    (tb,[]) -> pushc (CW_Forth (interpret_if (f tb,return ())))
-    (tb,fb) -> pushc (CW_Forth (interpret_if (f tb,f (tail fb))))
+    (tb,[]) -> pushc (CC_Forth (interpret_if (f tb,return ())))
+    (tb,fb) -> pushc (CC_Forth (interpret_if (f tb,f (tail fb))))
 
 -- | Function over current locals 'Dict'.
 at_current_locals :: (Dict w a -> Dict w a) -> VM w a -> VM w a
@@ -426,7 +437,7 @@ def_locals = do
   trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
   let locals' = M.fromList (zip nm (repeat undefined))
   with_vm (\vm -> (at_current_locals (M.union locals') vm,()))
-  pushc (CW_Forth (forth_block (map fw_local' nm)))
+  pushc (CC_Forth (forth_block (map fw_local' nm)))
 
 clear_s_quote :: String -> Forth w a String
 clear_s_quote str = do
@@ -438,37 +449,34 @@ clear_s_quote str = do
 compile_s_quote :: Forth_Type a => Forth w a ()
 compile_s_quote = do
   str <- scan_until '"' >>= clear_s_quote
-  vm <- get
-  let k = next_string_id vm
-  put vm {strings = M.insert k str (strings vm)}
-  pushc (CW_Forth (push (ty_from_int k) >> push (ty_from_int (length str))))
+  pushc (CC_Forth (push_str str >> push (ty_from_int (length str))))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
-compile :: (Eq a,Forth_Type a) => Forth w a ()
-compile = do
+vm_compile :: (Eq a,Forth_Type a) => Forth w a ()
+vm_compile = do
   expr <- read_expr
   trace 2 ("COMPILE: " ++ expr_pp expr)
   case expr of
     Word ";" -> end_compilation
     Word ":" -> throw_error ": IN COMPILE CONTEXT"
-    Word "do" -> pushc (CW_Word "do")
-    Word "i" -> pushc (CW_Forth fw_i)
-    Word "j" -> pushc (CW_Forth fw_j)
+    Word "do" -> pushc (CC_Word "do")
+    Word "i" -> pushc (CC_Forth fw_i)
+    Word "j" -> pushc (CC_Forth fw_j)
     Word "loop" -> end_do
-    Word "if" -> pushc (CW_Word "if")
-    Word "else" -> pushc (CW_Word "else")
+    Word "if" -> pushc (CC_Word "if")
+    Word "else" -> pushc (CC_Word "else")
     Word "then" -> end_if
     Word "{" -> def_locals
     Word "s\"" -> compile_s_quote
-    e -> pushc (CW_Forth (interpret_expr e))
+    e -> pushc (CC_Forth (interpret_expr e))
 
 -- | Either 'interpret' or 'compile', depending on 'mode'.
-execute :: (Eq a,Forth_Type a) => Forth w a ()
-execute = do
+vm_execute :: (Eq a,Forth_Type a) => Forth w a ()
+vm_execute = do
   vm <- get
   case mode vm of
-    Interpret -> interpret
-    Compile -> compile
+    Interpret -> vm_interpret
+    Compile -> vm_compile
 
 -- * Primitives
 
@@ -498,12 +506,12 @@ fw_local' nm = do
     e : s' -> put vm {stack = s'
                      ,locals = case locals vm of
                                  [] -> error "NO LOCALS FRAME"
-                                 l : l' -> M.insert nm (push e) l : l'}
+                                 l : l' -> M.insert nm (push' e) l : l'}
     _ -> throw_error ("(LOCAL): STACK UNDERFLOW: " ++ nm)
 
 execute_buffer :: (Forth_Type a, Eq a) => VM w a -> IO (VM w a)
 execute_buffer vm = do
-  (r,vm') <- runStateT (runExceptT execute) vm
+  (r,vm') <- runStateT (runExceptT vm_execute) vm
   case r of
     Left err -> case err of
                   VM_No_Input -> return vm'
@@ -548,7 +556,7 @@ fw_colon = do
         when (nm `elem` reserved) (throw_error ("':' RESERVED NAME: " ++ nm))
         when (not (null (cstack vm))) (throw_error ("':' CSTACK NOT EMPTY: " ++ nm))
         return (vm {mode = Compile
-                   ,cstack = [CW_Word nm]
+                   ,cstack = [CC_Word nm]
                    ,locals = M.empty : locals vm})
   do_with_vm edit
 
@@ -558,21 +566,21 @@ fw_div_mod = pop >>= \p -> pop >>= \q -> let (r,s) = q `divMod` p in push s >> p
 
 -- | dup:( p -- p p ) swap:( p q -- q p ) drop:( p -- ) over:( p q -- p q p )
 fw_dup,fw_swap,fw_drop,fw_over,fw_rot,fw_2dup :: Forth w a ()
-fw_dup = pop >>= \e -> push e >> push e
-fw_swap = pop >>= \p -> pop >>= \q -> push p >> push q
-fw_drop = pop >> return ()
-fw_over = pop >>= \p -> pop >>= \q -> push q >> push p >> push q
-fw_rot = pop >>= \p -> pop >>= \q -> pop >>= \r -> push q >> push p >> push r
-fw_2dup = pop >>= \p -> pop >>= \q -> push q >> push p >> push q >> push p
+fw_dup = pop' >>= \e -> push' e >> push' e
+fw_swap = pop' >>= \p -> pop' >>= \q -> push' p >> push' q
+fw_drop = pop' >> return ()
+fw_over = pop' >>= \p -> pop' >>= \q -> push' q >> push' p >> push' q
+fw_rot = pop' >>= \p -> pop' >>= \q -> pop' >>= \r -> push' q >> push' p >> push' r
+fw_2dup = pop' >>= \p -> pop' >>= \q -> push' q >> push' p >> push' q >> push' p
 
 -- | ( xu ... x1 x0 u -- xu ... x1 x0 xu )
 fw_pick :: Forth_Type a => Forth w a ()
 fw_pick = do
   vm <- get
   case stack vm of
-    n : s' -> let n' = ty_to_int n
-                  e = s' !! n'
-              in put vm {stack = e : s'}
+    DC n : s' -> let n' = ty_to_int n
+                     e = s' !! n'
+                 in put vm {stack = e : s'}
     _ -> throw_error "PICK"
 
 fw_emit,fw_dot :: Forth_Type a => Forth w a ()
@@ -582,21 +590,25 @@ fw_dot = liftIO . put_str_sp . ty_show =<< pop
 fw_dot_s :: Forth_Type a => Forth w a ()
 fw_dot_s = do
   vm <- get
-  let l = map ty_show (reverse (stack vm))
+  let l = map dc_show (reverse (stack vm))
       n = "<" ++ show (length l) ++ "> "
   liftIO (putStr n >> mapM_ put_str_sp l)
 
 fw_bye :: Forth w a ()
 fw_bye = liftIO exitSuccess
 
+push_str :: Forth_Type a => String -> Forth w a ()
+push_str str =
+    let f vm = (vm {stack = DC (ty_from_int (length str)) : DC_String str : stack vm},())
+    in with_vm f
+
 fw_s_quote_interpet :: Forth_Type a => Forth w a ()
 fw_s_quote_interpet = do
   vm <- get
   let (sq,buffer') = break_on '"' (buffer vm)
+  put vm {buffer = buffer'}
   str <- clear_s_quote sq
-  put vm {stack = ty_from_int (length str) : ty_from_int (-1) : stack vm
-         ,strings = M.insert (-1) str (strings vm)
-         ,buffer = buffer'}
+  push_str str
 
 fw_type :: Forth_Type a => Forth w a ()
 fw_type = pop_string >>= liftIO . put_str_sp
@@ -611,7 +623,7 @@ fw_fork = do
   case lookup_word nm vm of
     Just fw -> do th <- liftIO (forkIO (exec_err vm fw >> return ()))
                   let k = hash th :: Int
-                  put vm {stack = ty_from_int k : stack vm
+                  put vm {stack = DC (ty_from_int k) : stack vm
                          ,threads = M.insert k th (threads vm)}
     Nothing -> throw_error ("FORK: UNKNOWN WORD: " ++ nm)
 
@@ -631,6 +643,18 @@ fw_kill_all = do
   let th = M.elems (threads vm)
   liftIO (mapM_ killThread th)
   put vm {threads = M.empty}
+
+fw_quote :: Forth w a ()
+fw_quote = do
+  tok <- read_token
+  push' (DC_XT tok)
+
+fw_execute :: Forth w a ()
+fw_execute = do
+  c <- pop'
+  case c of
+    DC_XT xt -> interpret_word xt
+    _ -> throw_error "EXECUTE: NOT EXECUTION TOKEN"
 
 -- * Dictionaries
 
@@ -675,6 +699,8 @@ core_dict =
     ,("then",err "then")
     ,("{",err "{")
     ,("}",err "}")
+    ,("'",fw_quote)
+    ,("execute",fw_execute)
     ,("fork",fw_fork)
     ,("kill",fw_kill)
     ,("killall",fw_kill_all)
@@ -709,7 +735,7 @@ exec_err vm fw = do
 -- error message and runs 'vm_reset' on error.
 repl :: (Eq a,Forth_Type a) => VM w a -> IO ()
 repl vm = do
-  (r,vm') <- runStateT (runExceptT execute) vm
+  (r,vm') <- runStateT (runExceptT vm_execute) vm
   case r of
     Left err -> case err of
                   VM_EOF -> putStrLn "BYE" >> liftIO exitSuccess

@@ -12,18 +12,19 @@
       (comint-send-string (forth-proc) (concat s "\n"))
     (error "no HSC3-FORTH process running?")))
 
-(defun hsc3-forth-word-at-point (word immediate)
-  "If IMMEDIATE then WORD <POINT>, else <POINT> WORD."
-  (let ((p (thing-at-point 'symbol)))
+(defun hsc3-forth-word-at-point (word post q-str)
+  "If POST then WORD <POINT>, else <POINT> WORD.  If Q-STR quote <POINT> as string."
+  (let* ((p (thing-at-point 'symbol))
+         (p-q (if q-str (format "s\" %s\"" p) p)))
     (hsc3-forth-send-string
-     (if immediate (format "%s %s" word p) (format "%s %s" p word)))))
+     (if post (format "%s %s" word p-q) (format "%s %s" p-q word)))))
 
 (defun hsc3-forth-bye () "BYE." (interactive) (hsc3-forth-send-string "bye"))
 (defun hsc3-forth-stop () "STOP" (interactive) (hsc3-forth-send-string "stop"))
 (defun hsc3-forth-killall () "KILLALL" (interactive) (hsc3-forth-send-string "killall"))
-(defun hsc3-forth-help () "? <word>" (interactive) (hsc3-forth-word-at-point "?" 't))
-(defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-word-at-point "play" nil))
-(defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-word-at-point "draw" nil))
+(defun hsc3-forth-help () "s\" <word>\"" (interactive) (hsc3-forth-word-at-point "?" nil t))
+(defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-word-at-point "play" nil nil))
+(defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-word-at-point "draw" nil nil))
 
 (defun hsc3-forth-load-buffer ()
   "INCLUDED"

@@ -15,10 +15,10 @@
 
 ( HELP FORTH )
 
-? SinOsc
+s" SinOsc" ?
 \ SinOsc [AR,KR] freq=440.0 phase=0.0
 
-? ENVGEN
+s" ENVGEN" ?
 \ EnvGen [AR,KR] *envelope=0 gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0
 \     MCE INPUT: #5, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction
 
@@ -131,7 +131,7 @@ star star star \ *** \
 
 ( UGEN FORTH )
 
-440 0 SinOsc.ar 0.1 * -1 add-to-head 1 play-at
+440 0 SinOsc.ar 0.1 * 0 swap Out -1 add-to-head 1 play-at
 440 441 2 mce 0 SinOsc.ar 0.1 * play
 440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * play
 WhiteNoise.ar 0.1 * play
@@ -212,6 +212,15 @@ s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
 s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" fork included .s
 kill . . \ 45 -1
 
+( QUOTING FORTH )
+
+' + 1 2 rot execute . \ 3
+
+: cmb 0.1 0.1 1 CombN ;
+: post-proc { f } 0 2 In.ar f execute 0 swap Out dup draw -1 add-to-tail 1 play-at ;
+' cmb post-proc
+stop
+
 ( LABELED FORTH )
 
 s" LABEL" label . \ "LABEL"
@@ -219,7 +228,7 @@ s" LABEL" label . \ "LABEL"
 ( TROUBLE FORTH )
 
 vmstat \ PRINT VM STATUS
-0 trace \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
+2 trace \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
 
 ( FINISHING FORTH )
 

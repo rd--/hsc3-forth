@@ -17,7 +17,7 @@
 : mce2 2 mce ;
 : mrg2 2 mrg ;
 : clone2 2 clone ;
-: play -1 add-to-head 1 play-at ;
+: play 0 swap Out -1 add-to-head 1 play-at ;
 
 \ ENVELOPE CURVE ENUMERATION
 
