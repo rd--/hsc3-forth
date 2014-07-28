@@ -71,3 +71,13 @@
 
 : env-tri { dur lvl } dur 2 / { dur' }
   0 2 no-reset-node no-loop-node lvl dur' env-lin 0 0 dur' env-lin 0 12 mce ;
+
+\ COMPOSITE UGENS
+
+: TChoose { t a } 0 a chan t TIRand a Select ;
+
+: LinLin_muladd { sl sr dl dr } dr dl - sr sl - / { m } m dl m sl * - ;
+
+: MulAdd { m a } m * a + ; ( Not in hsc3-db )
+
+: LinLin LinLin_muladd MulAdd ;

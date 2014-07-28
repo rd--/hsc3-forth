@@ -231,6 +231,7 @@ ugen_dict =
     ,("label",pop_string >>= push . label)
     ,("seed",pop_int >>= set_id)
     ,("unrand",pop >>= push . ugen_optimise_ir_rand)
+    ,("chan",pop >>= push . constant . length . mceChannels)
     ,("?",fw_help)]
 
 -- | Print as integer if integral, else as real.
