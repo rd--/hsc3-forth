@@ -155,9 +155,12 @@ push' x = modify (\vm -> vm {stack = x : stack vm})
 push :: a -> Forth w a ()
 push = push' . DC
 
+pushr' :: DC a -> Forth w a ()
+pushr' x = modify (\vm -> vm {rstack = x : rstack vm})
+
 -- | Push value onto 'rstack'.
 pushr :: a -> Forth w a ()
-pushr x = modify (\vm -> vm {rstack = DC x : rstack vm})
+pushr = pushr' . DC
 
 -- | Push value onto 'cstack'.
 pushc :: CC w a -> Forth w a ()
@@ -184,9 +187,12 @@ pop' = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
 pop :: Forth w a a
 pop = pop' >>= dc_plain
 
+popr' :: Forth w a (DC a)
+popr' = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s})
+
 -- | Remove value from 'rstack'.
 popr :: Forth w a a
-popr = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s}) >>= dc_plain
+popr = popr' >>= dc_plain
 
 -- | Remove value from 'cstack'.
 popc :: Forth w a (CC w a)
@@ -713,6 +719,8 @@ core_dict =
     ,("rot",fw_rot)
     ,("swap",fw_swap)
     ,("2dup",fw_2dup)
+    ,(">r",pop' >>= pushr')
+    ,("r>",popr' >>= push')
      -- IO
     ,("emit",fw_emit)
     ,(".",fw_dot)

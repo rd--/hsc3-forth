@@ -221,6 +221,11 @@ kill . . \ 45 -1
 ' cmb post-proc
 stop
 
+( RETURN FORTH )
+
+1 >r .s r> . \ <0> 1
+>r \ ERROR
+
 ( LABELED FORTH )
 
 s" LABEL" label . \ "LABEL"
