@@ -1,12 +1,12 @@
-: env-asr { atk sus rel }
-  0 3 no-reset-node no-loop-node 1 atk env-sin 0 1 sus env-lin 0 0 rel env-sin 0 16 mce ;
+: texture-env { sus trans }
+  0 3 no-reset-node no-loop-node 1 trans env-sin 0 1 sus env-sin 0 0 trans env-sin 0 16 mce ;
 
-: with-env { sus trans } 1 1 0 1 remove-synth trans sus trans env-asr EnvGen.kr * ;
+: with-texture-env { sus trans } 1 1 0 1 remove-synth sus trans texture-env EnvGen.kr * ;
 
 : spawn-texture { ugen iot rep } rep 0 do ugen play iot pause loop ;
 
 : xfade-texture { ugen sus trans rep }
-  rep 0 do ugen sus trans with-env play sus trans + pause loop ;
+  rep 0 do ugen sus trans with-texture-env play sus trans + pause loop ;
 
 : overlaps-iot { sus trans overs } trans 2 * sus + overs / ;
 

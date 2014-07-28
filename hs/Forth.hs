@@ -24,16 +24,14 @@ type Reader w a = String -> Forth w a ()
 
 -- | Class of values that can constitute a 'Forth'.
 class Forth_Type a where
-    ty_char :: a -> Char -- ^ Single character representaton of /a/.
-    ty_string :: a -> String -- ^ String representation of /a/.
-    ty_int :: a -> Int -- ^ Coercion, ie. for loop counters.
+    ty_show :: a -> String -- ^ String representation of /a/, pretty printer.
+    ty_to_int :: a -> Int -- ^ Coercion, ie. for loop counters.
     ty_from_int :: Int -> a -- ^ Coercion
     ty_from_bool :: Bool -> a -- ^ Boolean value represented in /a/, by convention @-1@ and @0@.
 
 instance Forth_Type Integer where
-    ty_int = fromInteger
-    ty_char = toEnum . fromInteger
-    ty_string = show
+    ty_show = show
+    ty_to_int = fromInteger
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 
@@ -64,8 +62,8 @@ data VM_Signal = VM_EOF | VM_No_Input | VM_Error String deriving (Eq,Show)
 
 vm_pp :: Forth_Type a => VM w a -> String
 vm_pp vm =
-    concat ["\n DATA STACK: ",unwords (map ty_string (stack vm))
-           ,"\n RETURN STACK: ",unwords (map ty_string (rstack vm))
+    concat ["\n DATA STACK: ",unwords (map ty_show (stack vm))
+           ,"\n RETURN STACK: ",unwords (map ty_show (rstack vm))
            ,"\n COMPILE STACK DEPTH: ",show (length (cstack vm))
            ,"\n STRINGS: ",show (strings vm)
            ,"\n THREADS: ",intercalate "," (map show (M.keys (threads vm)))
@@ -74,6 +72,7 @@ vm_pp vm =
            ,"\n BUFFER: ",buffer vm
            ,"\n MODE: ",show (mode vm)
            ,"\n DYMAMIC: ",maybe "NO" (const "YES") (dynamic vm)
+           ,"\n EOL: ",if eol vm then "YES" else "NO"
            ,"\n INPUT PORT: ",maybe "NO" (const "YES") (input_port vm)
            ,"\n TRACING: ",show (tracing vm)
            ]
@@ -102,7 +101,7 @@ do_with_vm f = get >>= \vm -> f vm >>= put
 expr_pp :: Forth_Type a => Expr a -> String
 expr_pp e =
     case e of
-      Literal a -> ty_string a
+      Literal a -> ty_show a
       Word nm -> nm
 
 throw_error :: MonadIO m => String -> ExceptT VM_Signal m a
@@ -183,16 +182,21 @@ next_string_id vm =
     let m = strings vm
     in if M.null m then 0 else fst (M.findMax m) + 1
 
-get_string :: Forth_Type a => Forth w a (Maybe String)
-get_string = do
+pop_string' :: Forth_Type a => Forth w a (Maybe String)
+pop_string' = do
   _ <- pop
-  k <- fmap ty_int pop
+  k <- fmap ty_to_int pop
   vm <- get
   return (M.lookup k (strings vm))
+
+-- | ( id len -- )
+pop_string :: Forth_Type a => Forth w a String
+pop_string = pop_string' >>= maybe (throw_error "NO STRING?") return
 
 -- | Read until /x/ is seen, discarding /x/, RHS may be @[]@.
 --
 -- > break_on ')' "comment ) WORD" == ("comment "," WORD")
+-- > break_on '\n' " comment\n\n" == (" comment","\n")
 break_on :: Eq a => a -> [a] -> ([a],[a])
 break_on x l =
     case break (== x) l of
@@ -220,14 +224,16 @@ scan_token = do
     [] -> return Nothing
     str ->
         case break isSpace (dropWhile isSpace str) of
+          ([],[]) -> return Nothing
+          ([],r) -> throw_error ("SCAN_TOKEN: NULL: " ++ r)
           ("\\",r) -> put vm {buffer = delete_until '\n' r} >> scan_token
           ("(",r) -> put vm {buffer = delete_until ')' r} >> scan_token
-          (e,r) -> put vm {buffer = r,eol = null r} >>
-                   if null e then scan_token else return (Just e)
+          (e,r) -> put vm {buffer = r,eol = null r} >> return (Just e)
 
 -- | Read line from 'input_port' to 'buffer'.  There are two
 -- /exceptions/ thrown here, 'VM_EOF' if an input port is given but
--- returns EOF, and 'VM_No_Input' if there is no input port.
+-- returns EOF, and 'VM_No_Input' if there is no input port.  Sets
+-- 'eol' on refill.
 fw_refill :: Forth w a ()
 fw_refill = do
   vm <- get
@@ -315,7 +321,7 @@ interpret_do code = do
   let step = do
         code
         i <- popr
-        let i' = ty_from_int (ty_int i + 1)
+        let i' = ty_from_int (ty_to_int i + 1)
         pushr i'
   let loop = do
         r <- loop_end
@@ -356,6 +362,7 @@ end_compilation = do
                      else bracketed (begin_locals,end_locals) instr
             w = forth_block instr'
         in do trace 2 ("END DEFINITION: " ++ nm)
+              when (M.member nm (dict vm)) (liftIO (put_str_sp ("REDEFINED " ++ nm)))
               put (vm {cstack = []
                       ,locals = tail (locals vm)
                       ,dict = M.insert nm w (dict vm)
@@ -519,11 +526,7 @@ fw_included' nm = do
   liftIO (readFile nm) >>= fw_evaluate'
 
 fw_included :: (Eq a,Forth_Type a) => Forth w a ()
-fw_included = do
-  r <- get_string
-  case r of
-    Nothing -> throw_error "INCLUDED: NO STRING"
-    Just str -> fw_included' str
+fw_included = pop_string >>= fw_included'
 
 fw_i :: Forth w a ()
 fw_i = popr >>= \x -> pushr x >> push x
@@ -567,19 +570,19 @@ fw_pick :: Forth_Type a => Forth w a ()
 fw_pick = do
   vm <- get
   case stack vm of
-    n : s' -> let n' = ty_int n
+    n : s' -> let n' = ty_to_int n
                   e = s' !! n'
               in put vm {stack = e : s'}
     _ -> throw_error "PICK"
 
 fw_emit,fw_dot :: Forth_Type a => Forth w a ()
-fw_emit = liftIO . putChar . ty_char =<< pop
-fw_dot = liftIO . put_str_sp . ty_string =<< pop
+fw_emit = liftIO . putChar . toEnum . ty_to_int =<< pop
+fw_dot = liftIO . put_str_sp . ty_show =<< pop
 
 fw_dot_s :: Forth_Type a => Forth w a ()
 fw_dot_s = do
   vm <- get
-  let l = map ty_string (reverse (stack vm))
+  let l = map ty_show (reverse (stack vm))
       n = "<" ++ show (length l) ++ "> "
   liftIO (putStr n >> mapM_ put_str_sp l)
 
@@ -596,11 +599,7 @@ fw_s_quote_interpet = do
          ,buffer = buffer'}
 
 fw_type :: Forth_Type a => Forth w a ()
-fw_type = do
-  r <- get_string
-  case r of
-    Nothing -> throw_error "TYPE: UNKNOWN STRING-ID"
-    Just str -> liftIO (put_str_sp str)
+fw_type = pop_string >>= liftIO . put_str_sp
 
 fw_vmstat :: Forth_Type a => Forth w a ()
 fw_vmstat = get >>= liftIO . putStrLn . vm_pp
@@ -620,7 +619,7 @@ fw_kill :: Forth_Type a => Forth w a ()
 fw_kill = do
   k <- pop
   vm <- get
-  let k' = ty_int k
+  let k' = ty_to_int k
       threads' = threads vm
   case M.lookup k' threads' of
     Nothing -> throw_error ("KILL: UNKNOWN THREAD: " ++ show k')
@@ -695,7 +694,7 @@ core_dict =
     ,("key",liftIO getChar >>= \c -> push (ty_from_int (fromEnum c)))
     -- DEBUG
     ,("vmstat",fw_vmstat)
-    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_int k},())))]
+    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int k},())))]
 
 -- * Operation
 

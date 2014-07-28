@@ -1,23 +1,23 @@
-\ EMACS FORTH
+( EMACS FORTH )
 
 \ M-x set-variable forth-program-name "hsc3-forth"
 \ M-x run-forth
 \ M-x forth-send-paragraph
 
-\ HELP FORTH
+( HELP FORTH )
 
-? SinOsc \ SinOsc [AR,KR] freq=440.0 phase=0.0
+? SinOsc
+\ SinOsc [AR,KR] freq=440.0 phase=0.0
 
 ? ENVGEN
-
 \ EnvGen [AR,KR] *envelope=0 gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0
 \     MCE INPUT: #5, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction
 
-\ LITERAL FORTH
+( LITERAL FORTH )
 
 1 2 3 . . . \ 3 2 1 \
 
-\ NUM FORTH
+( NUM FORTH )
 
 2 2 + . \ 4 \
 2 1 - . \ 1 \
@@ -25,40 +25,40 @@
 3 4 5 * + . \ 23 \
 2 negate . \ -2 \
 
-\ FRACTIONAL FORTH
+( FRACTIONAL FORTH )
 
-( ANS Forth requires floating point literals be written 1.1e0 etc. )
-( ANS Forth has a separate floating point stack, printed using f. )
+\ ANS Forth requires floating point literals be written 1.1e0 etc.
+\ ANS Forth has a separate floating point stack, printed using f.
 
 : f. . ;
 1.1e0 2.2e0 3.3e0 f. f. f. \ 3.3 2.2 1.1 \
 
-( SC3 has only floating point numbers & only one data stack )
+\ SC3 has only floating point numbers & only one data stack
 
 1.1 2.2 3.3 . . . \ 3.3 2.2 1.1 \
 
 : f/ / ;
 5 2 f/ f. \ 2.5 \
 
-\ INTEGRAL FORTH
+( INTEGRAL FORTH )
 
 10 2 div . \ 5 \
 7 3 mod . \ 1 \
 7 3 /mod . . \ 2 1 \
 
-\ EQ FORTH
+( EQ FORTH )
 
 0 1 = . \ false \
 1 1 = . \ true \
 
-\ ORD FORTH
+( ORD FORTH )
 
 1 2 < . \ true \
 2 1 < . \ false \
 1 1 < . \ false \
 1 1 <= . \ true \
 
-\ STACK FORTH
+( STACK FORTH )
 
 1 2 drop . \ 1 \
 1 2 .s over .s drop drop drop .s \ <2> 1 2 <3> 1 2 1 <0> \
@@ -69,7 +69,7 @@
 1 2 2dup .s . . . . .s \ <4> 1 2 1 2 2 1 2 1 <0> \
 1 2 3 4 5 2 pick .s . . . . . . .s \ <6> 1 2 3 4 5 3 3 5 4 3 2 1 <0> \
 
-\ BLOCK FORTH
+( BLOCK FORTH )
 
 : squared dup * ;
 5 squared . \ 25 \
@@ -79,7 +79,7 @@
 : fourth-power squared squared ;
 3 fourth-power . \ 81 \
 
-\ CONDITIONAL FORTH
+( CONDITIONAL FORTH )
 
 5 abs . \ 5
 -5 abs . \ 5
@@ -87,7 +87,7 @@
 2 3 min . \ 2
 3 2 min . \ 2
 
-\ DO FORTH
+( DO FORTH )
 
 : five 5 0 do 5 loop ;
 five .s . . . . . \ <5> 5 5 5 5 5 5 5 5 5 5 \
@@ -111,7 +111,7 @@ star star star \ *** \
 : \stars 0 do cr i spaces 10 stars loop ;
 3 \stars
 
-\ LOCALS FORTH
+( LOCALS FORTH )
 
 : swap' { a b } b a ;
 1 2 swap' . . \ 1 2 \
@@ -120,7 +120,7 @@ star star star \ *** \
 : f { a } 2 { b } a b a ;
 1 f . . . \ 1 2 1 \
 
-\ UGEN FORTH
+( UGEN FORTH )
 
 440 0 SinOsc.ar 0.1 * play
 440 441 2 mce 0 SinOsc.ar 0.1 * play
@@ -128,55 +128,79 @@ star star star \ *** \
 WhiteNoise.ar 0.1 * play
 stop
 
-\ DRAWING FORTH
+( DRAWING FORTH )
 
 WhiteNoise.ar 0.1 * dup - draw \ silence \
 WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
-\ RANDOM FORTH
+( RANDOM FORTH )
 
 : random-sine 1900 2300 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
 : _ 5 0 do random-sine play loop ; _
 stop
 
-\ ENVELOPED FORTH
+( UN-RANDOM FORTH )
 
-: with-env { dur lvl } 1 1 0 1 remove-synth dur lvl env-tri EnvGen.kr * ;
-WhiteNoise.ar 10 0.1 with-env play
-random-sine 5 0.1 with-env play
+\ The non-deterministic UGens get identifiers from a counter, which can be set.
+1376523 seed
+
+\ The unrand transformation lifts scalar random UGens to constants.
+0 1 Rand.ir 2 clone .s \ <1> [UGEN:Rand UGEN:Rand]
+unrand . \ [0.6768026553207348 0.21705544209066452]
+
+( ENVELOPED FORTH )
+
+: with-triangle-env { dur lvl } 1 1 0 1 remove-synth dur lvl env-tri EnvGen.kr * ;
+WhiteNoise.ar 10 0.1 with-triangle-env play
+random-sine 5 0.1 with-triangle-env play
 stop
 
-\ PAUSE FORTH
+( PAUSING FORTH )
 
 : anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-env play loop ;
 anon 5 pause stop
 
-\ SCHEDULE FORTH
+( SCHEDULE FORTH )
 
-( random-sine takes time, audible scattering )
+\ Since random-sine takes time, there is audible scattering.
 : _ 25 0 do random-sine play loop ; _
 stop
 
-( forward scheduling for precise alignment )
+\ Forward scheduling allows for precise alignment.
 : _ time 0.1 + { t } 25 0 do random-sine t sched loop ; _
 stop
 
-\ TEXTURAL FORTH
+( TEXTURAL FORTH )
 
 random-sine 2 3 5 xfade-texture
 random-sine 2 3 6 12 overlap-texture
 
-\ FORK FORTH
+( FORK FORTH )
 
 : endless inf 0 do s" MSG" type cr 1 pause loop ;
-fork endless
+fork endless .s
 kill
 
-\ INCLUSIVE FORTH
+\ The forked word can read from the stack, but it does so in the new thread.
+: n-messages 0 do i . cr dup pause loop ;
+0.5 10 fork n-messages .s \ <3> 0.5 10 THREAD-ID
+
+\ Here the interval and the count remain on the stack, along with the thread-id.
+kill . . .s \ 10 0.5 <0>
+
+( INCLUSIVE FORTH )
 
 s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
 
-\ TROUBLE FORTH
+\ If the included file is a process we can fork included, with the normal fork stack rules.
+s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" fork included .s
+kill . . \ 45 -1
+
+( LABELED FORTH )
+
+s" LABEL" label . \ "LABEL"
+
+( TROUBLE FORTH )
 
 vmstat \ PRINT VM STATUS
 0 trace \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)

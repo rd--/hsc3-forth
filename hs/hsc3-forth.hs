@@ -69,13 +69,16 @@ incr_id = do
   put vm {world = w + 1}
   return w
 
+set_id :: Int -> Forth Int a ()
+set_id k = with_vm (\vm -> (vm {world = k},()))
+
 -- | Assert that the stack is empty.
 fw_assert_empty :: Forth_Type a => Forth w a ()
 fw_assert_empty = do
   vm <- get
   case stack vm of
     [] -> return ()
-    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map ty_string l))
+    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map ty_show l))
 
 -- * UGen
 
@@ -214,15 +217,18 @@ ugen_dict =
     M.fromList
     [("clone",pop_int >>= \n -> pop >>= \u -> incr_id >>= \z -> push (uclone z n u))
     ,("draw",pop >>= \u -> fw_assert_empty >> liftIO (draw (out 0 u)))
-    ,("mce",pop_int >>= \n -> pop_n n >>= \u -> push (mce (reverse u)))
+    ,("mce",pop_int >>= \n -> pop_n n >>= push . mce . reverse)
     ,("mix",pop >>= push . mix)
-    ,("mrg",pop_int >>= \n -> pop_n n >>= \u -> push (mrg (reverse u)))
+    ,("mrg",pop_int >>= \n -> pop_n n >>= push . mrg . reverse)
     ,("play",pop >>= \u -> fw_assert_empty >> liftIO (audition (out 0 u)))
     ,("sched",pop_double >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
-    ,("unmce",pop >>= \u -> push_l (mceChannels u))
-    ,("pause",pop_double >>= \t -> pauseThread t)
-    ,("time",liftIO time >>= \t -> push (constant t))
+    ,("unmce",pop >>= push_l . mceChannels)
+    ,("pause",pop_double >>= pauseThread)
+    ,("time",liftIO time >>= push . constant)
+    ,("label",pop_string >>= push . label)
+    ,("seed",pop_int >>= set_id)
+    ,("unrand",pop >>= push . ugen_optimise_ir_rand)
     ,("?",help)]
 
 -- | Print as integer if integral, else as real.
@@ -236,17 +242,17 @@ ugen_pp :: UGen -> String
 ugen_pp u =
     case u of
       Constant_U (Constant n) -> real_pp n
-      Primitive_U (Primitive _ nm _ _ sp _ ) -> "UGEN: " ++ ugen_user_name nm sp
+      Label_U (Label s) -> show s
+      Primitive_U (Primitive _ nm _ _ sp _ ) -> "UGEN:" ++ ugen_user_name nm sp
       MCE_U (MCE_Unit u') -> ugen_pp u'
       MCE_U (MCE_Vector v) -> "[" ++ intercalate " " (map ugen_pp v) ++ "]"
       _ -> show u
 
 instance Forth_Type UGen where
-    ty_char = toEnum . (floor . u_constant)
-    ty_string = ugen_pp
-    ty_int = floor . u_constant
-    ty_from_bool t = if t then -1 else 0
+    ty_show = ugen_pp
+    ty_to_int = floor . u_constant
     ty_from_int = fromIntegral
+    ty_from_bool t = if t then -1 else 0
 
 parse_constant :: String -> Maybe UGen
 parse_constant s =

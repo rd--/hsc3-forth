@@ -1,14 +1,11 @@
-\ In ANS Forth true is -1.  In SC3 true is 1.
-
-: true 1 ;
-
 \ OPERATOR ALIASES
 
-: negate Neg ;
-: div IDiv ;
 : = == ;
-: abs Abs ;
-: negate Neg ;
+: div IDiv ;
+: not 0= ; \ NOT is not in ANS FORTH, see DPAN for discussion
+
+\ : abs Abs ;
+\ : negate Neg ;
 
 \ PSEUDO INFINITY
 
