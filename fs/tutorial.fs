@@ -1,11 +1,17 @@
 ( EMACS FORTH )
 
-\ C-cC-> = hsc3-forth-see-forth
-\ C-cC-c = hsc3-forth-send-line
-
-\ M-x set-variable forth-program-name "hsc3-forth"
-\ M-x run-forth
-\ M-x forth-send-paragraph
+\ HSC3-FORTH MODE
+\ Commands have a with C-cC- prefix
+\ <point> is the word at the cursor
+\ > -- Start & see the HSC3-FORTH interpreter
+\ c -- Send line the cursor is in
+\ d -- Send the current region (selection)
+\ g -- Send <point> DRAW
+\ a -- Send <point> PLAY
+\ u -- Send ? <point>
+\ k -- Send STOP
+\ s -- Send KILLALL
+\ q -- Send BYE
 
 ( HELP FORTH )
 
@@ -129,9 +135,13 @@ star star star \ *** \
 440 441 2 mce 0 SinOsc.ar 0.1 * play
 440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * play
 WhiteNoise.ar 0.1 * play
+
+\ Free all nodes at scsynth (C-cC-k)
 stop
 
 ( DRAWING FORTH )
+
+\ Draw unit-generator graph, requires graphviz dot language interpreter, (C-cC-g)
 
 WhiteNoise.ar 0.1 * dup - draw \ silence \
 WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
@@ -191,6 +201,9 @@ kill
 \ Here the interval and the count remain on the stack, along with the thread-id.
 kill . . .s \ 10 0.5 <0>
 
+\ The VM keeps a list of all running threads, and the can be killed altogether (C-cC-s)
+killall
+
 ( INCLUSIVE FORTH )
 
 s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
@@ -207,3 +220,7 @@ s" LABEL" label . \ "LABEL"
 
 vmstat \ PRINT VM STATUS
 0 trace \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
+
+( FINISHING FORTH )
+
+bye \ C-cC-q
