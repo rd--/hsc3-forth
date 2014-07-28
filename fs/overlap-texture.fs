@@ -11,4 +11,4 @@
 : overlaps-iot { sus trans overs } trans 2 * sus + overs / ;
 
 : overlap-texture { ugen sus trans overs rep }
-  rep 0 do ugen sus trans with-env play sus trans overs overlaps-iot pause loop ;
+  rep 0 do ugen sus trans with-texture-env play sus trans overs overlaps-iot pause loop ;

@@ -4,18 +4,20 @@
 : div IDiv ;
 : not 0= ; \ NOT is not in ANS FORTH, see DPAN for discussion
 
-\ : abs Abs ;
-\ : negate Neg ;
+\ : abs Abs ; \ stdlib REDEFINE
+\ : negate Neg ; \ stdlib REDEFINE
 
-\ PSEUDO INFINITY
+\ CONSTANTS
 
-: inf 9e8 ;
+: inf 9e8 ; \ Pseudo infinity
+: pi 3.141592653589793 ;
 
 \ ABBREVIATIONS
 
 : mce2 2 mce ;
 : mrg2 2 mrg ;
 : clone2 2 clone ;
+: play -1 add-to-head 1 play-at ;
 
 \ ENVELOPE CURVE ENUMERATION
 

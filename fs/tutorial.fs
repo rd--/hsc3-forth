@@ -1,5 +1,8 @@
 ( EMACS FORTH )
 
+\ C-cC-> = hsc3-forth-see-forth
+\ C-cC-c = hsc3-forth-send-line
+
 \ M-x set-variable forth-program-name "hsc3-forth"
 \ M-x run-forth
 \ M-x forth-send-paragraph
@@ -122,7 +125,7 @@ star star star \ *** \
 
 ( UGEN FORTH )
 
-440 0 SinOsc.ar 0.1 * play
+440 0 SinOsc.ar 0.1 * -1 add-to-head 1 play-at
 440 441 2 mce 0 SinOsc.ar 0.1 * play
 440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * play
 WhiteNoise.ar 0.1 * play

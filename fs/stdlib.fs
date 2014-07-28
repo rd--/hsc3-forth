@@ -12,8 +12,6 @@
 : abs dup 0 < if negate then ;
 : min 2dup < if drop else nip then ;
 
-: pi 3.141592653589793 ;
-
 : bl 32 ;
 : space bl emit ;
 : spaces 0 do space loop ;

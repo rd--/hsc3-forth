@@ -18,7 +18,6 @@ import Sound.SC3.UGen.MCE {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
-import qualified Sound.SC3.UGen.DB.Meta as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
 
 import Sound.SC3.UGen.Dot {- hsc3-dot -}
@@ -82,14 +81,8 @@ fw_assert_empty = do
 
 -- * UGen
 
--- | Predicate to see if UGen has an MCE input.
---
--- > map u_halts_mce (words "Drand EnvGen Out")
-u_halts_mce :: String -> Bool
-u_halts_mce u =
-    case DB.uLookup u of
-      Just r -> isJust (DB.ugen_mce_input r)
-      _ -> False
+u_halts_mce :: DB.U -> Bool
+u_halts_mce = isJust . DB.ugen_mce_input
 
 -- | The halt MCE transform, requires mce is last input.
 --
@@ -99,12 +92,9 @@ halt_mce_transform l =
     let (l',e) = fromMaybe (error "HALT MCE TRANSFORM FAILED") (sep_last l)
     in l' ++ mceChannels e
 
-is_nondet :: String -> Bool
-is_nondet = flip elem DB.meta_nondet
-
 -- | UGen names are given with rate suffixes if oscillators, without if filters.
 --
--- > map ugen_sep (words "SinOsc.ar LPF") == [("SinOsc",Just AR),("LPF",Nothing)]
+-- > map ugen_sep (words "SinOsc.ar LPF *")
 ugen_sep :: String -> (String,Maybe Rate)
 ugen_sep u =
     case splitOn "." u of
@@ -112,19 +102,15 @@ ugen_sep u =
       [nm] -> (nm,Nothing)
       _ -> error "UGEN NAME RATE SEPARATOR FAILED"
 
--- > ugen_io "SinOsc" == Just (2,Just 1)
--- > mapMaybe ugen_io ["Out","ResonZ","Pan2","Drand"]
--- > mapMaybe ugen_io ["BrownNoise","Dust","LFNoise0","LFNoise1","Rand"]
--- > mapMaybe ugen_io ["Max"]
--- > mapMaybe ugen_io ["In"]
-ugen_io :: String -> Maybe (Int,Maybe Int)
+ugen_rec :: String -> Maybe DB.U
+ugen_rec = DB.uLookup
+
+ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u =
-    case DB.uLookup u of
-      Just r -> Just (length (DB.ugen_inputs r)
-                     ,case lookup u DB.meta_nc_input of
-                        Nothing -> DB.ugen_outputs r
-                        Just _ -> Nothing)
-      _ -> Nothing
+    (length (DB.ugen_inputs u)
+    ,case DB.ugen_nc_input u of
+       Nothing -> DB.ugen_outputs u
+       Just _ -> Nothing)
 
 -- | SC3 has name overlaps.  '-' is suppressed as a uop (see 'negate')
 -- in prefence to the binop ('-').  Likewise 'Rand' is suppressed as a
@@ -143,27 +129,33 @@ is_binop s = s `notElem` [] && isJust (binaryIndex s)
 
 -- * UForth
 
-gen_osc :: String -> Rate -> Int -> Maybe Int -> U_Forth ()
-gen_osc nm rt inp nc = do
-  nc' <- case nc of
-           Just n -> return n
-           Nothing -> pop_int
-  z <- if is_nondet nm then incr_id else return 0
+get_nc :: Maybe Int -> U_Forth Int
+get_nc nc =
+    case nc of
+      Just n -> return n
+      Nothing -> pop_int
+
+gen_osc :: DB.U -> Rate -> U_Forth ()
+gen_osc u rt = do
+  let (inp,nc) = ugen_io u
+      nm = DB.ugen_name u
+  z <- if DB.ugen_nondet u then incr_id else return 0
+  nc' <- get_nc nc
   i <- pop_n inp
-  let i' = (if u_halts_mce nm then halt_mce_transform else id) (reverse i)
-  let gen = if is_nondet nm then nondet nm (UId z) else ugen nm
+  let i' = (if u_halts_mce u then halt_mce_transform else id) (reverse i)
+  let gen = if DB.ugen_nondet u then nondet nm (UId z) else ugen nm
   push (gen rt i' nc')
 
-gen_filter :: String -> Int -> Maybe Int -> U_Forth ()
-gen_filter nm inp nc = do
-  nc' <- case nc of
-           Just n -> return n
-           Nothing -> pop_int
-  z <- if is_nondet nm then incr_id else return 0
+gen_filter :: DB.U -> U_Forth ()
+gen_filter u = do
+  let (inp,nc) = ugen_io u
+      nm = DB.ugen_name u
+  z <- if DB.ugen_nondet u then incr_id else return 0
+  nc' <- get_nc nc
   i <- pop_n inp
   let rt = maximum (map rateOf i)
-      i' = (if u_halts_mce nm then halt_mce_transform else id) (reverse i)
-      gen = if is_nondet nm then nondet nm (UId z) else ugen nm
+      i' = (if u_halts_mce u then halt_mce_transform else id) (reverse i)
+      gen = if DB.ugen_nondet u then nondet nm (UId z) else ugen nm
   push (gen rt i' nc')
 
 gen_uop :: U_Reader
@@ -182,20 +174,21 @@ gen_binop nm = do
 
 -- | Order of lookup: binop, uop, ugen
 gen_ugen :: U_Reader
-gen_ugen u = do
-  let (nm,rt) = ugen_sep u
+gen_ugen w = do
+  let (nm,rt) = ugen_sep w
+  trace 2 ("GEN_UGEN: " ++ show (w,nm,rt))
   case is_binop nm of
     True -> gen_binop nm
     False ->
         case is_uop nm of
           True -> gen_uop nm
           False ->
-              case ugen_io nm of
-                Just (inp,outp) ->
+              case ugen_rec nm of
+                Nothing -> throw_error (show "UNKNOWN UGEN: '" ++ nm ++ "'")
+                Just u ->
                     case rt of
-                      Just rt' -> gen_osc nm rt' inp outp
-                      Nothing -> gen_filter nm inp outp
-                Nothing -> throw_error (show "UNKNOWN UGEN: " ++ nm)
+                      Just rt' -> gen_osc u rt'
+                      Nothing -> gen_filter u
 
 sched :: Time -> UGen -> IO ()
 sched t u =
@@ -205,12 +198,21 @@ sched t u =
         b1 = bundle t [s_new nm (-1) AddToHead 1 []]
     in withSC3 (sendBundle b0 >> sendBundle b1)
 
-help :: Forth w a ()
-help = do
-  nm <- read_token
+fw_help :: Forth w a ()
+fw_help = do
+  (nm,_) <- fmap ugen_sep read_token
   case DB.ugenSummary' True nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
+
+fw_play_at :: U_Forth ()
+fw_play_at = do
+  grp <- pop_int
+  act <- pop_int
+  nid <- pop_int
+  u <- pop
+  fw_assert_empty
+  liftIO (audition_at (nid,toEnum act,grp) (out 0 u))
 
 ugen_dict :: Dict Int UGen
 ugen_dict =
@@ -220,7 +222,7 @@ ugen_dict =
     ,("mce",pop_int >>= \n -> pop_n n >>= push . mce . reverse)
     ,("mix",pop >>= push . mix)
     ,("mrg",pop_int >>= \n -> pop_n n >>= push . mrg . reverse)
-    ,("play",pop >>= \u -> fw_assert_empty >> liftIO (audition (out 0 u)))
+    ,("play-at",fw_play_at)
     ,("sched",pop_double >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= push_l . mceChannels)
@@ -229,7 +231,7 @@ ugen_dict =
     ,("label",pop_string >>= push . label)
     ,("seed",pop_int >>= set_id)
     ,("unrand",pop >>= push . ugen_optimise_ir_rand)
-    ,("?",help)]
+    ,("?",fw_help)]
 
 -- | Print as integer if integral, else as real.
 real_pp :: (Show a, Real a) => a -> String
