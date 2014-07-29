@@ -113,19 +113,20 @@ ugen_io u =
        Just _ -> Nothing)
 
 -- | SC3 has name overlaps.  '-' is suppressed as a uop (see 'negate')
--- in prefence to the binop ('-').  Likewise 'Rand' & 'LinRand' are
--- suppressed as a uop and allowed as a UGen.
+-- in prefence to the binop ('-'), binops are searched first.
+-- Likewise 'Rand' & 'LinRand' are suppressed as a uop if they are
+-- given a rate, ie. @Rand.ir@, and allowed as a UGen.
 --
 -- > map is_uop (words "Abs MIDICPS Neg")
--- > map is_uop (words "- Rand")
+-- > map is_uop (words "- Rand Rand.ir")
 is_uop :: String -> Bool
-is_uop s = s `notElem` ["-","Rand","LinRand"] && isJust (unaryIndex s)
+is_uop s = isJust (unaryIndex s)
 
--- | Max is a UGen (SLUGens) and a binop, we look for binops first.
+-- | Max is a UGen (SLUGens) and a binop, to select the UGen supply a rate suffix.
 --
--- > map is_binop (words "== > % Trunc Max")
+-- > map is_binop (words "== > % Trunc Max Max.kr")
 is_binop :: String -> Bool
-is_binop s = s `notElem` [] && isJust (binaryIndex s)
+is_binop s = isJust (binaryIndex s)
 
 -- * UForth
 
@@ -177,10 +178,10 @@ gen_ugen :: U_Reader
 gen_ugen w = do
   let (nm,rt) = ugen_sep w
   trace 2 ("GEN_UGEN: " ++ show (w,nm,rt))
-  case is_binop nm of
+  case is_binop w of
     True -> gen_binop nm
     False ->
-        case is_uop nm of
+        case is_uop w of
           True -> gen_uop nm
           False ->
               case ugen_rec nm of

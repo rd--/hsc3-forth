@@ -146,6 +146,13 @@ stop
 WhiteNoise.ar 0.1 * dup - draw \ silence \
 WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
+( NAMING FORTH )
+
+440 Rand 440 + 0 SinOsc.ar 0.1 * draw \ Rand is a unary operator
+440 880 Rand.ir 0 SinOsc.ar 0.1 * draw \ Rand.ir is a UGen
+440 0 SinOsc.ar 0.1 * Neg draw \ Neg is a unary operator
+440 0 SinOsc.ar 0.1 * negate draw \ negate is a stdlib word
+
 ( RANDOM FORTH )
 
 : random-sine 1900 2300 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
@@ -210,7 +217,7 @@ s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
 
 \ If the included file is a process we can fork included, with the normal fork stack rules.
 s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" fork included .s
-kill . . \ 45 -1
+kill . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
 
 ( QUOTING FORTH )
 

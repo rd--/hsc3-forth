@@ -54,7 +54,6 @@ data VM w a =
        ,world :: w -- ^ The world, instance state.
        ,literal :: String -> Maybe a -- ^ Read function for literal values.
        ,dynamic :: Maybe (Reader w a) -- ^ Dynamic post-dictionary lookup.
-       ,eol :: Bool -- ^ End of line, runs printer.
        ,input_port :: Maybe Handle
        ,tracing :: Int
        }
@@ -66,7 +65,7 @@ dc_show :: Forth_Type a => DC a -> String
 dc_show dc =
     case dc of
       DC a -> ty_show a
-      DC_String str -> "STRING:" ++ str
+      DC_String str -> "STRING:\"" ++ str ++ "\""
       DC_XT str -> "XT:" ++ str
 
 vm_pp :: Forth_Type a => VM w a -> String
@@ -80,7 +79,6 @@ vm_pp vm =
            ,"\n BUFFER: ",buffer vm
            ,"\n MODE: ",show (mode vm)
            ,"\n DYMAMIC: ",maybe "NO" (const "YES") (dynamic vm)
-           ,"\n EOL: ",if eol vm then "YES" else "NO"
            ,"\n INPUT PORT: ",maybe "NO" (const "YES") (input_port vm)
            ,"\n TRACING: ",show (tracing vm)
            ]
@@ -95,7 +93,7 @@ data Expr a = Literal a | Word String deriving (Show,Eq)
 trace :: Int -> String -> Forth w a ()
 trace k msg = do
   vm <- get
-  when (k <= tracing vm) (liftIO (putStrLn msg))
+  when (k <= tracing vm) (write_ln msg)
 
 -- | Function with 'VM'.
 with_vm :: MonadState a m => (a -> (a,r)) -> m r
@@ -133,7 +131,6 @@ empty_vm w lit =
        ,world = w
        ,literal = lit
        ,dynamic = Nothing
-       ,eol = False
        ,input_port = Nothing
        ,tracing = -1}
 
@@ -145,8 +142,7 @@ vm_reset vm =
        ,cstack = []
        ,buffer = ""
        ,mode = Interpret
-       ,locals = []
-       ,eol = False}
+       ,locals = []}
 
 push' :: DC a -> Forth w a ()
 push' x = modify (\vm -> vm {stack = x : stack vm})
@@ -210,47 +206,50 @@ pop_string = do
     DC _ : DC_String str : s' -> put vm {stack = s'} >> return str
     _ -> throw_error "NOT-STRING?"
 
--- | Read until /x/ is seen, discarding /x/, RHS may be @[]@.
+-- | Read until /f/ is 'True', discarding /x/, RHS may be @[]@.
 --
--- > break_on ')' "comment ) WORD" == ("comment "," WORD")
--- > break_on '\n' " comment\n\n" == (" comment","\n")
-break_on :: Eq a => a -> [a] -> ([a],[a])
-break_on x l =
-    case break (== x) l of
+-- > break_on isSpace "" == ([],[])
+-- > break_on (== ')') "comment ) WORD" == ("comment "," WORD")
+-- > break_on (== '\n') " comment\n\n" == (" comment","\n")
+break_on :: (a -> Bool) -> [a] -> ([a],[a])
+break_on f l =
+    case break f l of
       (lhs,[]) -> (lhs,[])
       (lhs,_ : rhs) -> (lhs,rhs)
 
-scan_until :: Forth_Type a => Char -> Forth w a String
-scan_until c = do
-  vm <- get
-  let (str,buffer') = break_on c (buffer vm)
-  put vm {buffer = buffer'}
-  return str
-
 -- | 'snd' of 'break_on'.
-delete_until :: Eq a => a -> [a] -> [a]
-delete_until x = snd . break_on x
+delete_until :: (a -> Bool) -> [a] -> [a]
+delete_until f = snd . break_on f
+
+-- | Read buffer until predicate holds, if /pre/ delete preceding white space.
+read_until :: Bool -> (Char -> Bool) -> Forth w a (String,String)
+read_until pre cf = do
+  vm <- get
+  let f = if pre then dropWhile isSpace else id
+      r = break_on cf (f (buffer vm))
+  trace 2 (show ("READ_UNTIL",mode vm,fst r,length (snd r)))
+  put vm {buffer = snd r}
+  return r
+
+scan_until :: (Char -> Bool) -> Forth w a String
+scan_until = fmap snd . read_until False
 
 -- | Scan a token from 'buffer', ANS Forth type comments are
 -- discarded.  Although 'buffer' is filled by 'hGetLine' it may
 -- contain newline characters because we may include a file.
 scan_token :: Forth w a (Maybe String)
 scan_token = do
-  vm <- get
-  case buffer vm of
-    [] -> return Nothing
-    str ->
-        case break isSpace (dropWhile isSpace str) of
-          ([],[]) -> return Nothing
-          ([],r) -> throw_error ("SCAN_TOKEN: NULL: " ++ r)
-          ("\\",r) -> put vm {buffer = delete_until '\n' r} >> scan_token
-          ("(",r) -> put vm {buffer = delete_until ')' r} >> scan_token
-          (e,r) -> put vm {buffer = r,eol = null r} >> return (Just e)
+  r <- read_until True isSpace
+  case r of
+    ([],[]) -> write_ln " OK" >> return Nothing
+    ([],rhs) -> throw_error ("SCAN_TOKEN: NULL: " ++ rhs)
+    ("\\",_) -> scan_until (== '\n') >> scan_token
+    ("(",_) -> scan_until (== ')') >> scan_token
+    (e,_) -> return (Just e)
 
 -- | Read line from 'input_port' to 'buffer'.  There are two
 -- /exceptions/ thrown here, 'VM_EOF' if an input port is given but
--- returns EOF, and 'VM_No_Input' if there is no input port.  Sets
--- 'eol' on refill.
+-- returns EOF, and 'VM_No_Input' if there is no input port.
 fw_refill :: Forth w a ()
 fw_refill = do
   vm <- get
@@ -259,8 +258,9 @@ fw_refill = do
     Just h -> do
       eof <- liftIO (hIsEOF h)
       when eof (throwError VM_EOF)
+      trace 2 "REFILL"
       x <- liftIO (hGetLine h)
-      put (vm {buffer = x,eol = True})
+      put (vm {buffer = x})
 
 -- | If 'scan_token' is 'Nothing', then 'fw_refill' and retry.
 read_token :: Forth w a String
@@ -379,7 +379,7 @@ end_compilation = do
                      else bracketed (begin_locals,end_locals) instr
             w = forth_block instr'
         in do trace 2 ("END DEFINITION: " ++ nm)
-              when (M.member nm (dict vm)) (liftIO (put_str_sp ("REDEFINED " ++ nm)))
+              when (M.member nm (dict vm)) (write_sp ("REDEFINED " ++ nm))
               put (vm {cstack = []
                       ,locals = tail (locals vm)
                       ,dict = M.insert nm w (dict vm)
@@ -454,7 +454,7 @@ clear_s_quote str = do
 
 compile_s_quote :: Forth_Type a => Forth w a ()
 compile_s_quote = do
-  str <- scan_until '"' >>= clear_s_quote
+  str <- scan_until (== '"') >>= clear_s_quote
   pushc (CC_Forth (push_str str >> push (ty_from_int (length str))))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
@@ -524,6 +524,8 @@ execute_buffer vm = do
                   _ -> error (show err)
     Right () -> execute_buffer vm'
 
+-- | Store current buffer & input port, place input string on buffer
+-- with no input port, 'execute_buffer', restore buffer & port.
 fw_evaluate' :: (Eq a,Forth_Type a) => String -> Forth w a ()
 fw_evaluate' str = do
   vm <- get
@@ -590,16 +592,21 @@ fw_pick = do
                  in put vm {stack = e : s'}
     _ -> throw_error "PICK"
 
+write,write_ln,write_sp :: String -> Forth w a ()
+write = liftIO . putStr
+write_ln = write . (++ "\n")
+write_sp = write . (++ " ")
+
 fw_emit,fw_dot :: Forth_Type a => Forth w a ()
-fw_emit = liftIO . putChar . toEnum . ty_to_int =<< pop
-fw_dot = liftIO . put_str_sp . ty_show =<< pop
+fw_emit = write . return . toEnum . ty_to_int =<< pop
+fw_dot = write_sp . dc_show =<< pop'
 
 fw_dot_s :: Forth_Type a => Forth w a ()
 fw_dot_s = do
   vm <- get
   let l = map dc_show (reverse (stack vm))
       n = "<" ++ show (length l) ++ "> "
-  liftIO (putStr n >> mapM_ put_str_sp l)
+  write (n ++ concatMap (++ " ") l)
 
 fw_bye :: Forth w a ()
 fw_bye = liftIO exitSuccess
@@ -611,17 +618,14 @@ push_str str =
 
 fw_s_quote_interpet :: Forth_Type a => Forth w a ()
 fw_s_quote_interpet = do
-  vm <- get
-  let (sq,buffer') = break_on '"' (buffer vm)
-  put vm {buffer = buffer'}
-  str <- clear_s_quote sq
+  str <- scan_until (== '"') >>= clear_s_quote
   push_str str
 
 fw_type :: Forth_Type a => Forth w a ()
-fw_type = pop_string >>= liftIO . put_str_sp
+fw_type = pop_string >>= write
 
 fw_vmstat :: Forth_Type a => Forth w a ()
-fw_vmstat = get >>= liftIO . putStrLn . vm_pp
+fw_vmstat = get >>= write_ln . vm_pp
 
 fw_fork :: Forth_Type a => Forth w a ()
 fw_fork = do
@@ -750,7 +754,7 @@ repl vm = do
                   VM_EOF -> putStrLn "BYE" >> liftIO exitSuccess
                   VM_No_Input -> liftIO exitSuccess
                   VM_Error msg -> putStrLn (" ERROR: " ++ msg) >> repl (vm_reset vm)
-    Right () -> when (eol vm') (putStrLn " OK") >> repl vm'
+    Right () -> repl vm'
 
 load_files :: (Eq a,Forth_Type a) => [String] -> VM w a -> IO (VM w a)
 load_files nm vm =
