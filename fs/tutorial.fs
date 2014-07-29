@@ -165,7 +165,7 @@ WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 ( RANDOM FORTH )
 
 : random-sine 1900 2300 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
-: _ 5 0 do random-sine play loop ; _
+: _ 4 0 do random-sine play loop ; _
 stop
 
 ( UN-RANDOM FORTH )
@@ -193,6 +193,11 @@ stop
 : anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-triangle-env play loop ;
 anon 5 pause stop
 
+\ Pause doesn't re-instate interrupts
+
+10 pause \ non-interruptible
+.s
+
 ( SCHEDULE FORTH )
 
 \ Since random-sine takes time, there is audible scattering.
@@ -209,6 +214,15 @@ stop
 
 random-sine 2 3 5 xfade-texture
 random-sine 2 3 6 12 overlap-texture
+
+( INTERRUPTING FORTH )
+
+\ SIGINT is caught and the next VM operation will raise an error.
+
+: endless inf 0 do s" MSG" type cr 1 pause loop ;
+endless
+
+\ To send SIGINT from Emacs type C-cC-i
 
 ( FORK FORTH )
 

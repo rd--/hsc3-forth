@@ -9,6 +9,7 @@ import qualified Data.Map as M {- containers -}
 import System.Directory {- directory -}
 import System.Exit {- base -}
 import System.IO {- base -}
+import qualified System.Posix.Signals as P {- unix -}
 
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
@@ -56,6 +57,7 @@ data VM w a =
        ,dynamic :: Maybe (Reader w a) -- ^ Dynamic post-dictionary lookup.
        ,input_port :: Maybe Handle
        ,tracing :: Int
+       ,sigint :: MVar Bool -- ^ True is a SIGINT signal (user interrupt) has been received.
        }
 
 -- | Signals (exceptions) from 'VM'.
@@ -95,10 +97,18 @@ type Forth w a r = ExceptT {- String -} VM_Signal (StateT (VM w a) IO) r
 -- | Expressions are either literals or words.
 data Expr a = Literal a | Word String deriving (Show,Eq)
 
+-- | Variant of 'get' that handles SIGINT.
+get_vm :: Forth w a (VM w a)
+get_vm = do
+  vm <- get
+  sig <- liftIO (modifyMVar (sigint vm) (\s -> return (False,s)))
+  when sig (throw_error "VM: SIGINT")
+  return vm
+
 -- | Tracer, levels are 0 = HIGH, 1 = MEDIUM, 2 = LOW
 trace :: Int -> String -> Forth w a ()
 trace k msg = do
-  vm <- get
+  vm <- get_vm
   when (k <= tracing vm) (write_ln msg)
 
 -- | Function with 'VM'.
@@ -124,8 +134,8 @@ unknown_error :: Reader w a
 unknown_error s = throw_error ("unknown word: " ++ tick_quotes s)
 
 -- | Make an empty (initial) machine.
-empty_vm :: w -> (String -> Maybe a) -> VM w a
-empty_vm w lit =
+empty_vm :: w -> (String -> Maybe a) -> MVar Bool -> VM w a
+empty_vm w lit sig =
     VM {stack = []
        ,rstack = []
        ,cstack = []
@@ -138,7 +148,8 @@ empty_vm w lit =
        ,literal = lit
        ,dynamic = Nothing
        ,input_port = Nothing
-       ,tracing = -1}
+       ,tracing = -1
+       ,sigint = sig}
 
 -- | Reset 'VM', on error.
 vm_reset :: VM w a -> VM w a
@@ -171,7 +182,7 @@ pushc x = modify (\vm -> vm {cstack = x : cstack vm})
 -- | Pop indicated 'VM' stack.
 pop_vm_stack :: String -> (VM w a -> [r]) -> (VM w a -> [r] -> VM w a) -> Forth w a r
 pop_vm_stack nm f g = do
-  vm <- get
+  vm <- get_vm
   case f vm of
     [] -> throw_error (nm ++ ": stack underflow")
     x:xs -> put (g vm xs) >> return x
@@ -207,7 +218,7 @@ modify_world f = modify (\vm -> vm {world = f (world vm)})
 -- | ( id len -- )
 pop_string :: Forth_Type a => Forth w a String
 pop_string = do
-  vm <- get
+  vm <- get_vm
   case stack vm of
     DC _ : DC_String str : s' -> put vm {stack = s'} >> return str
     _ -> throw_error "NOT-STRING?"
@@ -230,7 +241,7 @@ delete_until f = snd . break_on f
 -- | Read buffer until predicate holds, if /pre/ delete preceding white space.
 read_until :: Bool -> (Char -> Bool) -> Forth w a (String,String)
 read_until pre cf = do
-  vm <- get
+  vm <- get_vm
   let f = if pre then dropWhile isSpace else id
       r = break_on cf (f (buffer vm))
   trace 2 (show ("READ_UNTIL",mode vm,fst r,length (snd r)))
@@ -258,7 +269,7 @@ scan_token = do
 -- returns EOF, and 'VM_No_Input' if there is no input port.
 fw_refill :: Forth w a ()
 fw_refill = do
-  vm <- get
+  vm <- get_vm
   case input_port vm of
     Nothing -> throwError VM_No_Input
     Just h -> do
@@ -288,7 +299,7 @@ lookup_word k vm =
 -- | Parse a token string to an expression.
 parse_token :: String -> Forth w a (Expr a)
 parse_token s = do
-  vm <- get
+  vm <- get_vm
   case lookup_word s vm of
     Just _  -> return (Word s)
     Nothing ->
@@ -307,7 +318,7 @@ read_expr = parse_token =<< read_token
 -- dynamic gives a word then add it to the dictionary.
 interpret_word :: String -> Forth w a ()
 interpret_word w = do
-  vm <- get
+  vm <- get_vm
   case lookup_word w vm of
     Just r -> r
     Nothing ->
@@ -329,7 +340,7 @@ vm_interpret = read_expr >>= interpret_expr
 -- | A loop ends when the two elements at the top of the rstack are equal.
 loop_end :: Eq a => Forth w a Bool
 loop_end = do
-  vm <- get
+  vm <- get_vm
   case rstack vm of
     DC p : DC q : _ -> return (p == q)
     _ -> throw_error "LOOP-END: ILLEGAL RSTACK"
@@ -373,7 +384,7 @@ end_locals = with_vm (\vm -> (vm {locals = tail (locals vm)},()))
 -- | Compile ';' statement.  There is always a compile 'locals' frame to be removed.
 end_compilation :: Forth w a ()
 end_compilation = do
-  vm <- get
+  vm <- get_vm
   case reverse (cstack vm) of
     CC_Word nm : cw ->
         let instr = (map cw_instr cw)
@@ -476,7 +487,7 @@ vm_compile = do
 -- | Either 'interpret' or 'compile', depending on 'mode'.
 vm_execute :: (Eq a,Forth_Type a) => Forth w a ()
 vm_execute = do
-  vm <- get
+  vm <- get_vm
   case mode vm of
     Interpret -> vm_interpret
     Compile -> vm_compile
@@ -504,7 +515,7 @@ put_str_sp s = putStr s >> putChar ' '
 -- | Variant on @(local)@, argument not on stack.
 fw_local' :: String -> Forth w a ()
 fw_local' nm = do
-  vm <- get
+  vm <- get_vm
   case stack vm of
     e : s' -> put vm {stack = s'
                      ,locals = case locals vm of
@@ -525,7 +536,7 @@ execute_buffer vm = do
 -- with no input port, 'execute_buffer', restore buffer & port.
 fw_evaluate' :: (Eq a,Forth_Type a) => String -> Forth w a ()
 fw_evaluate' str = do
-  vm <- get
+  vm <- get_vm
   let buf = buffer vm
       ip = input_port vm
   vm' <- liftIO (execute_buffer (vm {buffer = str, input_port = Nothing}))
@@ -582,7 +593,7 @@ fw_2dup = pop' >>= \p -> pop' >>= \q -> push' q >> push' p >> push' q >> push' p
 -- | ( xu ... x1 x0 u -- xu ... x1 x0 xu )
 fw_pick :: Forth_Type a => Forth w a ()
 fw_pick = do
-  vm <- get
+  vm <- get_vm
   case stack vm of
     DC n : s' -> let n' = ty_to_int n
                      e = s' !! n'
@@ -600,7 +611,7 @@ fw_dot = write_sp . dc_show =<< pop'
 
 fw_dot_s :: Forth_Type a => Forth w a ()
 fw_dot_s = do
-  vm <- get
+  vm <- get_vm
   let l = map dc_show (reverse (stack vm))
       n = "<" ++ show (length l) ++ "> "
   write (n ++ concatMap (++ " ") l)
@@ -625,7 +636,7 @@ fw_vmstat = get >>= write_ln . vm_pp
 fw_fork :: Forth_Type a => Forth w a ()
 fw_fork = do
   nm <- read_token
-  vm <- get
+  vm <- get_vm
   case lookup_word nm vm of
     Just fw -> do th <- liftIO (forkIO (exec_err vm fw >> return ()))
                   let k = hash th :: Int
@@ -636,7 +647,7 @@ fw_fork = do
 fw_kill :: Forth_Type a => Forth w a ()
 fw_kill = do
   k <- pop
-  vm <- get
+  vm <- get_vm
   let k' = ty_to_int k
       threads' = threads vm
   case M.lookup k' threads' of
@@ -645,7 +656,7 @@ fw_kill = do
 
 fw_kill_all :: Forth w a ()
 fw_kill_all = do
-  vm <- get
+  vm <- get_vm
   let th = M.elems (threads vm)
   liftIO (mapM_ killThread th)
   put vm {threads = M.empty}
@@ -741,15 +752,26 @@ exec_err vm fw = do
 
 -- | Read, evaluate, print, loop.  Prints @OK@ at end of line.  Prints
 -- error message and runs 'vm_reset' on error.
-repl :: (Eq a,Forth_Type a) => VM w a -> IO ()
-repl vm = do
+repl' :: (Eq a,Forth_Type a) => VM w a -> IO ()
+repl' vm = do
   (r,vm') <- runStateT (runExceptT vm_execute) vm
   case r of
     Left err -> case err of
                   VM_EOF -> putStrLn "BYE" >> liftIO exitSuccess
                   VM_No_Input -> liftIO exitSuccess
                   VM_Error msg -> putStrLn (" ERROR: " ++ msg) >> repl (vm_reset vm)
-    Right () -> repl vm'
+    Right () -> repl' vm'
+
+catch_sigint :: VM w a -> IO ()
+catch_sigint vm = do
+  let h = modifyMVar_ (sigint vm) (return . const True)
+  _ <- P.installHandler P.sigINT (P.Catch h) Nothing
+  _ <- P.installHandler P.sigTERM (P.Catch h) Nothing
+  return ()
+
+-- | 'repl'' but with 'catch_sigint'.
+repl :: (Forth_Type a, Eq a) => VM w a -> IO ()
+repl vm = catch_sigint vm >> repl' vm
 
 load_files :: (Eq a,Forth_Type a) => [String] -> VM w a -> IO (VM w a)
 load_files nm vm =

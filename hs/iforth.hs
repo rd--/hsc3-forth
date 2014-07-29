@@ -1,3 +1,4 @@
+import Control.Concurrent {- base -}
 import qualified Data.Map as M {- containers -}
 import qualified Text.Read as R {- base -}
 import System.IO {- base -}
@@ -9,7 +10,8 @@ main = do
   let d :: Dict () Integer
       d = M.unions [core_dict,num_dict,integral_dict,ord_dict]
   putStrLn "IFORTH"
-  repl (empty_vm () R.readMaybe) {dict = d,input_port = Just stdin}
+  sig <- newMVar False
+  repl (empty_vm () R.readMaybe sig) {dict = d,input_port = Just stdin}
 
 {-
 import Data.Boolean {- Boolean -}

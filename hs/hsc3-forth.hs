@@ -1,3 +1,4 @@
+import Control.Concurrent {- base -}
 import Control.Monad {- base -}
 import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
@@ -269,10 +270,11 @@ parse_constant s =
 
 main :: IO ()
 main = do
+  sig <- newMVar False
   let d :: Dict Int UGen
       d = M.unions [core_dict,ugen_dict]
-      vm = (empty_vm 0 parse_constant) {dynamic = Just gen_ugen
-                                       ,dict = d}
+      vm = (empty_vm 0 parse_constant sig) {dynamic = Just gen_ugen
+                                           ,dict = d}
   dir <- lookupEnv "HSC3_FORTH_DIR"
   case dir of
     Nothing -> error "HSC3_FORTH_DIR NOT SET"
