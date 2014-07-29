@@ -21,6 +21,7 @@
 
 (defun hsc3-forth-bye () "BYE." (interactive) (hsc3-forth-send-string "bye"))
 (defun hsc3-forth-stop () "STOP" (interactive) (hsc3-forth-send-string "stop"))
+(defun hsc3-forth-sc3-status () "SC3-STATUS" (interactive) (hsc3-forth-send-string "sc3-status"))
 (defun hsc3-forth-killall () "KILLALL" (interactive) (hsc3-forth-send-string "killall"))
 (defun hsc3-forth-help () "s\" <word>\"" (interactive) (hsc3-forth-word-at-point "?" nil t))
 (defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-word-at-point "play" nil nil))
@@ -73,6 +74,7 @@
   (define-key map [?\C-c ?\C-c] 'hsc3-forth-send-line)
   (define-key map [?\C-c ?\C-d] 'hsc3-forth-send-region)
   (define-key map [?\C-c ?\C-k] 'hsc3-forth-stop)
+  (define-key map [?\C-c ?\C-p] 'hsc3-forth-sc3-status)
   (define-key map [?\C-c ?\C-i] 'hsc3-forth-interrupt)
   (define-key map [?\C-c ?\C-q] 'hsc3-forth-bye)
   (define-key map [?\C-c ?\C-u] 'hsc3-forth-help))

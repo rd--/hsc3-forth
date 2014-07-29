@@ -139,14 +139,29 @@ s" STRING" type \ STRING
 
 ( UGEN FORTH )
 
-440 0 SinOsc.ar 0.1 * 0 swap Out -1 add-to-head 1 play-at
-440 441 2 mce 0 SinOsc.ar 0.1 * play
-440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * play
-WhiteNoise.ar 0.1 * play
+440 0 SinOsc.ar 0.1 * 0 swap Out . \ -1 add-to-head 1 play-at
+440 441 2 mce 0 SinOsc.ar 0.1 * . \ play
+440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * . \ play
+WhiteNoise.ar 0.1 * . \ play
+
+\ Filters may elide rate
+
+WhiteNoise.ar HPZ1.ar 0.1 * .
+WhiteNoise.ar HPZ1 0.1 * .
 
 \ Free all nodes at scsynth (C-cC-k)
 
 stop
+
+( SEE FORTH )
+
+\ see prints a representation of the graph that can be interpreted.
+\ true see prints the uid of each non-det UGen, false see doesn't.
+\ see is likely not perspicuous.
+
+: g 440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * * WhiteNoise.ar 0.1 * + ;
+g true see
+g false see
 
 ( DRAWING FORTH )
 
@@ -159,6 +174,7 @@ WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
 440 Rand 440 + 0 SinOsc.ar 0.1 * draw \ Rand is a unary operator
 440 880 Rand.ir 0 SinOsc.ar 0.1 * draw \ Rand.ir is a UGen
+
 440 0 SinOsc.ar 0.1 * Neg draw \ Neg is a unary operator
 440 0 SinOsc.ar 0.1 * negate draw \ negate is a stdlib word
 
@@ -168,11 +184,15 @@ WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 : _ 4 0 do random-sine play loop ; _
 stop
 
+\ Non-det operators are not marked
+
+50 Rand 50 Rand - draw
+
 ( UN-RANDOM FORTH )
 
 \ The non-deterministic UGens get identifiers from a counter, which can be set.
 
-1376523 seed
+1376523 uid
 
 \ The unrand transformation lifts scalar random UGens to constants.
 
@@ -219,7 +239,7 @@ random-sine 2 3 6 12 overlap-texture
 
 \ SIGINT is caught and the next VM operation will raise an error.
 
-: endless inf 0 do s" MSG" type cr 1 pause loop ;
+: endless inf 0 do s" MSG: " type i . cr 0.1 pause loop ;
 endless
 
 \ To send SIGINT from Emacs type C-cC-i

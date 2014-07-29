@@ -63,7 +63,7 @@ data VM w a =
 -- | Signals (exceptions) from 'VM'.
 data VM_Signal = VM_EOF | VM_No_Input | VM_Error String deriving (Eq,Show)
 
-bracketed :: (a, a) -> [a] -> [a]
+bracketed :: (a,a) -> [a] -> [a]
 bracketed (l,r) x = l : x ++ [r]
 
 tick_quotes :: String -> String
@@ -126,12 +126,12 @@ expr_pp e =
       Literal a -> ty_show a
       Word nm -> nm
 
-throw_error :: MonadIO m => String -> ExceptT VM_Signal m a
+throw_error :: String -> Forth w a r
 throw_error = throwError . VM_Error
 
 -- | Reader that raises an /unknown word/ error.
-unknown_error :: Reader w a
-unknown_error s = throw_error ("unknown word: " ++ tick_quotes s)
+unknown_error :: String -> Forth w a r
+unknown_error s = throw_error ("UNKNOWN WORD: " ++ tick_quotes s)
 
 -- | Make an empty (initial) machine.
 empty_vm :: w -> (String -> Maybe a) -> MVar Bool -> VM w a
@@ -184,7 +184,7 @@ pop_vm_stack :: String -> (VM w a -> [r]) -> (VM w a -> [r] -> VM w a) -> Forth 
 pop_vm_stack nm f g = do
   vm <- get_vm
   case f vm of
-    [] -> throw_error (nm ++ ": stack underflow")
+    [] -> throw_error (nm ++ ": STACK UNDERFLOW")
     x:xs -> put (g vm xs) >> return x
 
 dc_plain :: DC a -> Forth w a a
@@ -308,7 +308,7 @@ parse_token s = do
           Nothing ->
               case dynamic vm of
                 Just _ -> return (Word s) -- if there is an dynamic reader, defer...
-                Nothing -> throw_error ("unknown word: " ++ tick_quotes s)
+                Nothing -> unknown_error s
 
 -- | 'parse_token' of 'read_token'.
 read_expr :: Forth w a (Expr a)
@@ -492,24 +492,6 @@ vm_execute = do
     Interpret -> vm_interpret
     Compile -> vm_compile
 
--- * Primitives
-
--- | Unary stack operation.
-unary_op :: (a -> a) -> Forth w a ()
-unary_op f = pop >>= push . f
-
--- | Binary stack operation.  The first value on the stack is the RHS.
-binary_op :: (a -> a -> a) -> Forth w a ()
-binary_op f = pop >>= \y -> pop >>= \x -> push (f x y)
-
--- | 'binary_op', /rep/ translates the result so it can be placed onto the stack.
-comparison_op :: Forth_Type a => (a -> a -> Bool) -> Forth w a ()
-comparison_op f = binary_op (\x y -> ty_from_bool (f x y))
-
--- | Put string and then space.
-put_str_sp :: String -> IO ()
-put_str_sp s = putStr s >> putChar ' '
-
 -- * Forth words
 
 -- | Variant on @(local)@, argument not on stack.
@@ -674,29 +656,6 @@ fw_execute = do
     _ -> throw_error "EXECUTE: NOT EXECUTION TOKEN"
 
 -- * Dictionaries
-
--- | 'Num' instance words.
-num_dict :: Num n => Dict w n
-num_dict = M.fromList
-    [("+",binary_op (+))
-    ,("*",binary_op (*))
-    ,("-",binary_op (-))
-    ,("negate",unary_op negate)
-    ,("abs",unary_op abs)]
-
-integral_dict :: Integral n => Dict w n
-integral_dict = M.fromList
-    [("mod",binary_op mod)
-    ,("/",binary_op div)
-    ,("/mod",fw_div_mod)]
-
-ord_dict :: (Forth_Type a,Ord a) => Dict w a
-ord_dict = M.fromList
-    [("=",comparison_op (==))
-    ,("<",comparison_op (<))
-    ,("<=",comparison_op (<=))
-    ,(">",comparison_op (>))
-    ,(">=",comparison_op (>=))]
 
 core_dict :: (Eq a,Forth_Type a) => Dict w a
 core_dict =
