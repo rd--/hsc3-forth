@@ -8,7 +8,7 @@
 \ d -- Send the current region (selection)
 \ g -- Send <point> DRAW
 \ a -- Send <point> PLAY
-\ u -- Send ? <point>
+\ u -- Send <point> ?
 \ k -- Send STOP
 \ s -- Send KILLALL
 \ q -- Send BYE
@@ -16,9 +16,11 @@
 ( HELP FORTH )
 
 s" SinOsc" ?
+
 \ SinOsc [AR,KR] freq=440.0 phase=0.0
 
 s" ENVGEN" ?
+
 \ EnvGen [AR,KR] *envelope=0 gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0
 \     MCE INPUT: #5, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction
 
@@ -42,7 +44,7 @@ s" ENVGEN" ?
 : f. . ;
 1.1e0 2.2e0 3.3e0 f. f. f. \ 3.3 2.2 1.1 \
 
-\ SC3 has only floating point numbers & only one data stack
+\ HSC3-FORTH has only floating point numbers & only one data stack
 
 1.1 2.2 3.3 . . . \ 3.3 2.2 1.1 \
 
@@ -51,9 +53,11 @@ s" ENVGEN" ?
 
 ( INTEGRAL FORTH )
 
-10 2 div . \ 5 \
-7 3 mod . \ 1 \
-7 3 /mod . . \ 2 1 \
+\ There is an integer division uop, IDiv and a floating point modulo operator %.
+
+10 2 IDiv . \ 5 \
+5 2 IDiv . \ 2 \
+7 3 % . \ 1 \
 
 ( EQ FORTH )
 
@@ -90,11 +94,13 @@ s" ENVGEN" ?
 
 ( CONDITIONAL FORTH )
 
+\ There are Abs and Min unary operators, but also abs and min in the stdlib.
+
 5 abs . \ 5
 -5 abs . \ 5
-
+-5 Abs . \ 5
 2 3 min . \ 2
-3 2 min . \ 2
+3 2 Min . \ 2
 
 ( DO FORTH )
 
@@ -110,15 +116,17 @@ seven-eleven \ 7 8 9 10 \
 5 n-drop .s \ <0> \
 : tbl 3 0 do 12 10 do i j + . loop loop ;
 tbl \ 10 11 11 12 12 13 \
-: star 42 emit ;
-star star star \ *** \
-: stars 0 do star loop ;
-10 stars \ ********** \
+
+( PRINTING FORTH)
+
+: star 42 emit ; star star star \ *** \
+: stars 0 do star loop ; 10 stars \ ********** \
 : f 5 0 do cr loop ; f \ \n\n\n\n\n \
-: box 0 do cr dup stars loop drop ;
-3 3 box \ \n***\n***\n*** \
-: \stars 0 do cr i spaces 10 stars loop ;
-3 \stars
+: box 0 do cr dup stars loop drop ; 3 3 box \ \n***\n***\n*** \
+: \stars 0 do cr i spaces 10 stars loop ; 3 \stars
+
+s" STRING" type \ STRING
+: _ s" STRING" type ; _ \ STRING
 
 ( LOCALS FORTH )
 
@@ -137,6 +145,7 @@ star star star \ *** \
 WhiteNoise.ar 0.1 * play
 
 \ Free all nodes at scsynth (C-cC-k)
+
 stop
 
 ( DRAWING FORTH )
@@ -162,9 +171,11 @@ stop
 ( UN-RANDOM FORTH )
 
 \ The non-deterministic UGens get identifiers from a counter, which can be set.
+
 1376523 seed
 
 \ The unrand transformation lifts scalar random UGens to constants.
+
 0 1 Rand.ir 2 clone .s \ <1> [UGEN:Rand UGEN:Rand]
 unrand . \ [0.6768026553207348 0.21705544209066452]
 
@@ -177,16 +188,20 @@ stop
 
 ( PAUSING FORTH )
 
-: anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-env play loop ;
+\ The thread of the current VM can be paused.
+
+: anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-triangle-env play loop ;
 anon 5 pause stop
 
 ( SCHEDULE FORTH )
 
 \ Since random-sine takes time, there is audible scattering.
+
 : _ 25 0 do random-sine play loop ; _
 stop
 
 \ Forward scheduling allows for precise alignment.
+
 : _ time 0.1 + { t } 25 0 do random-sine t sched loop ; _
 stop
 
@@ -197,18 +212,23 @@ random-sine 2 3 6 12 overlap-texture
 
 ( FORK FORTH )
 
+\ The VM can be forked, and the fork can be killed
+
 : endless inf 0 do s" MSG" type cr 1 pause loop ;
 fork endless .s
-kill
+kill .s
 
 \ The forked word can read from the stack, but it does so in the new thread.
+
 : n-messages 0 do i . cr dup pause loop ;
 0.5 10 fork n-messages .s \ <3> 0.5 10 THREAD-ID
 
 \ Here the interval and the count remain on the stack, along with the thread-id.
+
 kill . . .s \ 10 0.5 <0>
 
-\ The VM keeps a list of all running threads, and the can be killed altogether (C-cC-s)
+\ The VM keeps a list of all running threads, and they can call be killed together (C-cC-s)
+
 killall
 
 ( INCLUSIVE FORTH )
@@ -216,6 +236,7 @@ killall
 s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
 
 \ If the included file is a process we can fork included, with the normal fork stack rules.
+
 s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" fork included .s
 kill . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
 
@@ -223,9 +244,11 @@ kill . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
 
 ' + 1 2 rot execute . \ 3
 
+: sig 1 50 20 remove-synth XLine.kr 0 Impulse.ar 0.01 0.2 Decay2 600 0 FSinOsc.ar 0.25 * * ;
 : cmb 0.1 0.1 1 CombN ;
-: post-proc { f } 0 2 In.ar f execute 0 swap Out dup draw -1 add-to-tail 1 play-at ;
-' cmb post-proc
+: post-proc { f } 0 2 In.ar f execute 0 swap Out -1 add-to-tail 1 play-at ;
+
+sig play ' cmb post-proc
 stop
 
 ( RETURN FORTH )

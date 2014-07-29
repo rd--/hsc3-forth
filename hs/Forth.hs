@@ -61,11 +61,17 @@ data VM w a =
 -- | Signals (exceptions) from 'VM'.
 data VM_Signal = VM_EOF | VM_No_Input | VM_Error String deriving (Eq,Show)
 
+bracketed :: (a, a) -> [a] -> [a]
+bracketed (l,r) x = l : x ++ [r]
+
+tick_quotes :: String -> String
+tick_quotes = bracketed ('\'','\'')
+
 dc_show :: Forth_Type a => DC a -> String
 dc_show dc =
     case dc of
       DC a -> ty_show a
-      DC_String str -> "STRING:\"" ++ str ++ "\""
+      DC_String str -> "STRING:" ++ tick_quotes str
       DC_XT str -> "XT:" ++ str
 
 vm_pp :: Forth_Type a => VM w a -> String
@@ -115,7 +121,7 @@ throw_error = throwError . VM_Error
 
 -- | Reader that raises an /unknown word/ error.
 unknown_error :: Reader w a
-unknown_error s = throw_error ("unknown word: '" ++ s ++ "'")
+unknown_error s = throw_error ("unknown word: " ++ tick_quotes s)
 
 -- | Make an empty (initial) machine.
 empty_vm :: w -> (String -> Maybe a) -> VM w a
@@ -232,7 +238,7 @@ read_until pre cf = do
   return r
 
 scan_until :: (Char -> Bool) -> Forth w a String
-scan_until = fmap snd . read_until False
+scan_until = fmap fst . read_until False
 
 -- | Scan a token from 'buffer', ANS Forth type comments are
 -- discarded.  Although 'buffer' is filled by 'hGetLine' it may
@@ -291,7 +297,7 @@ parse_token s = do
           Nothing ->
               case dynamic vm of
                 Just _ -> return (Word s) -- if there is an dynamic reader, defer...
-                Nothing -> throw_error ("unknown word: '" ++ s ++ "'")
+                Nothing -> throw_error ("unknown word: " ++ tick_quotes s)
 
 -- | 'parse_token' of 'read_token'.
 read_expr :: Forth w a (Expr a)
@@ -307,7 +313,7 @@ interpret_word w = do
     Nothing ->
         case dynamic vm of
           Just f -> let d_r = f w in put vm {dict = M.insert w d_r (dict vm)} >> d_r
-          Nothing -> throw_error ("unknown word: '" ++ w ++ "'")
+          Nothing -> throw_error ("unknown word: " ++ tick_quotes w)
 
 -- | Either 'interpret_word' or 'push' literal.
 interpret_expr :: Expr a -> Forth w a ()
@@ -363,9 +369,6 @@ begin_locals = with_vm (\vm -> (vm {locals = M.empty : locals vm},()))
 -- | Remove a 'locals' frame.
 end_locals :: Forth w a ()
 end_locals = with_vm (\vm -> (vm {locals = tail (locals vm)},()))
-
-bracketed :: (a, a) -> [a] -> [a]
-bracketed (l,r) x = l : x ++ [r]
 
 -- | Compile ';' statement.  There is always a compile 'locals' frame to be removed.
 end_compilation :: Forth w a ()
@@ -445,17 +448,11 @@ def_locals = do
   with_vm (\vm -> (at_current_locals (M.union locals') vm,()))
   pushc (CC_Forth (forth_block (map fw_local' nm)))
 
-clear_s_quote :: String -> Forth w a String
-clear_s_quote str = do
-  case str of
-    [] -> return []
-    ' ' : str' -> return str'
-    _ -> throw_error "S\""
-
 compile_s_quote :: Forth_Type a => Forth w a ()
 compile_s_quote = do
-  str <- scan_until (== '"') >>= clear_s_quote
-  pushc (CC_Forth (push_str str >> push (ty_from_int (length str))))
+  str <- scan_until (== '"')
+  trace 2 ("COMPILE: S\": \"" ++ str ++ "\"")
+  pushc (CC_Forth (push_str str))
 
 -- | Define word and add to dictionary.  The only control structures are /if/ and /do/.
 vm_compile :: (Eq a,Forth_Type a) => Forth w a ()
@@ -538,7 +535,7 @@ fw_evaluate' str = do
 fw_included' :: (Eq a,Forth_Type a) => FilePath -> Forth w a ()
 fw_included' nm = do
   x <- liftIO (doesFileExist nm)
-  when (not x) (throw_error ("INCLUDED': FILE MISSING: '" ++ nm ++ "'"))
+  when (not x) (throw_error ("INCLUDED': FILE MISSING: " ++ tick_quotes nm))
   liftIO (readFile nm) >>= fw_evaluate'
 
 fw_included :: (Eq a,Forth_Type a) => Forth w a ()
@@ -617,9 +614,7 @@ push_str str =
     in with_vm f
 
 fw_s_quote_interpet :: Forth_Type a => Forth w a ()
-fw_s_quote_interpet = do
-  str <- scan_until (== '"') >>= clear_s_quote
-  push_str str
+fw_s_quote_interpet = scan_until (== '"') >>=  push_str
 
 fw_type :: Forth_Type a => Forth w a ()
 fw_type = pop_string >>= write
@@ -694,7 +689,7 @@ ord_dict = M.fromList
 
 core_dict :: (Eq a,Forth_Type a) => Dict w a
 core_dict =
-    let err nm = throw_error (concat ["'",nm,"': compiler word in interpeter context"])
+    let err nm = throw_error (concat [tick_quotes nm,": compiler word in interpeter context"])
     in M.fromList
     [(":",fw_colon)
     ,(";",err ";")
