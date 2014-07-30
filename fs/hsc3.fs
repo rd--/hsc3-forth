@@ -69,10 +69,9 @@
 
 \ ENVELOPE CONSTRUCTORS
 
-: env-perc { atk rel } 0 2 no-reset-node no-loop-node 1 atk 5 -4 0 rel 5 -4 12 mce ;
-
-: env-tri { dur lvl } dur 2 / { dur' }
-  0 2 no-reset-node no-loop-node lvl dur' env-lin 0 0 dur' env-lin 0 12 mce ;
+: env-perc { atk rel } 0 2 -99 -99 1 atk 5 -4 0 rel 5 -4 12 mce ;
+: env-linen { atk sus rel lev } 0 3 -99 -99 lev atk 1 0 lev sus 1 0 0 rel 1 0 16 mce ;
+: env-tri { dur lvl } dur 2 / { dur' } 0 2 -99 -99 lvl dur' env-lin 0 0 dur' env-lin 0 12 mce ;
 
 \ COMPOSITE UGENS
 
