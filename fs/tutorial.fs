@@ -1,8 +1,15 @@
+( HSC3 FORTH )
+
+\ HSC3-FORTH is a simple FORTH-ish interpreter.
+\ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, and one data stack.
+\ There is a return stack.
+\ There is IF ELSE THEN and DO LOOP.
+
 ( EMACS FORTH )
 
 \ HSC3-FORTH MODE
-\ Commands have a with C-cC- prefix
-\ <point> is the word at the cursor
+\ Commands are C-cC- prefixed.
+\ <point> is the word at the cursor.
 \ > -- Start & see the HSC3-FORTH interpreter
 \ c -- Send line the cursor is in
 \ d -- Send the current region (selection)
@@ -12,6 +19,8 @@
 \ k -- Send STOP
 \ s -- Send KILLALL
 \ q -- Send BYE
+\ i -- Send !SIGINT!
+\ p -- Send SC3-STATUS
 
 ( HELP FORTH )
 
@@ -38,25 +47,15 @@ s" ENVGEN" ?
 
 ( FRACTIONAL FORTH )
 
-\ ANS Forth requires floating point literals be written 1.1e0 etc.
-\ ANS Forth has a separate floating point stack, printed using f.
-
-: f. . ;
-1.1e0 2.2e0 3.3e0 f. f. f. \ 3.3 2.2 1.1 \
-
-\ HSC3-FORTH has only floating point numbers & only one data stack
-
 1.1 2.2 3.3 . . . \ 3.3 2.2 1.1 \
-
-: f/ / ;
-5 2 f/ f. \ 2.5 \
+5 2 / . \ 2.5 \
 
 ( INTEGRAL FORTH )
 
 \ There is an integer division uop, IDiv and a floating point modulo operator %.
 
-10 2 IDiv . \ 5 \
-5 2 IDiv . \ 2 \
+10 2 IDiv . \ IDiv 5? \
+5 2 IDiv . \ IDiv 2? \
 7 3 % . \ 1 \
 
 ( EQ FORTH )
@@ -314,3 +313,25 @@ vmstat \ PRINT VM STATUS
 ( FINISHING FORTH )
 
 bye \ C-cC-q
+
+( RAT FORTH )
+
+\ RAT-FORTH uses the same Forth interpreter as HSC3-FORTH.
+\ RAT-FORTH knows only rational numbers.
+
+5 2 / . \ 5/2 \
+5 2 div . \ 2 \
+5 2 mod . \ 1 \
+5 2 div-mod . . \ 2 1 \
+1/10 .  \ 1/10 \
+0.1 . \ 3602879701896397/36028797018963968 \
+
+( ANS FORTH )
+
+\ ANS FORTH is something else altogther.
+\ HSC3 FORTH uses ANS FORTH names where it makes sense.
+\ ANS FORTH requires floating point literals be written 1.1e0 etc.
+\ ANS FORTH has a separate floating point stack, printed using f.
+
+: f. . ;
+1.1e0 2.2e0 3.3e0 f. f. f. \ 3.3 2.2 1.1 \

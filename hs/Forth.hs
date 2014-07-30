@@ -441,7 +441,7 @@ at_current_locals :: (Dict w a -> Dict w a) -> VM w a -> VM w a
 at_current_locals f vm =
     case locals vm of
       l : l' -> vm {locals = f l : l'}
-      _ -> error "at_current_locals"
+      _ -> error "AT_CURRENT_LOCALS"
 
 -- | 'locals' is used both during compilation and interpretation.  In
 -- compilation the RHS is undefined, it is used for name lookup and to
@@ -511,7 +511,7 @@ execute_buffer vm = do
   case r of
     Left err -> case err of
                   VM_No_Input -> return vm'
-                  _ -> error (show err)
+                  _ -> error ("EXECUTE_BUFFER: " ++ show err)
     Right () -> execute_buffer vm'
 
 -- | Store current buffer & input port, place input string on buffer
@@ -548,19 +548,14 @@ fw_j = do {x <- popr; y <- popr; z <- popr
 fw_colon :: Forth w a ()
 fw_colon = do
   nm <- read_token
-  let reserved = M.keys (core_dict :: Dict w Integer)
   trace 0 ("DEFINE: " ++ nm)
   let edit vm = do
-        when (nm `elem` reserved) (throw_error ("':' RESERVED NAME: " ++ nm))
+        when (nm `elem` core_words) (throw_error ("':' RESERVED NAME: " ++ nm))
         when (not (null (cstack vm))) (throw_error ("':' CSTACK NOT EMPTY: " ++ nm))
         return (vm {mode = Compile
                    ,cstack = [CC_Word nm]
                    ,locals = M.empty : locals vm})
   do_with_vm edit
-
--- | Forth word @/mod@.
-fw_div_mod :: Integral a => Forth w a ()
-fw_div_mod = pop >>= \p -> pop >>= \q -> let (r,s) = q `divMod` p in push s >> push r
 
 -- | dup : ( p -- p p ) swap : ( p q -- q p ) drop : ( p -- ) over : (
 -- p q -- p q p ) rot : ( p q r -- q r p ) 2dup : ( p q -- p q p q )
@@ -700,13 +695,16 @@ core_dict =
     ,("vmstat",fw_vmstat)
     ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int k},())))]
 
+core_words :: [String]
+core_words = M.keys (core_dict :: Dict w Integer)
+
 -- * Operation
 
 exec_err :: VM w a -> Forth w a () -> IO (VM w a)
 exec_err vm fw = do
   (r,vm') <- runStateT (runExceptT fw) vm
   case r of
-    Left err -> error (show err)
+    Left err -> error ("EXEC_ERR: " ++ show err)
     Right () -> return vm'
 
 -- | Read, evaluate, print, loop.  Prints @OK@ at end of line.  Prints
