@@ -454,6 +454,7 @@ def_locals = do
                w <- read_token
                if w == "}" then return r else get_names (w : r)
   nm <- get_names []
+  when (any is_reserved_word nm) (throw_error ("DEF_LOCALS: RESERVED WORD: " ++ unwords nm))
   trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
   let locals' = M.fromList (zip nm (repeat undefined))
   with_vm (\vm -> (at_current_locals (M.union locals') vm,()))
@@ -550,7 +551,7 @@ fw_colon = do
   nm <- read_token
   trace 0 ("DEFINE: " ++ nm)
   let edit vm = do
-        when (nm `elem` core_words) (throw_error ("':' RESERVED NAME: " ++ nm))
+        when (is_reserved_word nm) (throw_error ("':' RESERVED NAME: " ++ nm))
         when (not (null (cstack vm))) (throw_error ("':' CSTACK NOT EMPTY: " ++ nm))
         return (vm {mode = Compile
                    ,cstack = [CC_Word nm]
@@ -697,6 +698,9 @@ core_dict =
 
 core_words :: [String]
 core_words = M.keys (core_dict :: Dict w Integer)
+
+is_reserved_word :: String -> Bool
+is_reserved_word nm = nm `elem` core_words
 
 -- * Operation
 
