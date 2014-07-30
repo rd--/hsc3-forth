@@ -192,12 +192,17 @@ stop
 
 \ The non-deterministic UGens get identifiers from a counter, which can be set.
 
-1376523 uid
+1376523 set-uid
 
 \ The unrand transformation lifts scalar random UGens to constants.
 
 0 1 Rand.ir 2 clone .s \ <1> [UGEN:Rand UGEN:Rand]
 unrand . \ [0.6768026553207348 0.21705544209066452]
+
+\ How unrandom is it?  Not very.....
+
+: rnd Rand.ir unrand ;
+: _ 100 0 do 0 1 rnd . loop ; _
 
 ( ENVELOPED FORTH )
 

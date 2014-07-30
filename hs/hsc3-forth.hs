@@ -59,16 +59,17 @@ pop_int = fmap (floor . u_constant) pop
 pop_double :: Forth w UGen Double
 pop_double = fmap (realToFrac . u_constant) pop
 
--- | Get counter and store increment.
-incr_uid :: Forth Int a Int
-incr_uid = do
-  vm <- get
-  let w = world vm
-  put vm {world = w + 1}
-  return w
+-- | Get UId counter.
+get_uid :: Forth Int a Int
+get_uid = with_vm (\vm -> (vm,world vm))
 
+-- | Store UId counter.
 set_uid :: Int -> Forth Int a ()
 set_uid k = with_vm (\vm -> (vm {world = k},()))
+
+-- | Get UId counter and store increment.
+incr_uid :: Forth Int a Int
+incr_uid = with_vm (\vm -> let k = world vm in (vm {world = k + 1},k))
 
 -- | Assert that the stack is empty.
 fw_assert_empty :: Forth_Type a => Forth w a ()
@@ -235,7 +236,8 @@ ugen_dict =
     ,("pause",pop_double >>= pauseThread)
     ,("time",liftIO time >>= push . constant)
     ,("label",pop_string >>= push . label)
-    ,("uid",pop_int >>= set_uid)
+    ,("get-uid",get_uid >>= push . constant)
+    ,("set-uid",pop_int >>= set_uid)
     ,("unrand",pop >>= push . ugen_optimise_ir_rand)
     ,("chan",pop >>= push . constant . length . mceChannels)
     ,("sc3-status",liftIO (withSC3 serverStatus >>= mapM_ putStrLn))

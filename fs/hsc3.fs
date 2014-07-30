@@ -69,6 +69,8 @@
 
 \ ENVELOPE CONSTRUCTORS
 
+: env-perc { atk rel } 0 2 no-reset-node no-loop-node 1 atk 5 -4 0 rel 5 -4 12 mce ;
+
 : env-tri { dur lvl } dur 2 / { dur' }
   0 2 no-reset-node no-loop-node lvl dur' env-lin 0 0 dur' env-lin 0 12 mce ;
 
