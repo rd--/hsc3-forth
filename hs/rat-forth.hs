@@ -1,11 +1,31 @@
 import Control.Concurrent {- base -}
 import qualified Data.Map as M {- containers -}
 import Data.Ratio {- base -}
-import qualified Text.Read as R {- base -}
 import Safe {- safe -}
 import System.IO {- base -}
+import qualified Text.Read as R {- base -}
 
 import Forth
+
+-- * Rational
+
+sep :: Eq a => a -> [a] -> ([a],[a])
+sep c s = let (lhs,rhs) = break (== c) s in (lhs,tailDef [] rhs)
+
+bimap1 :: (t -> t1) -> (t, t) -> (t1, t1)
+bimap1 f (p,q) = (f p,f q)
+
+parse_int :: String -> Maybe Integer
+parse_int = R.readMaybe
+
+parse_rat :: String -> Maybe Rational
+parse_rat s =
+    case bimap1 parse_int (sep '/' s) of
+      (Just n,Just d) -> Just (n % d)
+      _ ->
+          case parse_int s of
+            Just i -> Just (fromInteger i)
+            Nothing -> fmap realToFrac (R.readMaybe s :: Maybe Double)
 
 -- * Primitives
 
@@ -67,24 +87,6 @@ rat_dict = M.fromList
     ,("<=",comparison_op (<=))
     ,(">",comparison_op (>))
     ,(">=",comparison_op (>=))]
-
-sep :: Eq a => a -> [a] -> ([a],[a])
-sep c s = let (lhs,rhs) = break (== c) s in (lhs,tailDef [] rhs)
-
-bimap1 :: (t -> t1) -> (t, t) -> (t1, t1)
-bimap1 f (p,q) = (f p,f q)
-
-parse_int :: String -> Maybe Integer
-parse_int = R.readMaybe
-
-parse_rat :: String -> Maybe Rational
-parse_rat s =
-    case bimap1 parse_int (sep '/' s) of
-      (Just n,Just d) -> Just (n % d)
-      _ ->
-          case parse_int s of
-            Just i -> Just (fromInteger i)
-            Nothing -> fmap realToFrac (R.readMaybe s :: Maybe Double)
 
 main :: IO ()
 main = do
