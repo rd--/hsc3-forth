@@ -52,12 +52,15 @@ pop_n n = replicateM n pop
 push_l :: [a] -> Forth w a ()
 push_l = mapM_ push
 
--- | 'u_constant' of 'pop'.
-pop_int :: Forth w UGen Int
-pop_int = fmap (floor . u_constant) pop
-
 pop_double :: Forth w UGen Double
-pop_double = fmap (realToFrac . u_constant) pop
+pop_double =
+    let f u = case u_constant (ugen_optimise_ir_rand u) of
+                Nothing -> throw_error "POP_DOUBLE"
+                Just n -> return n
+    in pop >>= f
+
+pop_int :: Forth w UGen Int
+pop_int = fmap floor pop_double
 
 -- | Get UId counter.
 get_uid :: Forth Int a Int
@@ -246,7 +249,7 @@ ugen_dict =
 
 instance Forth_Type UGen where
     ty_show = ugen_concise_pp
-    ty_to_int = floor . u_constant
+    ty_to_int = floor . fromMaybe (error "TY_TO_INT") . u_constant
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 

@@ -7,47 +7,45 @@
 (require 'comint)
 (require 'thingatpt)
 
-(defun hsc3-forth-send-string (s)
+(defun hsc3-forth-send (s)
+  "Send string argument to HSC3-FORTH"
   (if (comint-check-proc forth-process-buffer)
       (comint-send-string (forth-proc) (concat s "\n"))
     (error "HSC3-FORTH not running?")))
 
-(defun hsc3-forth-word-at-point (word post q-str)
+(defun hsc3-forth-point (word post q-str)
   "If POST then WORD <POINT>, else <POINT> WORD.  If Q-STR quote <POINT> as string."
   (let* ((p (thing-at-point 'symbol))
          (p-q (if q-str (format "s\" %s\"" p) p)))
-    (hsc3-forth-send-string
+    (hsc3-forth-send
      (if post (format "%s %s" word p-q) (format "%s %s" p-q word)))))
 
-(defun hsc3-forth-bye () "BYE." (interactive) (hsc3-forth-send-string "bye"))
-(defun hsc3-forth-stop () "STOP" (interactive) (hsc3-forth-send-string "stop"))
-(defun hsc3-forth-sc3-status () "SC3-STATUS" (interactive) (hsc3-forth-send-string "sc3-status"))
-(defun hsc3-forth-killall () "KILLALL" (interactive) (hsc3-forth-send-string "killall"))
-(defun hsc3-forth-help () "s\" <word>\"" (interactive) (hsc3-forth-word-at-point "?" nil t))
-(defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-word-at-point "play" nil nil))
-(defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-word-at-point "draw" nil nil))
+(defun hsc3-forth-bye () "BYE." (interactive) (hsc3-forth-send "bye"))
+(defun hsc3-forth-stop () "STOP" (interactive) (hsc3-forth-send "stop"))
+(defun hsc3-forth-sc3-status () "SC3-STATUS" (interactive) (hsc3-forth-send "sc3-status"))
+(defun hsc3-forth-killall () "KILLALL" (interactive) (hsc3-forth-send "killall"))
+(defun hsc3-forth-help () "s\" <word>\"" (interactive) (hsc3-forth-point "?" nil t))
+(defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-point "play" nil nil))
+(defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-point "draw" nil nil))
+(defun hsc3-forth-see () "<word> SEE" (interactive) (hsc3-forth-point "false see" nil nil))
 
 (defun hsc3-forth-load-buffer ()
   "INCLUDED"
   (interactive)
   (save-buffer)
-  (hsc3-forth-send-string (format "s\" %s\" included" buffer-file-name)))
+  (hsc3-forth-send (format "s\" %s\" included" buffer-file-name)))
 
 (defun hsc3-forth-send-line ()
   "Send the current line to the interpreter."
   (interactive)
-  (hsc3-forth-send-string (buffer-substring (line-beginning-position) (line-end-position))))
-
-(defun region-string ()
-  "Get region as string (no properties)"
-  (buffer-substring-no-properties
-   (region-beginning)
-   (region-end)))
+  (hsc3-forth-send
+   (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
 
 (defun hsc3-forth-send-region ()
   "Send the current region to the interpreter."
   (interactive)
-  (hsc3-forth-send-string (region-string)))
+  (hsc3-forth-send
+   (buffer-substring-no-properties (region-beginning) (region-end))))
 
 (defun hsc3-forth-see-forth ()
  "Start and see HSC3-FORTH."
@@ -70,6 +68,7 @@
   (define-key map [?\C-c ?>] 'hsc3-forth-see-forth)
   (define-key map [?\C-c ?\C-a] 'hsc3-forth-play)
   (define-key map [?\C-c ?\C-g] 'hsc3-forth-draw)
+  (define-key map [?\C-c ?\C-e] 'hsc3-forth-see)
   (define-key map [?\C-c ?\C-s] 'hsc3-forth-killall)
   (define-key map [?\C-c ?\C-c] 'hsc3-forth-send-line)
   (define-key map [?\C-c ?\C-d] 'hsc3-forth-send-region)
