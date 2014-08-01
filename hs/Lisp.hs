@@ -12,16 +12,20 @@ import qualified Language.Scheme.Types as S {- husk-scheme -}
 --import List
 --import Rational
 
+-- * Environment
+
 type Dict a = [(String,Cell a)]
 
 data Env a = Env {env_frame :: Dict a
                  ,env_parent :: Maybe (Env a)}
              deriving Show
 
+type VM a r = ExceptT String (StateT (Env a) IO) r
+
 maybe_to_err :: MonadError e m => e -> Maybe a -> m a
 maybe_to_err msg = maybe (throwError msg) return
 
-env_parent_err' :: Env a -> Lisp a (Env a)
+env_parent_err' :: Env a -> VM a (Env a)
 env_parent_err' = maybe_to_err "ENV-PARENT" . env_parent
 
 env_parent_err :: Env a -> Env a
@@ -42,35 +46,37 @@ env_lookup w (Env m p) =
       Nothing -> maybe Nothing (env_lookup w) p
       Just r -> Just r
 
-env_lookup_err' :: String -> Env a -> Lisp a (Cell a)
-env_lookup_err' w = maybe_to_err "ENV-LOOKUP" . env_lookup w
+env_lookup_err' :: String -> Env a -> VM a (Cell a)
+env_lookup_err' w = maybe_to_err ("ENV-LOOKUP: " ++ w). env_lookup w
 
 env_lookup_err :: String -> Env a -> Cell a
-env_lookup_err w = fromMaybe (error "ENV-LOOKUP") . env_lookup w
+env_lookup_err w = fromMaybe (error ("ENV-LOOKUP: " ++ w)) . env_lookup w
 
-data Cell a = Atom a
+data Cell a = Symbol String | Atom a
             | Nil | Cons (Cell a) (Cell a)
             | Proc (Cell a -> Cell a)
-            | Lambda (Env a) String SEXP
+            | Lambda (Env a) String (Cell a)
 
 instance Eq a => Eq (Cell a) where
     p == q =
         case (p,q) of
           (Atom p0,Atom q0) -> p0 == q0
+          (Symbol p0,Symbol q0) -> p0 == q0
           (Nil,Nil) -> True
           (Cons p0 p1,Cons q0 q1) -> p0 == q0 && p1 == q1
-          _ -> undefined
+          _ -> False -- error "EQ"
 
 instance Show a => Show (Cell a) where
     show c =
         case c of
-          Atom a -> show a
-          Nil -> "NIL"
-          Cons p q -> unwords ["CONS",show p,show q]
+          Atom a -> show ("ATOM",a)
+          Symbol s -> show ("SYMBOL",s)
+          Nil -> "Nil"
+          Cons p q -> concat ["(cons ",show p," ",show q,")"]
           Proc _ -> "PROC"
-          Lambda env nm code -> unwords ["LAMBDA",show env,nm,show code]
+          Lambda _ nm code -> concat ["(lambda (",nm,") ",show code,")"]
 
-apply' :: (Fractional a,Show a) => Cell a -> Cell a -> Maybe (Cell a)
+apply' :: (Eq a,Fractional a,Show a) => Cell a -> Cell a -> Maybe (Cell a)
 apply' p a =
     case p of
       Proc f -> Just (f a)
@@ -79,7 +85,7 @@ apply' p a =
           in Just res
       _ -> Nothing
 
-apply :: (Fractional a,Show a) => Cell a -> Cell a -> Cell a
+apply :: (Eq a,Fractional a,Show a) => Cell a -> Cell a -> Cell a
 apply p = maybe (error ("APPLY: " ++ show p)) id . apply' p
 
 cons :: Cell a
@@ -89,7 +95,7 @@ atom :: Show a => String -> Cell a -> a
 atom err c =
     case c of
       Atom a -> a
-      _ -> error (unwords ["NOT ATOM",err,show c])
+      _ -> error (unwords ["NOT-ATOM?",err,show c])
 
 lift_uop :: Show a => (a -> a) -> Cell a
 lift_uop f = Proc (\c -> Atom (f (atom "UOP" c)))
@@ -124,85 +130,105 @@ env_toplevel = Env core_dict Nothing
 
 type SEXP = S.LispVal
 
--- > parse_sexp "(define pi 3.141592653589793)"
-parse_sexp :: String -> S.LispVal
+parse_sexp :: String -> SEXP
 parse_sexp = either (error . show) id . S.readExpr
 
-type Lisp a r = ExceptT String (StateT (Env a) IO) r
+parse_cell' :: (Eq a,Fractional a,Show a) => SEXP -> Cell a
+parse_cell' sexp =
+    case sexp of
+      S.Number n -> Atom (fromIntegral n)
+      S.Float n -> Atom (realToFrac n)
+      S.Rational n -> Atom (fromRational n)
+      S.Atom nm -> Symbol nm
+      S.List l -> foldr (\p q -> Cons (parse_cell' p) q)  Nil l
+      _ -> error (show "PARSE-CELL")
+
+-- (parse_cell "((a 5) (b 6))")
+parse_cell :: (Eq a,Fractional a,Show a) => String -> Cell a
+parse_cell = parse_cell' . parse_sexp
 
 -- | Functions are one argument, but allow (+ 1 2) for ((+ 1) 2).
-eval_apply :: (Show a,Fractional a) => Env a -> Cell a -> SEXP -> [SEXP] -> (Env a,Cell a)
+eval_apply :: (Eq a,Fractional a,Show a) => Env a -> Cell a -> Cell a -> Cell a -> (Env a,Cell a)
 eval_apply env f p l =
     let (env',p') = eval env p
         r = apply f p'
     in case l of
-         [] -> (env',r)
-         e : l' -> eval_apply env' r e l'
+         Nil -> (env',r)
+         Cons e l' -> eval_apply env' r e l'
+         _ -> error "EVAL-APPLY"
 
-eval_let :: (Show a,Fractional a) => Env a -> [SEXP] -> SEXP -> (Env a,Cell a)
+eval_let :: (Eq a,Fractional a,Show a) => Env a -> Cell a -> Cell a -> (Env a,Cell a)
 eval_let env bind code =
     case bind of
-      [] -> eval env code
-      S.List [S.Atom nm,def] : bind' ->
+      Nil -> eval env code
+      Cons (Cons (Symbol nm) (Cons def Nil)) bind'->
           let (env',def') = eval env def
           in eval_let (env_add_binding env' nm def') bind' code
-      _ -> error "EVAL-LET"
+      _ -> error (show ("EVAL-LET",bind,code))
 
-rewrite_let_star :: [SEXP] -> SEXP -> SEXP
+-- > s_list [Symbol "a",Symbol "b",Symbol "c"]
+s_list :: [Cell a] -> Cell a
+s_list = foldr Cons Nil
+
+rewrite_let_star :: Cell a -> Cell a -> Cell a
 rewrite_let_star bind code =
     case bind of
-      [] -> error "EVAL-LET"
-      [p] -> S.List [S.Atom "let",S.List [p],code]
-      p:bind' -> S.List [S.Atom "let",S.List [p],rewrite_let_star bind' code]
+      Cons p Nil -> s_list [Symbol "let",s_list [p],code]
+      Cons p bind' -> s_list [Symbol "let",s_list [p],rewrite_let_star bind' code]
+      _ -> error "REWRITE-LET*"
 
-eval_lambda :: Env a -> [SEXP] -> SEXP -> (Env a,Cell a)
+eval_lambda :: Show a => Env a -> Cell a -> Cell a -> (Env a,Cell a)
 eval_lambda env param code =
     case param of
-      [S.Atom nm] -> (env,Lambda env nm code)
-      nm : param' ->
-          let code' = S.List [S.Atom "lambda",S.List param',code]
-          in eval_lambda env [nm] code'
-      _ -> error "EVAL-LAMBDA"
+      Cons (Symbol nm) Nil -> (env,Lambda env nm code)
+      Cons nm param' ->
+          let code' = s_list [Symbol "lambda",param',code]
+          in eval_lambda env (Cons nm Nil) code'
+      _ -> error (show ("EVAL-LAMBDA",param,code))
 
 drop_frame :: (Env a,t) -> (Env a,t)
 drop_frame (e,c) = (env_parent_err e,c)
 
-eval :: (Show a,Fractional a) => Env a -> SEXP -> (Env a,Cell a)
-eval env sexp =
-    case sexp of
-      S.Number n -> (env,Atom (fromIntegral n))
-      S.Float n -> (env,Atom (realToFrac n))
-      S.Rational n -> (env,Atom (fromRational n))
-      S.Atom nm -> (env,env_lookup_err nm env)
-      S.List [S.Atom "define",S.Atom nm,def] ->
+eval :: (Eq a,Fractional a,Show a) => Env a -> Cell a -> (Env a,Cell a)
+eval env c =
+    case c of
+      Symbol nm -> (env,env_lookup_err nm env)
+      Atom _ -> (env,c)
+      Cons (Symbol "define") (Cons (Symbol nm) (Cons def Nil)) ->
           let (env',def') = eval env def
           in (env_add_binding env' nm def',def')
-      S.List [S.Atom "let",S.List bind,code] ->
+      Cons (Symbol "let") (Cons bind (Cons code Nil)) ->
           let env' = env_add_frame env
           in drop_frame (eval_let env' bind code)
-      S.List [S.Atom "let*",S.List bind,code] ->
+      Cons (Symbol "let*") (Cons bind (Cons code Nil)) ->
           eval env (rewrite_let_star bind code)
-      S.List [S.Atom "lambda",S.List param,code] ->
+      Cons (Symbol "lambda") (Cons param (Cons code Nil)) ->
           eval_lambda env param code
-      S.List (f : p : l) ->
+      Cons (Symbol "if") (Cons p (Cons t (Cons f Nil))) ->
+          if p == false then eval env f else eval env t
+      Cons (Symbol "quote") (Cons code Nil) -> (env,code)
+      Cons (Symbol "eval") (Cons code Nil) ->
+          let (env',code') = eval env code
+          in eval env' code'
+      Cons f (Cons p l) ->
           let (env',f') = eval env f
           in eval_apply env' f' p l
-      _ -> error (show (env,sexp))
+      _ -> error (show ("EVAL",env,c))
 
-vm_eval' :: (Show a,Fractional a) => SEXP -> Lisp a (Cell a)
+vm_eval' :: (Eq a,Fractional a,Show a) => Cell a -> VM a (Cell a)
 vm_eval' sexp = do
   env <- get
   let (env',res) = eval env sexp
   put env'
   return res
 
-vm_eval :: (Show a,Fractional a) => SEXP -> Lisp a ()
+vm_eval :: (Eq a,Fractional a,Show a) => Cell a -> VM a ()
 vm_eval sexp = vm_eval' sexp >> return ()
 
-repl' :: (Fractional a,Show a) => Env a -> IO ()
+repl' :: (Eq a,Fractional a,Show a) => Env a -> IO ()
 repl' vm = do
   str <- getLine
-  let sexp = parse_sexp str
+  let sexp = parse_cell str
   (r,vm') <- runStateT (runExceptT (vm_eval' sexp)) vm
   case r of
     Left err -> case err of
@@ -220,6 +246,8 @@ one ; 1
 (+ 1) ; PROC
 ((+ 1) 2) ; 3
 (+ 1 2) ; 3
+(let ((a 5)) a) ; 5
+(let ((a 5) (b 6)) (cons a b)) ; (cons 5 6)
 (let ((a 5) (b (+ 2 3))) (* a b)) ; 25
 (let* ((a 5) (b (+ a 3))) (* a b)) ; 40
 (equal? 5 5) ; #t
@@ -227,4 +255,10 @@ one ; 1
 (sq 5) ; 25
 (define sum-sq (lambda (p q) (+ (sq p) (sq q))))
 (sum-sq 7 9) ; 130
+(define t 't)
+(if t 1 2)
+(quote (+ 1 2))
+(eval 1) ; 1
+(eval (eval 1)) ; 1
+(eval (quote (+ 1 2)))
 -}
