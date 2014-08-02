@@ -1,61 +1,55 @@
-(define pi 3.141592653589793)
-(define newline (lambda (_) (display "\n")))
+; LIST
 
-(define id (lambda (x) x))
-
-; (++) :: [a] -> [a] -> [a]
-(define append (lambda (a b) (if (null? a) b (cons (car a) (append (cdr a) b)))))
-
-; (map (+ 1) (cons 1 (cons 2 '())))
-(define map
-  (lambda (f l)
-    (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
-
-; (foldl + 0 (cons 1 (cons 2 '())))
-(define foldl
-  (lambda (f z l)
-    (if (null? l)
-        z
-        (foldl f (f z (car l)) (cdr l)))))
-
-; (foldr cons '() (cons 1 (cons 2 '())))
-(define foldr
-  (lambda (f z l)
-    (if (null? l)
-        z
-        (f (car l) (foldr f z (cdr l))))))
-
-(define nil '())
-
-;; (list 1 2 3) => (cons 1 (cons 2 (cons 3 '())))
-; (list-rewriter '(1 2 3))
-(define list-rewriter
+; list is a macro because HSC3-LISP is not VARARG
+(define list-rw
   (lambda (l)
-    (let ((f (lambda (e r) (append (cons 'cons (cons e nil)) (cons r '())))))
+    (let ((f (lambda (e r)
+               (append (cons 'cons (cons e nil)) (cons r '())))))
       (foldr f 'nil l))))
 
-;;      (cons 'quote (cons (foldr f '() l) '())))))
+(define list (macro list-rw))
 
-(define list (macro list-rewriter))
+; LOGIC
 
-; (when-rewriter '(#t (display "TRUE")))
-; (when-rewriter '(#f (display "FALSE")))
-(define when-rewriter
+(define not (lambda (p) (if p #f #t)))
+
+(define and-rw (lambda (sexp) (list 'if (car sexp) (cadr sexp) #f)))
+(define and (macro and-rw))
+
+(define or-rw (lambda (sexp) (list 'if (car sexp) #t (cadr sexp))))
+(define or (macro or-rw))
+
+(define cond-rw
+  (lambda (sexp)
+    (if (null? sexp)
+        void
+        (let ((c0 (car sexp)))
+          (if (equal? (car c0) 'else)
+              (cadr c0)
+              (list 'if (car c0) (cadr c0) (cond-rw (cdr sexp))))))))
+
+(define cond (macro cond-rw))
+
+(define when-rw
   (lambda (sexp)
     (let ((test (car sexp))
           (branch (cadr sexp)))
       (cons 'if (cons test (cons branch (cons void '())))))))
 
-;; (when #t (display "TRUE\n"))
-(define when (macro when-rewriter))
+(define when (macro when-rw))
 
-; (and p q) => (if p q #f)
-; (define and (macro (lambda (sexp) (cons 'if (cons (car l) (
-; (or p q) => (if p #t q)
+; MATH
 
-(define length (lambda (l) (if (null? l) 0 (+ 1 (length (cdr l))))))
+(define pi 3.141592653589793)
 
-;; cxr
+(define = equal?)
+
+; IO
+
+(define newline (lambda (_) (display "\n")))
+
+; C....R
+
 (define caar (lambda (c) (car (car c))))
 (define cadr (lambda (c) (car (cdr c))))
 (define cdar (lambda (c) (cdr (car c))))

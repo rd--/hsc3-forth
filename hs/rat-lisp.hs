@@ -10,4 +10,5 @@ instance (Show a,Integral a) => Lisp_Ty (Ratio a) where
 main :: IO ()
 main = do
   putStrLn "RAT-LISP"
-  repl' =<< (env_toplevel :: IO (Env Rational))
+  env <- env_toplevel :: IO (Env Rational)
+  repl env (load_files ["stdlib.lisp","rhs.lisp"])

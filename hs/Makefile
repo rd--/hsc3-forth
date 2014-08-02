@@ -1,7 +1,7 @@
 prefix=$(HOME)/opt
-cmd=hsc3-forth rat-forth
+cmd=hsc3-forth rat-forth rat-lisp
 
-% : %.hs Forth.hs
+% : %.hs
 	ghc -Wall -O2 -fno-warn-orphans --make $<
 
 all: $(cmd)

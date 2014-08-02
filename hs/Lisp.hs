@@ -9,14 +9,16 @@ import qualified Data.Map as M {- containers -}
 --import Data.Maybe {- base -}
 --import Data.Ratio {- base -}
 import System.Directory {- directory -}
---import System.IO {- base -}
+import System.Environment {- base -}
+import System.FilePath {- filepath -}
+import System.IO {- base -}
 
 import qualified Language.Scheme.Parser as S {- husk-scheme -}
 import qualified Language.Scheme.Types as S {- husk-scheme -}
 
 -- * Types
 
-class (Eq a,Num a,Fractional a) => Lisp_Ty a where
+class (Eq a,Ord a,Num a,Fractional a) => Lisp_Ty a where
     ty_show :: a -> String -- ^ String representation of /a/, pretty printer.
     ty_from_bool :: Bool -> a -- ^ Boolean value represented in /a/, by convention @1@ and @0@.
 
@@ -34,7 +36,8 @@ env_print (Env m p) = do
     Just p' -> env_print p'
 
 data Cell a = Void
-            | Boolean Bool | Symbol String | String String | Atom a
+            | Symbol String | String String
+            | Atom a
             | Nil | Cons (Cell a) (Cell a)
             | Fun (Cell a -> Cell a)
             | Proc (Cell a -> VM a (Cell a))
@@ -57,13 +60,13 @@ env_empty = do
   d <- newIORef M.empty
   return (Env d Nothing)
 
-env_lookup :: String -> Env a -> IO (Cell a)
+env_lookup :: String -> Env a -> VM a (Cell a)
 env_lookup w (Env m p) = do
-  d <- readIORef m
+  d <- liftIO (readIORef m)
   case M.lookup w d of
     Just r -> return r
     Nothing -> case p of
-                 Nothing -> error ("ENV-LOOKUP: " ++ w)
+                 Nothing -> throwError ("ENV-LOOKUP: " ++ w)
                  Just p' -> env_lookup w p'
 
 env_extend :: [(String,Cell a)] -> Env a -> IO (Env a)
@@ -93,7 +96,6 @@ instance Eq a => Eq (Cell a) where
     lhs == rhs =
         case (lhs,rhs) of
           (Atom p,Atom q) -> p == q
-          (Boolean p,Boolean q) -> p == q
           (String p,String q) -> p == q
           (Symbol p,Symbol q) -> p == q
           (Nil,Nil) -> True
@@ -120,7 +122,6 @@ instance Lisp_Ty a => Show (Cell a) where
           Atom a -> ty_show a
           Symbol s -> s
           String s -> show s
-          Boolean b -> if b then "#t" else "#f"
           Nil -> "'()"
           Cons p q -> if is_list c then list_pp c else concat ["(CONS ",show p," ",show q,")"]
           Fun _ -> "FUN"
@@ -140,36 +141,48 @@ lift_binop f =
                   _ -> Error "NOT-ATOM?"
     in Fun (\lhs -> Fun (\rhs -> g (atom lhs) (atom rhs)))
 
-false :: Cell a
-false = Boolean False
+(.:) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
+(.:) = fmap . fmap
 
-true :: Cell a
-true = Boolean True
+l_false :: Lisp_Ty a => Cell a
+l_false = Atom (ty_from_bool False)
 
-cell_equal :: Eq a => Cell a
-cell_equal = Fun (\lhs -> Fun (\rhs -> if lhs == rhs then true else false))
+l_true :: Lisp_Ty a => Cell a
+l_true = Atom (ty_from_bool True)
+
+cell_equal :: Lisp_Ty a => Eq a => Cell a
+cell_equal = Fun (\lhs -> Fun (\rhs -> if lhs == rhs then l_true else l_false))
 
 core_dict :: Lisp_Ty a => Dict a
 core_dict =
     M.fromList
-    [("nil",Nil)
-    ,("void",Void)
+    [("void",Void)
+    ,("#t",l_true)
+    ,("#f",l_false)
+    ,("void?",Fun (\c -> case c of {Void -> l_true; _ -> l_false}))
+    ,("symbol?",Fun (\c -> case c of {Symbol _ -> l_true; _ -> l_false}))
+    ,("string?",Fun (\c -> case c of {String _ -> l_true; _ -> l_false}))
     ,("cons",Fun (\lhs -> Fun (\rhs -> Cons lhs rhs)))
     ,("car",Fun (\c -> case c of {Cons lhs _ -> lhs; _ -> Error ("CAR: " ++ show c)}))
     ,("cdr",Fun (\c -> case c of {Cons _ rhs -> rhs; _ -> Error ("CDR: " ++ show c)}))
-    ,("null?",Fun (\c -> case c of {Nil -> true; _ -> false}))
-    ,("pair?",Fun (\c -> case c of {Cons _ _ -> true; _ -> false}))
-    ,("list?",Fun (Boolean . is_list))
+    ,("null?",Fun (\c -> case c of {Nil -> l_true; _ -> l_false}))
+    ,("pair?",Fun (\c -> case c of {Cons _ _ -> l_true; _ -> l_false}))
+    ,("list?",Fun (Atom . ty_from_bool . is_list))
     ,("+",lift_binop (+))
     ,("*",lift_binop (*))
     ,("-",lift_binop (-))
     ,("/",lift_binop (/))
+    ,("<",lift_binop (ty_from_bool .: (<)))
+    ,(">",lift_binop (ty_from_bool .: (>)))
+    ,("<=",lift_binop (ty_from_bool .: (<=)))
+    ,(">=",lift_binop (ty_from_bool .: (>=)))
     ,("negate",lift_uop negate)
     ,("recip",lift_uop recip)
     ,("equal?",cell_equal)
     ,("display",Proc (\c -> liftIO (putStr (show c)) >> return c))
-    ,("load",l_load)
-    ,("eval",l_eval)]
+    ,("load",Proc (\c -> load c >> return Void))
+    ,("eval",Proc (\c -> eval c >>= eval))
+    ,("error",Proc (\c -> throwError ("ERROR: " ++ show c)))]
 
 -- > fmap show (env_lookup "add" env_toplevel)
 env_toplevel :: Lisp_Ty a => IO (Env a)
@@ -193,7 +206,7 @@ parse_cell' sexp =
       S.Rational n -> return (Atom (fromRational n))
       S.Atom nm -> return (Symbol nm)
       S.String s -> return (String s)
-      S.Bool b -> return (Boolean b)
+      S.Bool b -> return (Atom (ty_from_bool b))
       S.List [] -> return Nil
       S.List (e : l) -> do
                 e' <- parse_cell' e
@@ -229,6 +242,7 @@ apply lhs arg var_arg = do
 s_list :: [Cell a] -> Cell a
 s_list = foldr Cons Nil
 
+-- in haskell because to write it in HSC3-LISP without let is opaque
 rewrite_let :: Eq a => Cell a -> Cell a -> VM a (Cell a)
 rewrite_let bind code =
     case bind of
@@ -265,24 +279,17 @@ load c = do
                mapM_ eval cells
     _ -> throwError ("LOAD: " ++ show c)
 
-l_load :: Lisp_Ty a => Cell a
-l_load = Proc (\c -> load c >> return Void)
-
-l_eval :: Lisp_Ty a => Cell a
-l_eval = Proc (\c -> eval c >>= eval)
-
-s_quote :: Cell a -> Cell a
-s_quote c = s_list [Symbol "quote",c]
+quote :: Cell a -> Cell a
+quote c = s_list [Symbol "quote",c]
 
 eval :: Lisp_Ty a => Cell a -> VM a (Cell a)
 eval c =
     -- liftIO (putStrLn ("RUN EVAL: " ++ show c)) >>
     case c of
       Void -> return c
-      Boolean _ -> return c
       String _ -> return c
       Atom _ -> return c
-      Symbol nm -> get >>= \env -> liftIO (env_lookup nm env)
+      Symbol nm -> get >>= \env -> env_lookup nm env
       Cons (Symbol "set!") (Cons (Symbol nm) (Cons def Nil)) ->
           get >>= \env -> liftIO (env_set env nm def) >> return Void
       Cons (Symbol "define") (Cons (Symbol nm) (Cons def Nil)) -> do
@@ -291,7 +298,7 @@ eval c =
              liftIO (env_add_binding nm (Symbol "VOID") env >> env_set env nm def')
              return Void
       Cons (Symbol "if") (Cons p (Cons t (Cons f Nil))) ->
-          eval p >>= \p' -> if p' == false then eval f else eval t
+          eval p >>= \p' -> if p' == l_false then eval f else eval t
       Cons (Symbol "begin") codes -> eval_begin codes
       Cons (Symbol "quote") (Cons code Nil) -> return code
       Cons (Symbol "lambda") (Cons param (Cons code Nil)) -> eval_lambda param code
@@ -302,108 +309,35 @@ eval c =
           -- liftIO (putStrLn ("EVAL: RUN APPLY"))
           f' <- eval f
           case f' of
-            Macro f'' -> apply f'' (s_quote (Cons p l)) Nil >>= eval
+            Macro f'' -> apply f'' (quote (Cons p l)) Nil >>= eval
             _ -> apply f' p l
       _ -> throwError ("EVAL: " ++ show c)
 
+get_sexp :: String -> Handle -> IO String
+get_sexp s h = do
+  l <- hGetLine h
+  r <- hReady h
+  let s' = s ++ l
+  if r then get_sexp s' h else return s'
+
 repl' :: Lisp_Ty a => Env a -> IO ()
 repl' env = do
-  str <- getLine
+  str <- get_sexp "" stdin
   (r,env') <- runStateT (runExceptT (parse_cell str >>= eval)) env
   case r of
     Left msg -> putStrLn ("ERROR: " ++ msg) >> repl' env
     Right res -> putStrLn ("RESULT: " ++ show res) >> repl' env'
 
-{-
+repl :: Lisp_Ty a => Env a -> VM a () -> IO ()
+repl env initialise = do
+  (r,env') <- runStateT (runExceptT initialise) env
+  case r of
+    Left msg -> error ("REPL: INIT ERROR: " ++ msg)
+    Right () -> repl' env'
 
-(define one 1)
-one ; 1
-(+ 1) ; FUN
-((+ 1) 2) ; 3
-(+ 1 2) ; 3
-
-(let ((a 5)) a) ; 5
-(let ((a 5) (b 6)) (cons a b)) ; (cons 5 6)
-(let ((a 5) (b (+ 2 3))) (* a b)) ; 25
-(let ((a 5) (b (+ a 3))) (* a b)) ; 40
-
-(equal? 5 5) ; #t
-
-((lambda (n) (* n n)) 3) ; 9
-
-(define sq (lambda (n) (* n n)))
-(sq 5) ; 25
-
-(define sum-sq (lambda (p q) (+ (sq p) (sq q))))
-(sum-sq 7 9) ; 130
-
-(define t #t)
-(if t 1 2)
-
-(quote (+ 1 2)) ; (+ 1 2)
-(eval 1) ; 1
-(eval (eval 1)) ; 1
-(eval (quote (+ 1 2))) ; (+ 1 2)
-(1) ; ERROR
-(display 1) ; 1
-(display (+ 1 2)) ; 3
-(begin (display 1) (display 2)) ; 12
-(define three (begin (display 1) (display 2) 3)) ; 12 3
-
-"string"
-(load "/home/rohan/sw/hsc3-forth/lisp/stdlib.lisp")
-
-(define c (cons 1 2))
-(car c) ; 1
-(cdr c) ; 2
-(pair? c) ; #t
-(list? c) ; #f
-(null? c) ; #f
-(null? '()) ; #t
-
-(define l (cons 1 (cons 2 (cons 3 '()))))
-(null? l) ; #f
-(pair? l) ; #t
-(list? l) ; #t
-(define length (lambda (l) (if (null? l) 0 (+ 1 (length (cdr l))))))
-(length l) ; 3
-
-(define (lambda (_) (define undef 1)))
-undef
-
-(define a '())
-(set! a 5)
-a
-
-(define l (cons 1 (cons 2 (cons 3 '()))))
-(define length (lambda (l) (if (null? l) 0 (+ 1 (length (cdr l))))))
-(length l)
-(++ l l)
-
-(define square (lambda (n) (* n n)))
-((lambda (x y z) (+ x (+ y (square z)))) 1 2 3) ; 12
-
-(define a 5)
-(define b (lambda (_) a))
-(b '()) ; 5
-(set! a 4)
-(b '()) ; 4
-
-(define square (lambda (n) (* n n)))
-(define f (lambda (x y) ((lambda (a b) (+ (+ (* x (square a)) (* y b)) (* a b))) (+ 1 (* x y)) (- 1 y))))
-(f 7 9) ; 28088
-
-(load "/home/rohan/sw/hsc3-forth/lisp/stdlib.lisp")
-(when #t (display "TRUE"))
-(when #f (display "FALSE"))
-
-(when ((lambda (_) #t) void) (display "TRUE"))
-(when ((lambda (_) #f) void) (display "TRUE"))
-
-nil ; '()
-(list-rewriter '(1 2 3)) ; (cons 1 (cons 2 (cons 3 nil)))
-(list 1 2 3) ; (1 2 3)
-(append (list 1 2 3) (list 4 5 6)) ; (1 2 3 4 5 6)
-(list 1 2 (cons 3 4) 5) ; (1 2 (cons 3 4) 5)
-
--}
+load_files :: Lisp_Ty a => [String] -> VM a ()
+load_files nm = do
+  r <- liftIO (lookupEnv "HSC3_LISP_DIR")
+  case r of
+    Nothing -> throwError "HSC3_LISP_DIR NOT SET"
+    Just dir -> mapM_ load (map (String . (dir </>)) nm)

@@ -63,8 +63,9 @@ rat_dict = M.fromList
 
 main :: IO ()
 main = do
+  sig <- newMVar False
   let d :: Dict () Rational
       d = M.unions [core_dict,rat_dict]
+      vm = (empty_vm () parse_rat sig) {dict = d,input_port = Just stdin}
   putStrLn "RAT-FORTH"
-  sig <- newMVar False
-  repl (empty_vm () parse_rat sig) {dict = d,input_port = Just stdin}
+  repl vm (load_files ["stdlib.fs"])

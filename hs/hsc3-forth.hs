@@ -6,8 +6,6 @@ import Data.Char {- base -}
 import Data.List.Split {- split -}
 import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
-import System.Environment {- base -}
-import System.FilePath {- filepath -}
 import System.IO {- base -}
 import qualified Text.Read as R {- base -}
 
@@ -80,7 +78,7 @@ fw_assert_empty = do
   vm <- get
   case stack vm of
     [] -> return ()
-    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map dc_show l))
+    l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map show l))
 
 -- * UGen
 
@@ -266,11 +264,6 @@ main = do
       d = M.unions [core_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant sig) {dynamic = Just gen_ugen
                                            ,dict = d}
-  dir <- lookupEnv "HSC3_FORTH_DIR"
-  case dir of
-    Nothing -> error "HSC3_FORTH_DIR NOT SET"
-    Just dir' -> do
-      let nm = map (dir' </>) ["stdlib.fs","hsc3.fs","overlap-texture.fs"]
-      vm' <- load_files nm vm
-      putStrLn "HSC3-FORTH"
-      repl vm' {input_port = Just stdin}
+      init_f = load_files ["stdlib.fs","hsc3.fs","overlap-texture.fs"]
+  putStrLn "HSC3-FORTH"
+  repl (vm {input_port = Just stdin}) init_f

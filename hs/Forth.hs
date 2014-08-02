@@ -9,7 +9,9 @@ import Data.Hashable {- hashable -}
 import Data.List {- base -}
 import qualified Data.Map as M {- containers -}
 import System.Directory {- directory -}
+import System.Environment {- base -}
 import System.Exit {- base -}
+import System.FilePath {- filepath -}
 import System.IO {- base -}
 import qualified System.Posix.Signals as P {- unix -}
 
@@ -719,7 +721,7 @@ repl' vm = do
     Left err -> case err of
                   VM_EOF -> putStrLn "BYE" >> liftIO exitSuccess
                   VM_No_Input -> liftIO exitSuccess
-                  VM_Error msg -> putStrLn (" ERROR: " ++ msg) >> repl (vm_reset vm)
+                  VM_Error msg -> putStrLn (" ERROR: " ++ msg) >> repl' (vm_reset vm)
     Right () -> repl' vm'
 
 catch_sigint :: VM w a -> IO ()
@@ -730,14 +732,18 @@ catch_sigint vm = do
   return ()
 
 -- | 'repl'' but with 'catch_sigint'.
-repl :: (Forth_Type a, Eq a) => VM w a -> IO ()
-repl vm = catch_sigint vm >> repl' vm
+repl :: (Forth_Type a, Eq a) => VM w a -> Forth w a () -> IO ()
+repl vm init_f = do
+  catch_sigint vm
+  (_,vm') <- runStateT (runExceptT init_f) vm
+  repl' vm'
 
-load_files :: (Eq a,Forth_Type a) => [String] -> VM w a -> IO (VM w a)
-load_files nm vm =
-    case nm of
-      [] -> return vm
-      f : nm' -> exec_err vm (fw_included' f) >>= load_files nm'
+load_files :: (Eq a,Forth_Type a) => [String] -> Forth w a ()
+load_files nm = do
+  r <- liftIO (lookupEnv "HSC3_FORTH_DIR")
+  case r of
+    Nothing -> throw_error "HSC3_FORTH_DIR NOT SET"
+    Just dir -> mapM_ fw_included' (map (dir </>) nm)
 
 -- * List functions
 

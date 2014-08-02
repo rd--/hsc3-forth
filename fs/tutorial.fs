@@ -1,11 +1,13 @@
-( HSC3 FORTH )
+( HSC3 FORTH -- AMERICAN PRIMITIVE, VOL. 1 )
 
 \ HSC3-FORTH is a simple FORTH-ish interpreter.
 \ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, and one data stack.
-\ There is a return stack.
 \ There is IF ELSE THEN, and DO LOOP, and (LOCAL) in the form { VAR ... }.
+\ There is a return stack.
 
 ( EMACS FORTH )
+
+\ You can write directly to HSC3-FORTH, or you can write to EMACS.
 
 \ HSC3-FORTH MODE
 \ Commands are C-cC- prefixed.
