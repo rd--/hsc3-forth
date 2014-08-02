@@ -1,12 +1,12 @@
-forth supercollider
+FORTH SUPERCOLLIDER
 -------------------
 
-`hsc3-forth` is a _very_ simple-minded [forth][forth] interpreter.
+`HSC3-FORTH` is a simple-minded [FORTH][forth] interpreter.
 
-the only data type is the [supercollider][sc3] `unit generator`.
+The only data type is the [SUPERCOLLIDER][sc3] `UNIT GENERATOR`.
 
-a forth answer to the eternal question,
-[why supercollider?](sw/hsc3-graphs/html/why-supercollider.scd.html)
+A FORTH answer to the eternal question,
+[WHY SUPERCOLLIDER?](sw/hsc3-graphs/html/why-supercollider.scd.html)
 
 ~~~~
 : rvb 5 0 do 0.05 0 0.05 Rand.ir 2 clone 1 AllpassN loop ; 0.2 Dust.ar
@@ -19,32 +19,38 @@ a forth answer to the eternal question,
 
 [img]: sw/hsc3-graphs/svg/why-supercollider.svg
 
-`hsc3-forth` works with the [gforth][gforth] [emacs][emacs] mode, just
+`HSC3-FORTH` works with the [GFORTH][gforth] [EMACS][emacs] mode, just
 set `forth-program-name`.
 
-to build type:
+To build type:
 
 ~~~~
 cd hs ; prefix=~/opt make install
 ~~~~
 
-to hear the above type `C-cC-r` in emacs, or in a shell type:
+To hear the above type `C-cC-r` in emacs, or in a shell type:
 
 ~~~~
 hsc3-forth < ~/sw/hsc3-graphs/gr/why-supercollider.fs
 ~~~~
 
-to quieten there is the forth word `stop`.
+To quieten there is the forth word `STOP`.
 
-`hsc3-forth` is case-sensitive.
+`HSC3-FORTH` is case-sensitive.
 
-it follows the [haskell][hs] supercollider ([hsc3][hsc3]) rules.
+It follows the [HASKELL][hs] supercollider ([HSC3][hsc3]) rules.
 
-it is very partial.
+It is very partial.
 
-it is only known to work as far as the translated graphs at [hsc3-graphs](?t=hsc3-graphs).
+It is known to work as far as the translated graphs at [HSC3-GRAPHS](?t=hsc3-graphs).
 
-search for `fs` in the [index](?t=hsc3-graphs&m=md/ix.md).
+Search for `FS` in the [INDEX](?t=hsc3-graphs&m=md/ix.md).
+
+* * *
+
+AMERICAN PRIMITIVE, VOL. 2
+
+Continuing the series, `HSC3-LISP` is a simple minded [LISP][lisp] interpreter.
 
 © [rohan drape][rd], 2014, [gpl][gpl].
 
@@ -56,3 +62,4 @@ search for `fs` in the [index](?t=hsc3-graphs&m=md/ix.md).
 [gpl]: http://gnu.org/copyleft/
 [gforth]: http://www.gnu.org/software/gforth/
 [emacs]: http://www.gnu.org/software/emacs/
+[lisp]: http://www-formal.stanford.edu/jmc/history/lisp/lisp.html

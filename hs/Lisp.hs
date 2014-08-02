@@ -1,13 +1,9 @@
 module Lisp where
 
---import Control.Concurrent {- mtl -}
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
 import Data.IORef {- base -}
---import Data.List {- base -}
 import qualified Data.Map as M {- containers -}
---import Data.Maybe {- base -}
---import Data.Ratio {- base -}
 import System.Directory {- directory -}
 import System.Environment {- base -}
 import System.FilePath {- filepath -}
@@ -131,19 +127,6 @@ instance Lisp_Ty a => Show (Cell a) where
           Void -> "VOID"
           Error msg -> "ERROR: " ++ msg
 
-lift_uop :: Lisp_Ty a => (a -> a) -> Cell a
-lift_uop f = Fun (\c -> maybe (Error "NOT-ATOM?") (Atom . f) (atom c))
-
-lift_binop :: Lisp_Ty a => (a -> a -> a) -> Cell a
-lift_binop f =
-    let g p q = case (p,q) of
-                  (Just p',Just q') -> Atom (f p' q')
-                  _ -> Error "NOT-ATOM?"
-    in Fun (\lhs -> Fun (\rhs -> g (atom lhs) (atom rhs)))
-
-(.:) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
-(.:) = fmap . fmap
-
 l_false :: Lisp_Ty a => Cell a
 l_false = Atom (ty_from_bool False)
 
@@ -168,16 +151,6 @@ core_dict =
     ,("null?",Fun (\c -> case c of {Nil -> l_true; _ -> l_false}))
     ,("pair?",Fun (\c -> case c of {Cons _ _ -> l_true; _ -> l_false}))
     ,("list?",Fun (Atom . ty_from_bool . is_list))
-    ,("+",lift_binop (+))
-    ,("*",lift_binop (*))
-    ,("-",lift_binop (-))
-    ,("/",lift_binop (/))
-    ,("<",lift_binop (ty_from_bool .: (<)))
-    ,(">",lift_binop (ty_from_bool .: (>)))
-    ,("<=",lift_binop (ty_from_bool .: (<=)))
-    ,(">=",lift_binop (ty_from_bool .: (>=)))
-    ,("negate",lift_uop negate)
-    ,("recip",lift_uop recip)
     ,("equal?",cell_equal)
     ,("display",Proc (\c -> liftIO (putStr (show c)) >> return c))
     ,("load",Proc (\c -> load c >> return Void))
@@ -185,9 +158,9 @@ core_dict =
     ,("error",Proc (\c -> throwError ("ERROR: " ++ show c)))]
 
 -- > fmap show (env_lookup "add" env_toplevel)
-env_toplevel :: Lisp_Ty a => IO (Env a)
-env_toplevel = do
-  m <- newIORef core_dict
+gen_toplevel :: Lisp_Ty a => Dict a -> IO (Env a)
+gen_toplevel dict = do
+  m <- newIORef dict
   return (Env m Nothing)
 
 type SEXP = S.LispVal

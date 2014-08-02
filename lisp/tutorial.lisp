@@ -6,6 +6,11 @@
 
 ; (setq rsc3-interpreter (list "hsc3-lisp"))
 
+; THE VOID
+
+void ; VOID
+(void? void) ; #t
+
 ; EQ LISP
 
 (equal? 'a 'a) ; #t
@@ -24,13 +29,43 @@
 
 ; FUNCTION LISP
 
+; Functions and procedures are strictly of the form α -> β.
+
++ ; FUN
+(+ 1) ; FUN
+((+ 1) 2) ; 3
+
+; One obvious notational extension is allowed, another is not.
+
+(+ 1 2) ; 3
+(+ 1 2 3) ; ERROR
+(sum '(1 2 3)) ; 6
+
 (map (compose (+ 1) (* 2)) (list 1 2 3)) ; (3 5 7)
 (map (compose (/ 2) (+ 3)) (list 1 2 3)) ; (1/2 2/5 1/3)
 (map (const 3) (list 1 2 3)) ; (3 3 3)
 (cons (- 1 2) ((flip -) 1 2)) ; (cons -1 1)
 (id 1) ; 1
 
-; CELLULAR LISP
+; CHURCH LISP
+
+((lambda (n) (* n n)) 3) ; 9
+((lambda (x y z) (+ x (+ y ((lambda (n) (* n n)) z)))) 1 2 3) ; 12
+
+; DEFINITE LISP
+
+(define one 1) ; VOID
+one ; 1
+
+(define sq (lambda (n) (* n n))) ; VOID
+(sq 5) ; 25
+
+(define sum-sq (lambda (p q) (+ (sq p) (sq q)))) ; VOID
+(sum-sq 7 9) ; 130
+
+(define (lambda (_) (define undefined 1))) ; ERROR
+
+; CONS LISP
 
 (define c (cons 1 2)) ; VOID
 (car c) ; 1
@@ -80,7 +115,7 @@ nil ; '()
 (succ 1) ; 2
 (pred 2) ; 1
 
-; LISP LOGIC
+; LOGICAL LISP
 
 (if #t 1 2) ; 1
 (if #f 1 2) ; 2
@@ -125,32 +160,12 @@ a ; 5
 (set! a 4)
 (b void) ; 4
 
-(define one 1) ; VOID
-one ; 1
-
-; FUNCTION LISP
-
-(+ 1) ; FUN
-((+ 1) 2) ; 3
-(+ 1 2) ; 3
-
 ; BINDING LISP
 
 (let ((a 5)) a) ; 5
 (let ((a 5) (b 6)) (cons a b)) ; (cons 5 6)
 (let ((a 5) (b (+ 2 3))) (* a b)) ; 25
 (let ((a 5) (b (+ a 3))) (* a b)) ; 40
-
-; LAMBDA
-
-((lambda (n) (* n n)) 3) ; 9
-
-(define sq (lambda (n) (* n n)))
-(sq 5) ; 25
-((lambda (x y z) (+ x (+ y (sq z)))) 1 2 3) ; 12
-
-(define sum-sq (lambda (p q) (+ (sq p) (sq q))))
-(sum-sq 7 9) ; 130
 
 ; QUOTING LISP
 
@@ -172,17 +187,11 @@ three ; 3
 ; STRING LISP
 
 "string" ; "string"
+(string? "string") ; #t
 
 ; LOADING LISP
 
 (load "/home/rohan/sw/hsc3-forth/lisp/stdlib.lisp")
-
-; THE VOID
-
-(void? void) ; #t
-
-(define (lambda (_) (define undef 1))) ; ERROR
-undef ; ERROR
 
 ; SICP
 
