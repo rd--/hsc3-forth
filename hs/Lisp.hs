@@ -1,27 +1,31 @@
 module Lisp where
 
-import Control.Concurrent {- mtl -}
+--import Control.Concurrent {- mtl -}
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
 import Data.IORef {- base -}
-import Data.List {- base -}
+--import Data.List {- base -}
 import qualified Data.Map as M {- containers -}
-import Data.Maybe {- base -}
-import Data.Ratio {- base -}
+--import Data.Maybe {- base -}
+--import Data.Ratio {- base -}
 import System.Directory {- directory -}
-import System.IO {- base -}
+--import System.IO {- base -}
 
 import qualified Language.Scheme.Parser as S {- husk-scheme -}
 import qualified Language.Scheme.Types as S {- husk-scheme -}
 
 -- * Types
 
+class (Eq a,Num a,Fractional a) => Lisp_Ty a where
+    ty_show :: a -> String -- ^ String representation of /a/, pretty printer.
+    ty_from_bool :: Bool -> a -- ^ Boolean value represented in /a/, by convention @1@ and @0@.
+
 type Dict a = M.Map String (Cell a)
 
 data Env a = Env {env_frame :: IORef (Dict a)
                  ,env_parent :: Maybe (Env a)}
 
-env_print :: (Show t, Eq t) => Env t -> IO ()
+env_print :: Lisp_Ty t => Env t -> IO ()
 env_print (Env m p) = do
   d <- readIORef m
   print d
@@ -29,16 +33,16 @@ env_print (Env m p) = do
     Nothing -> return ()
     Just p' -> env_print p'
 
-data Cell a = Symbol String | String String | Boolean Bool | Atom a
+data Cell a = Void
+            | Boolean Bool | Symbol String | String String | Atom a
             | Nil | Cons (Cell a) (Cell a)
-            | Fun (Cell a -> Cell a) | Proc (Cell a -> VM a (Cell a))
+            | Fun (Cell a -> Cell a)
+            | Proc (Cell a -> VM a (Cell a))
             | Lambda (Env a) String (Cell a)
+            | Macro (Cell a)
             | Error String
 
 type VM a r = ExceptT String (StateT (Env a) IO) r
-
-class (Eq a,Num a,Fractional a,Show a) => Lisp_Ty a where
-instance (Show a,Integral a) => Lisp_Ty (Ratio a) where
 
 -- * Environment
 
@@ -59,7 +63,7 @@ env_lookup w (Env m p) = do
   case M.lookup w d of
     Just r -> return r
     Nothing -> case p of
-                 Nothing -> error "ENV-LOOKUP"
+                 Nothing -> error ("ENV-LOOKUP: " ++ w)
                  Just p' -> env_lookup w p'
 
 env_extend :: [(String,Cell a)] -> Env a -> IO (Env a)
@@ -77,7 +81,7 @@ env_set (Env m p) nm c = do
     then modifyIORef m (M.insert nm c)
     else case p of
            Just p' -> env_set p' nm c
-           Nothing -> error "ENV-SET"
+           Nothing -> error ("ENV-SET: " ++ nm)
 
 atom :: Cell a -> Maybe a
 atom c =
@@ -96,32 +100,34 @@ instance Eq a => Eq (Cell a) where
           (Cons p p',Cons q q') -> p == q && p' == q'
           _ -> False -- error "EQ"
 
-list_p :: Eq a => Cell a -> Bool
-list_p c =
+is_list :: Eq a => Cell a -> Bool
+is_list c =
     case c of
-      Cons _ c' -> c' == Nil || list_p c'
+      Cons _ c' -> c' == Nil || is_list c'
       _ -> False
 
-list_pp :: (Eq a,Show a) => Cell a -> String
+list_pp :: Lisp_Ty a => Cell a -> String
 list_pp c =
     let f l = case l of
                 Nil -> []
                 Cons e l' -> show e : f l'
-                _ -> ["ERROR: NOT LIST"]
-    in "(" ++ intercalate "," (f c) ++ ")"
+                _ -> ["ERROR: NOT LIST?"]
+    in "(" ++ unwords (f c) ++ ")"
 
-instance (Eq a,Show a) => Show (Cell a) where
+instance Lisp_Ty a => Show (Cell a) where
     show c =
         case c of
-          Atom a -> show a
+          Atom a -> ty_show a
           Symbol s -> s
           String s -> show s
           Boolean b -> if b then "#t" else "#f"
           Nil -> "'()"
-          Cons p q -> if list_p c then list_pp c else concat ["(CONS ",show p," ",show q,")"]
+          Cons p q -> if is_list c then list_pp c else concat ["(CONS ",show p," ",show q,")"]
           Fun _ -> "FUN"
           Proc _ -> "PROC"
-          Lambda _ nm code -> concat ["(LAMBDA (",nm,") ",show code,")"]
+          Lambda _ nm code -> concat ["(","LAMBDA"," (",nm,") ",show code,")"]
+          Macro m -> "MACRO: " ++ show m
+          Void -> "VOID"
           Error msg -> "ERROR: " ++ msg
 
 lift_uop :: Lisp_Ty a => (a -> a) -> Cell a
@@ -147,11 +153,13 @@ core_dict :: Lisp_Ty a => Dict a
 core_dict =
     M.fromList
     [("nil",Nil)
+    ,("void",Void)
     ,("cons",Fun (\lhs -> Fun (\rhs -> Cons lhs rhs)))
     ,("car",Fun (\c -> case c of {Cons lhs _ -> lhs; _ -> Error ("CAR: " ++ show c)}))
     ,("cdr",Fun (\c -> case c of {Cons _ rhs -> rhs; _ -> Error ("CDR: " ++ show c)}))
     ,("null?",Fun (\c -> case c of {Nil -> true; _ -> false}))
     ,("pair?",Fun (\c -> case c of {Cons _ _ -> true; _ -> false}))
+    ,("list?",Fun (Boolean . is_list))
     ,("+",lift_binop (+))
     ,("*",lift_binop (*))
     ,("-",lift_binop (-))
@@ -196,29 +204,27 @@ parse_cell' sexp =
 parse_cell :: Lisp_Ty a => String -> VM a (Cell a)
 parse_cell str = parse_sexp str >>= parse_cell'
 
-apply :: Lisp_Ty a => Cell a -> Cell a -> VM a (Cell a)
-apply p arg =
-    case p of
-      Fun f -> return (f arg)
-      Proc f -> f arg
-      Lambda env nm code -> do
-             cur_env <- get -- save current environment
-             env' <- liftIO (env_extend [(nm,arg)] env)
-             put env' -- put lambda environment
-             res <- eval code -- eval code in lambda environment
-             put cur_env -- restore environment
-             return res
-      _ -> throwError ("APPLY: " ++ show p ++ show arg)
+apply_lambda :: Lisp_Ty a => Env a -> String -> Cell a -> Cell a -> VM a (Cell a)
+apply_lambda env nm code arg = do
+  cur_env <- get -- save current environment
+  put =<< liftIO (env_extend [(nm,arg)] env) -- put extended lambda environment
+  res <- eval code -- eval code in lambda environment
+  put cur_env -- restore environment
+  return res
 
 -- | Functions are one argument, but allow (+ 1 2) for ((+ 1) 2).
-eval_apply :: Lisp_Ty a => Cell a -> Cell a -> Cell a -> VM a (Cell a)
-eval_apply f p l = do
-  p' <- eval p
-  r <- apply f p'
-  case l of
-    Nil -> return r
-    Cons e l' -> eval_apply r e l'
-    _ -> throwError "EVAL-APPLY"
+apply :: Lisp_Ty a => Cell a -> Cell a -> Cell a -> VM a (Cell a)
+apply lhs arg var_arg = do
+  let msg = s_list [Symbol "LHS:",lhs,Symbol "RHS:",arg,var_arg]
+  r <- case lhs of
+         Fun f -> eval arg >>= return . f
+         Proc f -> eval arg >>= f
+         Lambda env nm code -> eval arg >>= apply_lambda env nm code
+         _ -> throwError ("APPLY: " ++ show msg)
+  case (lhs,var_arg) of
+    (_,Nil) -> return r
+    (_,Cons e l') -> apply r e l'
+    _ -> throwError ("APPLY: RESULT: " ++ show msg)
 
 s_list :: [Cell a] -> Cell a
 s_list = foldr Cons Nil
@@ -230,15 +236,6 @@ rewrite_let bind code =
           body <- if bind' == Nil then return code else rewrite_let bind' code
           return (s_list [s_list [Symbol "lambda",s_list [nm],body],def])
       _ -> throwError "REWRITE-LET"
-
-rewrite_let_star :: Cell a -> Cell a -> VM a (Cell a)
-rewrite_let_star bind code =
-    case bind of
-      Cons p Nil -> return (s_list [Symbol "let",s_list [p],code])
-      Cons p bind' -> do
-                code' <- rewrite_let_star bind' code
-                return (s_list [Symbol "let",s_list [p],code'])
-      _ -> throwError "REWRITE-LET*"
 
 eval_lambda :: Lisp_Ty a => Cell a -> Cell a -> VM a (Cell a)
 eval_lambda param code =
@@ -269,38 +266,45 @@ load c = do
     _ -> throwError ("LOAD: " ++ show c)
 
 l_load :: Lisp_Ty a => Cell a
-l_load = Proc (\c -> load c >> return Nil)
+l_load = Proc (\c -> load c >> return Void)
 
 l_eval :: Lisp_Ty a => Cell a
 l_eval = Proc (\c -> eval c >>= eval)
 
+s_quote :: Cell a -> Cell a
+s_quote c = s_list [Symbol "quote",c]
+
 eval :: Lisp_Ty a => Cell a -> VM a (Cell a)
 eval c =
+    -- liftIO (putStrLn ("RUN EVAL: " ++ show c)) >>
     case c of
-      Symbol nm -> get >>= \env -> liftIO (env_lookup nm env)
+      Void -> return c
+      Boolean _ -> return c
       String _ -> return c
       Atom _ -> return c
+      Symbol nm -> get >>= \env -> liftIO (env_lookup nm env)
       Cons (Symbol "set!") (Cons (Symbol nm) (Cons def Nil)) ->
-          get >>= \env -> liftIO (env_set env nm def) >> return Nil
+          get >>= \env -> liftIO (env_set env nm def) >> return Void
       Cons (Symbol "define") (Cons (Symbol nm) (Cons def Nil)) -> do
              env <- get
              def' <- eval def
              liftIO (env_add_binding nm (Symbol "VOID") env >> env_set env nm def')
-             return Nil
+             return Void
       Cons (Symbol "if") (Cons p (Cons t (Cons f Nil))) ->
           eval p >>= \p' -> if p' == false then eval f else eval t
       Cons (Symbol "begin") codes -> eval_begin codes
       Cons (Symbol "quote") (Cons code Nil) -> return code
-      Cons (Symbol "lambda") (Cons param (Cons code Nil)) ->
-          eval_lambda param code
+      Cons (Symbol "lambda") (Cons param (Cons code Nil)) -> eval_lambda param code
+      Cons (Symbol "macro") (Cons code Nil) -> fmap Macro (eval code)
       Cons (Symbol "let") (Cons bind (Cons code Nil)) ->
           eval =<< rewrite_let bind code
-      Cons (Symbol "let*") (Cons bind (Cons code Nil)) ->
-          eval =<< rewrite_let_star bind code
       Cons f (Cons p l) -> do
+          -- liftIO (putStrLn ("EVAL: RUN APPLY"))
           f' <- eval f
-          eval_apply f' p l
-      _ -> return (Error ("EVAL: " ++ show c))
+          case f' of
+            Macro f'' -> apply f'' (s_quote (Cons p l)) Nil >>= eval
+            _ -> apply f' p l
+      _ -> throwError ("EVAL: " ++ show c)
 
 repl' :: Lisp_Ty a => Env a -> IO ()
 repl' env = do
@@ -317,10 +321,12 @@ one ; 1
 (+ 1) ; FUN
 ((+ 1) 2) ; 3
 (+ 1 2) ; 3
+
 (let ((a 5)) a) ; 5
 (let ((a 5) (b 6)) (cons a b)) ; (cons 5 6)
 (let ((a 5) (b (+ 2 3))) (* a b)) ; 25
-(let* ((a 5) (b (+ a 3))) (* a b)) ; 40
+(let ((a 5) (b (+ a 3))) (* a b)) ; 40
+
 (equal? 5 5) ; #t
 
 ((lambda (n) (* n n)) 3) ; 9
@@ -351,11 +357,14 @@ one ; 1
 (car c) ; 1
 (cdr c) ; 2
 (pair? c) ; #t
+(list? c) ; #f
 (null? c) ; #f
 (null? '()) ; #t
 
 (define l (cons 1 (cons 2 (cons 3 '()))))
 (null? l) ; #f
+(pair? l) ; #t
+(list? l) ; #t
 (define length (lambda (l) (if (null? l) 0 (+ 1 (length (cdr l))))))
 (length l) ; 3
 
@@ -369,7 +378,7 @@ a
 (define l (cons 1 (cons 2 (cons 3 '()))))
 (define length (lambda (l) (if (null? l) 0 (+ 1 (length (cdr l))))))
 (length l)
-
+(++ l l)
 
 (define square (lambda (n) (* n n)))
 ((lambda (x y z) (+ x (+ y (square z)))) 1 2 3) ; 12
@@ -383,5 +392,18 @@ a
 (define square (lambda (n) (* n n)))
 (define f (lambda (x y) ((lambda (a b) (+ (+ (* x (square a)) (* y b)) (* a b))) (+ 1 (* x y)) (- 1 y))))
 (f 7 9) ; 28088
+
+(load "/home/rohan/sw/hsc3-forth/lisp/stdlib.lisp")
+(when #t (display "TRUE"))
+(when #f (display "FALSE"))
+
+(when ((lambda (_) #t) void) (display "TRUE"))
+(when ((lambda (_) #f) void) (display "TRUE"))
+
+nil ; '()
+(list-rewriter '(1 2 3)) ; (cons 1 (cons 2 (cons 3 nil)))
+(list 1 2 3) ; (1 2 3)
+(append (list 1 2 3) (list 4 5 6)) ; (1 2 3 4 5 6)
+(list 1 2 (cons 3 4) 5) ; (1 2 (cons 3 4) 5)
 
 -}
