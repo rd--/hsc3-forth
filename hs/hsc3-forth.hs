@@ -37,7 +37,7 @@ push_l = mapM_ push
 
 pop_double :: Forth w UGen Double
 pop_double =
-    let f u = case u_constant (ugen_optimise_ir_rand u) of
+    let f u = case constant_opt u of
                 Nothing -> throw_error "POP_DOUBLE"
                 Just n -> return n
     in pop >>= f

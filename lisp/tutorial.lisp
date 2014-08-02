@@ -193,6 +193,10 @@ three ; 3
 
 (load "/home/rohan/sw/hsc3-forth/lisp/stdlib.lisp")
 
+; FLOATING LISP
+
+(map sin (enum-from-then-to 0 0.05 pi))
+
 ; SICP
 
 (define square (lambda (n) (* n n))) ; VOID
@@ -204,3 +208,10 @@ three ; 3
      (- 1 y))))
 
 (f 7 9) ; 28088
+
+; UGEN
+
+(stop void)
+(draw (* (sin-osc ar 440 0) 0.1))
+(sc3-status void)
+(play (* (sin-osc ar 440 0) 0.1))

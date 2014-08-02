@@ -104,13 +104,15 @@ is_list c =
       Cons _ c' -> c' == Nil || is_list c'
       _ -> False
 
+to_list :: Lisp_Ty a => Cell a -> [Cell a]
+to_list l =
+    case l of
+      Nil -> []
+      Cons e l' -> e : to_list l'
+      _ -> [Error "NOT LIST?"]
+
 list_pp :: Lisp_Ty a => Cell a -> String
-list_pp c =
-    let f l = case l of
-                Nil -> []
-                Cons e l' -> show e : f l'
-                _ -> ["ERROR: NOT LIST?"]
-    in "(" ++ unwords (f c) ++ ")"
+list_pp c = "(" ++ unwords (map show (to_list c)) ++ ")"
 
 instance Lisp_Ty a => Show (Cell a) where
     show c =
@@ -314,3 +316,38 @@ load_files nm = do
   case r of
     Nothing -> throwError "HSC3_LISP_DIR NOT SET"
     Just dir -> mapM_ load (map (String . (dir </>)) nm)
+
+-- * Num
+
+(.:) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
+(.:) = fmap . fmap
+
+lift_uop :: Lisp_Ty a => (a -> a) -> Cell a
+lift_uop f = Fun (\c -> maybe (Error "NOT-ATOM?") (Atom . f) (atom c))
+
+lift_binop :: Lisp_Ty a => (a -> a -> a) -> Cell a
+lift_binop f =
+    let g p q = case (p,q) of
+                  (Just p',Just q') -> Atom (f p' q')
+                  _ -> Error "NOT-ATOM?"
+    in Fun (\lhs -> Fun (\rhs -> g (atom lhs) (atom rhs)))
+
+num_dict :: Lisp_Ty a => Dict a
+num_dict =
+    M.fromList
+    [("+",lift_binop (+))
+    ,("*",lift_binop (*))
+    ,("-",lift_binop (-))
+    ,("/",lift_binop (/))
+    ,("<",lift_binop (ty_from_bool .: (<)))
+    ,(">",lift_binop (ty_from_bool .: (>)))
+    ,("<=",lift_binop (ty_from_bool .: (<=)))
+    ,(">=",lift_binop (ty_from_bool .: (>=)))
+    ,("negate",lift_uop negate)
+    ,("recip",lift_uop recip)]
+
+float_dict :: (Lisp_Ty a,Floating a) => Dict a
+float_dict =
+    M.fromList
+    [("sin",lift_uop sin)
+    ,("cos",lift_uop cos)]

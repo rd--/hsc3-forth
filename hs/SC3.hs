@@ -78,3 +78,5 @@ parse_constant s =
         d = R.readMaybe s
     in fmap constant d
 
+constant_opt :: UGen -> Maybe Double
+constant_opt = u_constant . ugen_optimise_ir_rand
