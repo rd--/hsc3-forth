@@ -76,60 +76,25 @@ get_nc nc =
       Just n -> return n
       Nothing -> pop_int
 
-gen_osc :: DB.U -> Rate -> U_Forth ()
-gen_osc u rt = do
-  let (inp,nc) = ugen_io u
-      nm = DB.ugen_name u
-  z <- if DB.ugen_nondet u then incr_uid else return 0
-  nc' <- get_nc nc
-  i <- pop_n inp
-  let i' = (if u_halts_mce u then halt_mce_transform else id) (reverse i)
-  let gen = if DB.ugen_nondet u then nondet nm (UId z) else ugen nm
-  push (gen rt i' nc')
-
-gen_filter :: DB.U -> U_Forth ()
-gen_filter u = do
-  let (inp,nc) = ugen_io u
-      nm = DB.ugen_name u
-  z <- if DB.ugen_nondet u then incr_uid else return 0
-  nc' <- get_nc nc
-  i <- pop_n inp
-  let rt = maximum (map rateOf i)
-      i' = (if u_halts_mce u then halt_mce_transform else id) (reverse i)
-      gen = if DB.ugen_nondet u then nondet nm (UId z) else ugen nm
-  push (gen rt i' nc')
-
-gen_uop :: U_Reader
-gen_uop nm = do
-  p <- pop
-  let rt = rateOf p
-  push (ugen_optimise_const_operator (uop nm rt p))
-
--- | This follows the ANS Forth convention, ie. @10 2 /@ is @5@.
-gen_binop :: U_Reader
-gen_binop nm = do
-  p <- pop
-  q <- pop
-  let rt = max (rateOf p) (rateOf q)
-  push (ugen_optimise_const_operator (binop nm rt q p))
-
--- | Order of lookup: binop, uop, ugen
-gen_ugen :: U_Reader
-gen_ugen w = do
+gen_plain :: U_Reader
+gen_plain w = do
   (nm,rt) <- ugen_sep' w
-  trace 2 ("GEN_UGEN: " ++ show (w,nm,rt))
-  case is_binop w of
-    True -> gen_binop nm
-    False ->
-        case is_uop w of
-          True -> gen_uop nm
-          False ->
-              case ugen_rec nm of
-                Nothing -> throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ tick_quotes nm)
-                Just u ->
-                    case rt of
-                      Just rt' -> gen_osc u rt'
-                      Nothing -> gen_filter u
+  let (nm',sp) = case rt of
+                   Nothing -> resolve_operator nm
+                   _ -> (nm,Nothing) -- Rand.ir is UGen
+      sp' = Special (fromMaybe 0 sp)
+  u <- case ugen_rec nm' of
+         Nothing -> throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ tick_quotes nm')
+         Just r -> return r
+  when (isNothing rt && isNothing (DB.ugen_filter u))
+       (throw_error ("OSC: NO RATE?: " ++ tick_quotes nm'))
+  let (inp,nc) = ugen_io u
+  z <- if DB.ugen_nondet u then fmap UId incr_uid else return NoId
+  nc' <- get_nc nc
+  i <- pop_n inp
+  let rt' = fromMaybe (maximum (map rateOf i)) rt
+      i' = (if u_halts_mce u then halt_mce_transform else id) (reverse i)
+  push (mk_plain rt' nm' i' nc' sp' z)
 
 sched :: Time -> UGen -> IO ()
 sched t u =
@@ -192,7 +157,7 @@ main = do
   sig <- newMVar False
   let d :: Dict Int UGen
       d = M.unions [core_dict,ugen_dict]
-      vm = (empty_vm 0 parse_constant sig) {dynamic = Just gen_ugen
+      vm = (empty_vm 0 parse_constant sig) {dynamic = Just gen_plain
                                            ,dict = d}
       init_f = load_files ["stdlib.fs","hsc3.fs","overlap-texture.fs"]
   putStrLn "HSC3-FORTH"

@@ -229,6 +229,12 @@ three ; 3
 ; UGEN
 
 (stop nil)
-(draw (* (sin-osc ar 440 0) 0.1))
+(draw (* (SinOsc ar 440 0) 0.1))
+(draw (* (SinOsc ar (MouseX kr 440 880 0 0.1) 0) 0.1))
 (sc3-status nil)
 (play (* (sin-osc ar 440 0) 0.1))
+
+; UID
+
+(set! uid 0) ; NIL
+(map incr-uid '(nil nil nil)) ; (1 2 3)

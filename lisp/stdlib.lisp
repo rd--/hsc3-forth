@@ -68,6 +68,12 @@
 
 (define when (macro when-rw))
 
+; UID
+
+(define uid 0)
+
+(define incr-uid (lambda (_) (begin (set! uid (+ uid 1)) uid)))
+
 ; MATH
 
 (define pi 3.141592653589793)

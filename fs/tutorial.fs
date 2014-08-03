@@ -161,6 +161,10 @@ WhiteNoise.ar 0.1 * play
 WhiteNoise.ar HPZ1.ar 0.1 * .
 WhiteNoise.ar HPZ1 0.1 * .
 
+\ Oscillators may not
+
+440 0 SinOsc 0.1 * . \ ERROR
+
 \ STOP frees all nodes at scsynth (C-cC-k)
 
 stop

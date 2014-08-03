@@ -28,13 +28,16 @@ sep_last =
 u_halts_mce :: DB.U -> Bool
 u_halts_mce = isJust . DB.ugen_mce_input
 
+halt_mce_transform' :: (a -> [a]) -> [a] -> [a]
+halt_mce_transform' f l =
+    let (l',e) = fromMaybe (error "HALT MCE TRANSFORM FAILED") (sep_last l)
+    in l' ++ f e
+
 -- | The halt MCE transform, requires mce is last input.
 --
 -- > halt_mce_transform [1,2,mce2 3 4] == [1,2,3,4]
 halt_mce_transform :: [UGen] -> [UGen]
-halt_mce_transform l =
-    let (l',e) = fromMaybe (error "HALT MCE TRANSFORM FAILED") (sep_last l)
-    in l' ++ mceChannels e
+halt_mce_transform = halt_mce_transform' mceChannels
 
 -- | UGen names are given with rate suffixes if oscillators, without if filters.
 --
@@ -71,6 +74,17 @@ is_uop s = isJust (unaryIndex s)
 -- > map is_binop (words "== > % Trunc Max Max.kr")
 is_binop :: String -> Bool
 is_binop s = isJust (binaryIndex s)
+
+-- | Order of lookup: binop, uop
+--
+-- > map resolve_operator (words "+ - Add Sub Neg")
+resolve_operator :: String -> (String,Maybe Int)
+resolve_operator nm =
+    case binaryIndex nm of
+      Just sp -> ("BinaryOpUGen",Just sp)
+      Nothing -> case unaryIndex nm of
+                   Just sp -> ("UnaryOpUGen",Just sp)
+                   _ -> (nm,Nothing)
 
 parse_constant :: String -> Maybe UGen
 parse_constant s =
