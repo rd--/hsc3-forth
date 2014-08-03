@@ -72,7 +72,12 @@
 
 (define uid 0)
 
-(define incr-uid (lambda (_) (begin (set! uid (+ uid 1)) uid)))
+(define incr-uid (lambda (n) (begin (set! uid (+ uid n)) uid)))
+
+; COMPAT
+
+(define let* let)
+(define mce2 (lambda (p q) (mce (list p q))))
 
 ; MATH
 

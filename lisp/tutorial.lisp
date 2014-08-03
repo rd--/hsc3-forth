@@ -107,6 +107,7 @@ not-defined ; 1
 
 ; LIST LISP
 
+(list-rw '(list)) ; NIL
 (list-rw '(list 1 2 3)) ; (cons 1 (cons 2 (cons 3 nil)))
 (list 1 2 3) ; (1 2 3)
 list ; MACRO
@@ -231,6 +232,7 @@ three ; 3
 (stop nil)
 (draw (* (SinOsc ar 440 0) 0.1))
 (draw (* (SinOsc ar (MouseX kr 440 880 0 0.1) 0) 0.1))
+(draw (* (HPZ1 (WhiteNoise ar)) 0.1))
 (sc3-status nil)
 (play (* (sin-osc ar 440 0) 0.1))
 

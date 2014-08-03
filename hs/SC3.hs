@@ -52,12 +52,14 @@ ugen_sep u =
 ugen_rec :: String -> Maybe DB.U
 ugen_rec = DB.uLookup
 
+ugen_fixed_outputs :: DB.U -> Maybe Int
+ugen_fixed_outputs u =
+    case DB.ugen_nc_input u of
+      Nothing -> DB.ugen_outputs u
+      Just _ -> Nothing
+
 ugen_io :: DB.U -> (Int,Maybe Int)
-ugen_io u =
-    (length (DB.ugen_inputs u)
-    ,case DB.ugen_nc_input u of
-       Nothing -> DB.ugen_outputs u
-       Just _ -> Nothing)
+ugen_io u = (length (DB.ugen_inputs u),ugen_fixed_outputs u)
 
 -- | SC3 has name overlaps.  '-' is suppressed as a uop (see 'negate')
 -- in prefence to the binop ('-'), binops are searched first.
@@ -94,3 +96,23 @@ parse_constant s =
 
 constant_opt :: UGen -> Maybe Double
 constant_opt = u_constant . ugen_optimise_ir_rand
+
+uop_names :: [String]
+uop_names = map show [minBound :: Unary .. maxBound]
+
+binop_names :: [String]
+binop_names = map show [minBound :: Binary .. maxBound]
+
+-- > map sc3_name_to_lisp_name (words "SinOsc LFSaw FFT PV_Add")
+sc3_name_to_lisp_name :: String -> String
+sc3_name_to_lisp_name =
+    let f c0 s =
+            case s of
+              [] -> []
+              [c] -> [toLower c]
+              c : c1 : s' -> if (isLower c0 && isUpper c) ||
+                                (isUpper c0 && isUpper c && isLower c1)
+                             then ['-',toLower c] ++ f c (c1 : s')
+                             else let c' = if c == '_' then '-' else toLower c
+                                  in c' : f c (c1 : s')
+    in f '-'
