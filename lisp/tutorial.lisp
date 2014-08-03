@@ -6,10 +6,10 @@
 
 ; (setq rsc3-interpreter (list "hsc3-lisp"))
 
-; THE VOID
+; NIL LISP
 
-void ; VOID
-(void? void) ; #t
+nil ; NIL
+(null? nil) ; #t
 
 ; EQ LISP
 
@@ -54,15 +54,15 @@ void ; VOID
 
 ; MUTATING LISP
 
-(set! a nil) ; VOID
-a ; nil
-(set! a 5) ; VOID
+(set! a nil) ; NIL
+a ; NIL
+(set! a 5) ; NIL
 a ; 5
 
-(set! b (lambda (_) a)) ; VOID
-(b void) ; 5
-(set! a 4) ; VOID
-(b void) ; 4
+(set! b (lambda (_) a)) ; NIL
+(b nil) ; 5
+(set! a 4) ; NIL
+(b nil) ; 4
 
 ((lambda (x) (begin (display x) (set! x 5) (display x))) 0) ; 05
 
@@ -71,17 +71,17 @@ a ; 5
 ; DEFINE is an alias for set!
 (define-rw '(define one 1)) ; (set! one 1)
 
-(define one 1) ; VOID
+(define one 1) ; NIL
 one ; 1
 
-(define sq (lambda (n) (* n n))) ; VOID
+(define sq (lambda (n) (* n n))) ; NIL
 (sq 5) ; 25
 
-(define sum-sq (lambda (p q) (+ (sq p) (sq q)))) ; VOID
+(define sum-sq (lambda (p q) (+ (sq p) (sq q)))) ; NIL
 (sum-sq 7 9) ; 130
 
 not-defined ; ERROR
-((lambda (_) (define not-defined 1)) void) ; VOID
+((lambda (_) (define not-defined 1)) nil) ; NIL
 not-defined ; 1
 
 ; BINDING LISP
@@ -97,7 +97,7 @@ not-defined ; 1
 
 ; CONS LISP
 
-(define c (cons 1 2)) ; VOID
+(define c (cons 1 2)) ; NIL
 (car c) ; 1
 (cdr c) ; 2
 (pair? c) ; #t
@@ -111,7 +111,7 @@ not-defined ; 1
 (list 1 2 3) ; (1 2 3)
 list ; MACRO
 
-(define l (cons 1 (cons 2 (cons 3 '())))) ; VOID
+(define l (cons 1 (cons 2 (cons 3 '())))) ; NIL
 (null? l) ; #f
 (pair? l) ; #t
 (list? l) ; #t
@@ -122,7 +122,7 @@ list ; MACRO
 (foldl + 0 (list 1 2 3)) ; 6
 (foldr cons '() (list 1 2 3)) ; (1 2 3)
 (list 1 2 3) ; (1 2 3)
-(list 1 2 ((lambda (_) (cons 3 4)) void) 5) ; (1 2 (cons 3 4) 5)
+(list 1 2 ((lambda (_) (cons 3 4)) nil) 5) ; (1 2 (cons 3 4) 5)
 (map (+ 1) (list 1 2 3)) ; (2 3 4)
 (maximum '(1 3 5 4 2 0)) ; 5
 (minimum '(1 3 5 4 2 0)) ; 5
@@ -153,7 +153,7 @@ nil ; '()
 (if #t 1 2) ; 1
 (if #f 1 2) ; 2
 
-(define t #t) ; VOID
+(define t #t) ; NIL
 (if t 1 2) ; 1
 
 (not #t) ; #f
@@ -171,18 +171,18 @@ nil ; '()
 (or #f #t) ; #t
 (or #f #f) ; #f
 
-(cond-rw '(cond)) ; void
-(cond-rw '(cond (a b))) ; (if a b void)
-(cond-rw '(cond (a b) (c d))) ; (if a b (if c d void))
+(cond-rw '(cond)) ; NIL
+(cond-rw '(cond (a b))) ; (if a b nil)
+(cond-rw '(cond (a b) (c d))) ; (if a b (if c d nil))
 (cond-rw '(cond (a b) (c d) (else e))) ; (if a b (if c d e))
 (cond-rw '(cond ((> x y) 'gt) ((< x y) 'lt) (else 'eq)))
 
-(when-rw '(when a b)) ; (if a b VOID)
+(when-rw '(when a b)) ; (if a b NIL)
 (when #t (display "TRUE")) ; "TRUE"
-(when #f (display "FALSE")) ; VOID
+(when #f (display "FALSE")) ; NIL
 
-(when ((lambda (_) #t) void) (display "TRUE")) ; "TRUE"
-(when ((lambda (_) #f) void) (display "FALSE")) ; VOID
+(when ((lambda (_) #t) nil) (display "TRUE")) ; "TRUE"
+(when ((lambda (_) #f) nil) (display "FALSE")) ; NIL
 
 ; QUOTING LISP
 
@@ -198,7 +198,7 @@ nil ; '()
 (display 1) ; 1
 (display (+ 1 2)) ; 3
 (begin (display 1) (display 2)) ; 12
-(define three (begin (display 1) (display 2) 3)) ; 12 VOID
+(define three (begin (display 1) (display 2) 3)) ; 12 NIL
 three ; 3
 
 ; STRING LISP
@@ -216,7 +216,7 @@ three ; 3
 
 ; SICP
 
-(define square (lambda (n) (* n n))) ; VOID
+(define square (lambda (n) (* n n))) ; NIL
 
 (define f
   (lambda (x y)
@@ -228,7 +228,7 @@ three ; 3
 
 ; UGEN
 
-(stop void)
+(stop nil)
 (draw (* (sin-osc ar 440 0) 0.1))
-(sc3-status void)
+(sc3-status nil)
 (play (* (sin-osc ar 440 0) 0.1))

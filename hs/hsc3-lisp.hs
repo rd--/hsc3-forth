@@ -22,7 +22,7 @@ instance Lisp_Ty UGen where
     ty_from_bool t = if t then 1 else 0
 
 lift_io :: IO () -> VM a (Cell a)
-lift_io f = liftIO f >> return Void
+lift_io f = liftIO f >> return Nil
 
 maybe_to_err :: String -> Maybe a -> VM a a
 maybe_to_err msg = maybe (throwError msg) return

@@ -23,8 +23,7 @@ type Dict a = M.Map String (Cell a)
 
 data Env a = Frame (IORef (String,Cell a)) (Env a) | Toplevel (IORef (Dict a))
 
-data Cell a = Void
-            | Symbol String | String String
+data Cell a = Symbol String | String String
             | Atom a
             | Nil | Cons (Cell a) (Cell a)
             | Fun (Cell a -> Cell a)
@@ -119,13 +118,12 @@ instance Lisp_Ty a => Show (Cell a) where
           Atom a -> ty_show a
           Symbol s -> s
           String s -> show s
-          Nil -> "'()"
+          Nil -> "NIL"
           Cons p q -> if is_list c then list_pp c else concat ["(CONS ",show p," ",show q,")"]
           Fun _ -> "FUN"
           Proc _ -> "PROC"
           Lambda _ nm code -> concat ["(","LAMBDA"," (",nm,") ",show code,")"]
           Macro m -> "MACRO: " ++ show m
-          Void -> "VOID"
           Error msg -> "ERROR: " ++ msg
 
 l_false :: Lisp_Ty a => Cell a
@@ -213,12 +211,11 @@ eval :: Lisp_Ty a => Cell a -> VM a (Cell a)
 eval c =
     -- liftIO (putStrLn ("RUN EVAL: " ++ show c)) >>
     case c of
-      Void -> return c
       String _ -> return c
       Atom _ -> return c
       Symbol nm -> get >>= \env -> env_lookup nm env
       Cons (Symbol "set!") (Cons (Symbol nm) (Cons def Nil)) ->
-          get >>= \env -> eval def >>= \def' -> liftIO (env_set env nm def') >> return Void
+          get >>= \env -> eval def >>= \def' -> liftIO (env_set env nm def') >> return Nil
       Cons (Symbol "if") (Cons p (Cons t (Cons f Nil))) ->
           eval p >>= \p' -> if p' == l_false then eval f else eval t
       Cons (Symbol "begin") codes -> eval_begin codes
@@ -259,10 +256,8 @@ load_files nm = do
 core_dict :: Lisp_Ty a => Dict a
 core_dict =
     M.fromList
-    [("void",Void)
-    ,("#t",l_true)
+    [("#t",l_true)
     ,("#f",l_false)
-    ,("void?",Fun (\c -> case c of {Void -> l_true; _ -> l_false}))
     ,("symbol?",Fun (\c -> case c of {Symbol _ -> l_true; _ -> l_false}))
     ,("string?",Fun (\c -> case c of {String _ -> l_true; _ -> l_false}))
     ,("cons",Fun (\lhs -> Fun (\rhs -> Cons lhs rhs)))
@@ -273,7 +268,7 @@ core_dict =
     ,("list?",Fun (Atom . ty_from_bool . is_list))
     ,("equal?",cell_equal)
     ,("display",Proc (\c -> liftIO (putStr (show c)) >> return c))
-    ,("load",Proc (\c -> load c >> return Void))
+    ,("load",Proc (\c -> load c >> return Nil))
     ,("eval",Proc (\c -> eval c >>= eval))
     ,("error",Proc (\c -> throwError ("ERROR: " ++ show c)))
     ,("exit",Proc (\_ -> liftIO exitSuccess))]

@@ -52,7 +52,7 @@
   (lambda (exp)
     (let ((c (cdr exp)))
       (if (null? c)
-          void
+          nil
           (let ((c0 (car c)))
             (if (equal? (car c0) 'else)
                 (cadr c0)
@@ -64,7 +64,7 @@
   (lambda (exp)
     (let ((test (cadr exp))
           (branch (caddr exp)))
-      (list 'if test branch void))))
+      (list 'if test branch nil))))
 
 (define when (macro when-rw))
 
