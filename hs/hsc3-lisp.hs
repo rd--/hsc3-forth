@@ -1,4 +1,5 @@
-import Control.Monad.State {- mtl -}
+import Control.Monad.Except {- mtl -}
+--import Control.Monad.State {- mtl -}
 import Data.Char
 import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
@@ -22,6 +23,9 @@ instance Lisp_Ty UGen where
 
 lift_io :: IO () -> VM a (Cell a)
 lift_io f = liftIO f >> return Void
+
+maybe_to_err :: String -> Maybe a -> VM a a
+maybe_to_err msg = maybe (throwError msg) return
 
 atom_err :: Cell a -> VM a a
 atom_err = maybe_to_err "NOT ATOM?" . atom

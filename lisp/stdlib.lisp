@@ -1,11 +1,40 @@
+; DEFINE
+
+(set! define-rw (lambda (exp) (cons 'set! (cdr exp))))
+(set! define (macro define-rw))
+
+; LET
+
+; using list, which isn't available when let-rw first runs...
+(define let-rw*
+  (lambda (exp)
+    (if (null? (cadr exp))
+        (caddr exp)
+        (list (list 'lambda
+                    (list (caaadr exp))
+                    (let-rw (list 'let (cdadr exp) (caddr exp))))
+              (cadr (caadr exp))))))
+
+; expanded
+(define let-rw
+  (lambda (exp)
+    (if (null? (cadr exp))
+        (caddr exp)
+        (cons (cons 'lambda
+                    (cons (cons (caaadr exp) nil)
+                          (cons (let-rw (cons 'let (cons (cdadr exp) (cons (caddr exp) nil)))) nil)))
+              (cons (cadr (caadr exp)) nil)))))
+
+(define let (macro let-rw))
+
 ; LIST
 
 ; list is a macro because HSC3-LISP is not VARARG
 (define list-rw
-  (lambda (l)
+  (lambda (exp)
     (let ((f (lambda (e r)
                (append (cons 'cons (cons e nil)) (cons r '())))))
-      (foldr f 'nil l))))
+      (foldr f 'nil (cdr exp)))))
 
 (define list (macro list-rw))
 
@@ -13,28 +42,29 @@
 
 (define not (lambda (p) (if p #f #t)))
 
-(define and-rw (lambda (sexp) (list 'if (car sexp) (cadr sexp) #f)))
+(define and-rw (lambda (exp) (list 'if (cadr exp) (caddr exp) #f)))
 (define and (macro and-rw))
 
-(define or-rw (lambda (sexp) (list 'if (car sexp) #t (cadr sexp))))
+(define or-rw (lambda (exp) (list 'if (cadr exp) #t (caddr exp))))
 (define or (macro or-rw))
 
 (define cond-rw
-  (lambda (sexp)
-    (if (null? sexp)
-        void
-        (let ((c0 (car sexp)))
-          (if (equal? (car c0) 'else)
-              (cadr c0)
-              (list 'if (car c0) (cadr c0) (cond-rw (cdr sexp))))))))
+  (lambda (exp)
+    (let ((c (cdr exp)))
+      (if (null? c)
+          void
+          (let ((c0 (car c)))
+            (if (equal? (car c0) 'else)
+                (cadr c0)
+                (list 'if (car c0) (cadr c0) (cond-rw (cons 'cond (cdr c))))))))))
 
 (define cond (macro cond-rw))
 
 (define when-rw
-  (lambda (sexp)
-    (let ((test (car sexp))
-          (branch (cadr sexp)))
-      (cons 'if (cons test (cons branch (cons void '())))))))
+  (lambda (exp)
+    (let ((test (cadr exp))
+          (branch (caddr exp)))
+      (list 'if test branch void))))
 
 (define when (macro when-rw))
 
