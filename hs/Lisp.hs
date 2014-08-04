@@ -188,9 +188,11 @@ apply lhs arg var_arg = do
     (_,Cons e l') -> apply r e l'
     _ -> throwError ("APPLY: RESULT: " ++ show msg)
 
+-- allow (lambda () ...) as (lambda (_) ...)
 eval_lambda :: Lisp_Ty a => Cell a -> Cell a -> VM a (Cell a)
 eval_lambda param code =
     case param of
+      Nil -> get >>= \env -> return (Lambda env "_" code)
       Cons (Symbol nm) Nil -> get >>= \env -> return (Lambda env nm code)
       Cons nm param' ->
           let code' = from_list [Symbol "lambda",param',code]
@@ -213,6 +215,7 @@ eval c =
     case c of
       String _ -> return c
       Atom _ -> return c
+      Nil -> return c
       Symbol nm -> get >>= \env -> env_lookup nm env
       Cons (Symbol "set!") (Cons (Symbol nm) (Cons def Nil)) ->
           get >>= \env -> eval def >>= \def' -> liftIO (env_set env nm def') >> return Nil
@@ -222,13 +225,17 @@ eval c =
       Cons (Symbol "quote") (Cons code Nil) -> return code
       Cons (Symbol "lambda") (Cons param (Cons code Nil)) -> eval_lambda param code
       Cons (Symbol "macro") (Cons code Nil) -> fmap Macro (eval code)
-      Cons f (Cons p l) -> do
+      Cons lhs rhs -> do
+          (p,l) <- case rhs of
+                     Nil -> return (Nil,Nil)
+                     Cons p' q' -> return (p',q')
+                     _ -> throwError ("EVAL: APPLY: RHS not Nil or Cons: " ++ show c)
           -- liftIO (putStrLn ("EVAL: RUN APPLY"))
-          f' <- eval f
-          case f' of
-            Macro f'' -> apply f'' (quote c) Nil >>= eval
-            _ -> apply f' p l
-      _ -> throwError ("EVAL: " ++ show c)
+          f <- eval lhs
+          case f of
+            Macro f' -> apply f' (quote c) Nil >>= eval
+            _ -> apply f p l
+      _ -> throwError ("EVAL: ILLEGAL FORM: " ++ show c)
 
 -- * LOAD
 
@@ -302,14 +309,17 @@ repl env initialise = do
 (.:) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
 (.:) = fmap . fmap
 
+map_atom :: Lisp_Ty a => (a -> a) -> Cell a -> Cell a
+map_atom f c = maybe (Error ("NOT-ATOM: " ++ show c)) (Atom . f) (atom c)
+
 lift_uop :: Lisp_Ty a => (a -> a) -> Cell a
-lift_uop f = Fun (\c -> maybe (Error "NOT-ATOM?") (Atom . f) (atom c))
+lift_uop f = Fun (map_atom f)
 
 lift_binop :: Lisp_Ty a => (a -> a -> a) -> Cell a
 lift_binop f =
     let g p q = case (p,q) of
                   (Just p',Just q') -> Atom (f p' q')
-                  _ -> Error "NOT-ATOM?"
+                  _ -> Error "BINOP: NOT-ATOM?"
     in Fun (\lhs -> Fun (\rhs -> g (atom lhs) (atom rhs)))
 
 num_dict :: Lisp_Ty a => Dict a

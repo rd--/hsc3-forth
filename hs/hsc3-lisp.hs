@@ -80,6 +80,8 @@ ugen_dict =
     ,("number?",Fun l_is_number)
     ,("clone*",Proc l_clone_star)
     ,("mce",Fun (\c -> Atom (mce (map atom_err' (to_list c)))))
+    ,("mce-channels",Fun (\c -> from_list (map Atom (mceChannels (atom_err' c)))))
+    ,("mrg",Fun (\c -> Atom (mrg (map atom_err' (to_list c)))))
     ,("draw",Proc (\c -> atom_err c >>= \u -> lift_io (draw (out 0 u))))
     ,("play",Proc (\c -> atom_err c >>= \u -> lift_io (audition (out 0 u))))
     ,("stop",Proc (\_ -> lift_io (withSC3 reset)))
@@ -89,7 +91,8 @@ main :: IO ()
 main = do
   putStrLn "HSC3-LISP"
   env <- gen_toplevel (M.unions [core_dict,num_dict,float_dict,ugen_dict]) :: IO (Env UGen)
-  repl env (load_files ["stdlib.lisp","rhs.lisp","hsc3.lisp","ugen.lisp","rsc3.lisp"])
+  let nm = ["stdlib.lisp","rhs.lisp","hsc3.lisp","ugen.lisp","rsc3-compat.lisp","rsc3.lisp"]
+  repl env (load_files nm)
 
 {-
 
@@ -100,4 +103,3 @@ let b = map (\nm -> DB.gen_mk_ugen nm) DB.complete_names
 writeFile "/home/rohan/sw/hsc3-forth/lisp/ugen.lisp" (unlines b)
 
 -}
-

@@ -35,9 +35,18 @@ nil ; NIL
 (+ 1) ; FUN
 ((+ 1) 2) ; 3
 
-; One obvious notational extension is allowed, another is not.
+; A notational extension is allowed
 
 (+ 1 2) ; 3
+
+; And another, for THUNKS
+
+(lambda () 1) ; (LAMBDA (_) 1)
+((lambda () 1)) ; 1
+(newline) ; \n
+
+; There is no VARARG
+
 (+ 1 2 3) ; ERROR
 (sum '(1 2 3)) ; 6
 
