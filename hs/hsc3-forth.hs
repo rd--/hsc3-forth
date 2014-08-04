@@ -17,7 +17,6 @@ import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
 import Sound.SC3.UGen.Dot {- hsc3-dot -}
 
 import Forth
-import SC3
 
 -- * Forth
 
@@ -65,8 +64,8 @@ fw_assert_empty = do
     [] -> return ()
     l -> throw_error ("STACK NOT EMPTY: " ++ unwords (map show l))
 
-ugen_sep' :: String -> Forth w a (String,Maybe Rate)
-ugen_sep' = maybe (throw_error "UGEN NAME RATE SEPARATOR FAILED") return . ugen_sep
+ugen_sep :: String -> Forth w a (String,Maybe Rate)
+ugen_sep = maybe (throw_error "UGEN NAME RATE SEPARATOR FAILED") return . sc3_ugen_name_sep
 
 -- * UForth
 
@@ -76,14 +75,17 @@ get_nc nc =
       Just n -> return n
       Nothing -> pop_int
 
+ugen_io :: DB.U -> (Int,Maybe Int)
+ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
+
 gen_plain :: U_Reader
 gen_plain w = do
-  (nm,rt) <- ugen_sep' w
+  (nm,rt) <- ugen_sep w
   let (nm',sp) = case rt of
                    Nothing -> resolve_operator nm
                    _ -> (nm,Nothing) -- Rand.ir is UGen
       sp' = Special (fromMaybe 0 sp)
-  u <- case ugen_rec nm' of
+  u <- case DB.uLookup nm' of
          Nothing -> throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ tick_quotes nm')
          Just r -> return r
   when (isNothing rt && isNothing (DB.ugen_filter u))
@@ -93,7 +95,7 @@ gen_plain w = do
   nc' <- get_nc nc
   i <- pop_n inp
   let rt' = fromMaybe (maximum (map rateOf i)) rt
-      i' = (if u_halts_mce u then halt_mce_transform else id) (reverse i)
+      i' = (if DB.u_halts_mce u then halt_mce_transform else id) (reverse i)
   push (mk_plain rt' nm' i' nc' sp' z)
 
 sched :: Time -> UGen -> IO ()
@@ -106,7 +108,7 @@ sched t u =
 
 fw_help :: Forth_Type a => Forth w a ()
 fw_help = do
-  (nm,_) <- ugen_sep' =<< pop_string
+  (nm,_) <- ugen_sep =<< pop_string
   case DB.ugenSummary' True nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)

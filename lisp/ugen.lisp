@@ -13,19 +13,19 @@
 (define apf
   (lambda (rt in freq radius)
     (mk-ugen (list "APF" rt (list in freq radius) #f 1 #f #f))))
-(define allpassc
+(define allpass-c
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "AllpassC" #f (list in maxdelaytime delaytime decaytime) #f 1 #f #f))))
-(define allpassl
+(define allpass-l
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "AllpassL" #f (list in maxdelaytime delaytime decaytime) #f 1 #f #f))))
-(define allpassn
+(define allpass-n
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "AllpassN" #f (list in maxdelaytime delaytime decaytime) #f 1 #f #f))))
 (define amp-comp
   (lambda (rt freq root exp)
     (mk-ugen (list "AmpComp" rt (list freq root exp) #f 1 #f #f))))
-(define amp-compa
+(define amp-comp-a
   (lambda (rt freq root minAmp rootAmp)
     (mk-ugen (list "AmpCompA" rt (list freq root minAmp rootAmp) #f 1 #f #f))))
 (define amplitude
@@ -85,7 +85,7 @@
 (define bi-pan-b2
   (lambda (rt inA inB azimuth gain)
     (mk-ugen (list "BiPanB2" rt (list inA inB azimuth gain) #f 3 #f #f))))
-(define binary-op-u-gen
+(define binary-op-ugen
   (lambda (a b)
     (mk-ugen (list "BinaryOpUGen" #f (list a b) #f 1 #f #f))))
 (define blip
@@ -97,34 +97,34 @@
 (define brown-noise
   (lambda (rt)
     (mk-ugen (list "BrownNoise" rt nil #f 1 #f (incr-uid 1)))))
-(define buf-allpassc
+(define buf-allpass-c
   (lambda (rt buf in delaytime decaytime)
     (mk-ugen (list "BufAllpassC" rt (list buf in delaytime decaytime) #f 1 #f #f))))
-(define buf-allpassl
+(define buf-allpass-l
   (lambda (rt buf in delaytime decaytime)
     (mk-ugen (list "BufAllpassL" rt (list buf in delaytime decaytime) #f 1 #f #f))))
-(define buf-allpassn
+(define buf-allpass-n
   (lambda (rt buf in delaytime decaytime)
     (mk-ugen (list "BufAllpassN" rt (list buf in delaytime decaytime) #f 1 #f #f))))
 (define buf-channels
   (lambda (rt bufnum)
     (mk-ugen (list "BufChannels" rt (list bufnum) #f 1 #f #f))))
-(define buf-combc
+(define buf-comb-c
   (lambda (rt buf in delaytime decaytime)
     (mk-ugen (list "BufCombC" rt (list buf in delaytime decaytime) #f 1 #f #f))))
-(define buf-combl
+(define buf-comb-l
   (lambda (rt buf in delaytime decaytime)
     (mk-ugen (list "BufCombL" rt (list buf in delaytime decaytime) #f 1 #f #f))))
-(define buf-combn
+(define buf-comb-n
   (lambda (rt buf in delaytime decaytime)
     (mk-ugen (list "BufCombN" rt (list buf in delaytime decaytime) #f 1 #f #f))))
-(define buf-delayc
+(define buf-delay-c
   (lambda (rt buf in delaytime)
     (mk-ugen (list "BufDelayC" rt (list buf in delaytime) #f 1 #f #f))))
-(define buf-delayl
+(define buf-delay-l
   (lambda (rt buf in delaytime)
     (mk-ugen (list "BufDelayL" rt (list buf in delaytime) #f 1 #f #f))))
-(define buf-delayn
+(define buf-delay-n
   (lambda (rt buf in delaytime)
     (mk-ugen (list "BufDelayN" rt (list buf in delaytime) #f 1 #f #f))))
 (define buf-dur
@@ -133,7 +133,7 @@
 (define buf-frames
   (lambda (rt bufnum)
     (mk-ugen (list "BufFrames" rt (list bufnum) #f 1 #f #f))))
-(define buf-info-u-gen-base
+(define buf-info-ugen-base
   (lambda (rt bufnum)
     (mk-ugen (list "BufInfoUGenBase" rt (list bufnum) #f 1 #f #f))))
 (define buf-rate-scale
@@ -169,19 +169,19 @@
 (define coin-gate
   (lambda (rt prob in)
     (mk-ugen (list "CoinGate" rt (list prob in) #f 1 #f (incr-uid 1)))))
-(define combc
+(define comb-c
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "CombC" #f (list in maxdelaytime delaytime decaytime) #f 1 #f #f))))
-(define combl
+(define comb-l
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "CombL" #f (list in maxdelaytime delaytime decaytime) #f 1 #f #f))))
-(define combn
+(define comb-n
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "CombN" #f (list in maxdelaytime delaytime decaytime) #f 1 #f #f))))
 (define compander
   (lambda (in control thresh slopeBelow slopeAbove clampTime relaxTime)
     (mk-ugen (list "Compander" #f (list in control thresh slopeBelow slopeAbove clampTime relaxTime) #f 1 #f #f))))
-(define companderd
+(define compander-d
   (lambda (rt in thresh slopeBelow slopeAbove clampTime relaxTime)
     (mk-ugen (list "CompanderD" rt (list in thresh slopeBelow slopeAbove clampTime relaxTime) #f 1 #f #f))))
 (define control
@@ -208,10 +208,10 @@
 (define crackle
   (lambda (rt chaosParam)
     (mk-ugen (list "Crackle" rt (list chaosParam) #f 1 #f #f))))
-(define cuspl
+(define cusp-l
   (lambda (rt freq a b xi)
     (mk-ugen (list "CuspL" rt (list freq a b xi) #f 1 #f #f))))
-(define cuspn
+(define cusp-n
   (lambda (rt freq a b xi)
     (mk-ugen (list "CuspN" rt (list freq a b xi) #f 1 #f #f))))
 (define dc
@@ -250,18 +250,18 @@
 (define delay2
   (lambda (in)
     (mk-ugen (list "Delay2" #f (list in) #f 1 #f #f))))
-(define delayc
+(define delay-c
   (lambda (in maxdelaytime delaytime)
     (mk-ugen (list "DelayC" #f (list in maxdelaytime delaytime) #f 1 #f #f))))
-(define delayl
+(define delay-l
   (lambda (in maxdelaytime delaytime)
     (mk-ugen (list "DelayL" #f (list in maxdelaytime delaytime) #f 1 #f #f))))
-(define delayn
+(define delay-n
   (lambda (in maxdelaytime delaytime)
     (mk-ugen (list "DelayN" #f (list in maxdelaytime delaytime) #f 1 #f #f))))
 (define demand
-  (lambda (rt trig reset demandUGens)
-    (mk-ugen (list "Demand" rt (list trig reset demandUGens) #f 1 #f #f))))
+  (lambda (trig reset demandUGens)
+    (mk-ugen (list "Demand" #f (list trig reset demandUGens) #f 1 #f #f))))
 (define demand-env-gen
   (lambda (rt level dur shape curve gate reset levelScale levelBias timeScale doneAction)
     (mk-ugen (list "DemandEnvGen" rt (list level dur shape curve gate reset levelScale levelBias timeScale doneAction) #f 1 #f #f))))
@@ -296,32 +296,32 @@
   (lambda (rt in label run trigid)
     (mk-ugen (list "Dpoll" rt (list in label run trigid) #f 1 #f #f))))
 (define drand
-  (lambda (rt list repeats)
-    (mk-ugen (list "Drand" rt (list list) repeats 1 #f (incr-uid 1)))))
+  (lambda (list_ repeats)
+    (mk-ugen (list "Drand" dr (list list_) repeats 1 #f (incr-uid 1)))))
 (define dreset
   (lambda (rt in reset)
     (mk-ugen (list "Dreset" rt (list in reset) #f 1 #f #f))))
 (define dseq
-  (lambda (rt list repeats)
-    (mk-ugen (list "Dseq" rt (list list) repeats 1 #f (incr-uid 1)))))
+  (lambda (list_ repeats)
+    (mk-ugen (list "Dseq" dr (list list_) repeats 1 #f (incr-uid 1)))))
 (define dser
-  (lambda (rt list repeats)
-    (mk-ugen (list "Dser" rt (list list) repeats 1 #f #f))))
+  (lambda (rt list_ repeats)
+    (mk-ugen (list "Dser" rt (list list_) repeats 1 #f #f))))
 (define dseries
   (lambda (rt start step length)
     (mk-ugen (list "Dseries" rt (list start step length) #f 1 #f #f))))
 (define dshuf
-  (lambda (rt list repeats)
-    (mk-ugen (list "Dshuf" rt (list list repeats) #f 1 #f (incr-uid 1)))))
+  (lambda (rt list_ repeats)
+    (mk-ugen (list "Dshuf" rt (list list_ repeats) #f 1 #f (incr-uid 1)))))
 (define dstutter
   (lambda (rt n in)
     (mk-ugen (list "Dstutter" rt (list n in) #f 1 #f #f))))
 (define dswitch
-  (lambda (rt list index)
-    (mk-ugen (list "Dswitch" rt (list list) index 1 #f #f))))
+  (lambda (rt list_ index)
+    (mk-ugen (list "Dswitch" rt (list list_) index 1 #f #f))))
 (define dswitch1
-  (lambda (rt list index)
-    (mk-ugen (list "Dswitch1" rt (list list) index 1 #f #f))))
+  (lambda (rt list_ index)
+    (mk-ugen (list "Dswitch1" rt (list list_) index 1 #f #f))))
 (define dunique
   (lambda (rt source maxBufferSize protected)
     (mk-ugen (list "Dunique" rt (list source maxBufferSize protected) #f 1 #f #f))))
@@ -331,7 +331,7 @@
 (define dust2
   (lambda (rt density)
     (mk-ugen (list "Dust2" rt (list density) #f 1 #f (incr-uid 1)))))
-(define dustr
+(define dust-r
   (lambda (rt iot_min iot_max)
     (mk-ugen (list "DustR" rt (list iot_min iot_max) #f 1 #f #f))))
 (define duty
@@ -341,11 +341,11 @@
   (lambda (rt lo hi length)
     (mk-ugen (list "Dwhite" rt (list lo hi length) #f 1 #f #f))))
 (define dwrand
-  (lambda (rt list weights repeats)
-    (mk-ugen (list "Dwrand" rt (list list weights repeats) #f 1 #f (incr-uid 1)))))
+  (lambda (rt list_ weights repeats)
+    (mk-ugen (list "Dwrand" rt (list list_ weights repeats) #f 1 #f (incr-uid 1)))))
 (define dxrand
-  (lambda (rt list repeats)
-    (mk-ugen (list "Dxrand" rt (list list) repeats 1 #f #f))))
+  (lambda (rt list_ repeats)
+    (mk-ugen (list "Dxrand" rt (list list_) repeats 1 #f #f))))
 (define dyn-klang
   (lambda (rt specificationsArrayRef freqscale freqoffset)
     (mk-ugen (list "DynKlang" rt (list specificationsArrayRef freqscale freqoffset) #f 1 #f #f))))
@@ -356,15 +356,15 @@
   (lambda (rt envelope gate levelScale levelBias timeScale doneAction)
     (mk-ugen (list "EnvGen" rt (list envelope gate levelScale levelBias timeScale) doneAction 1 #f #f))))
 (define exp-rand
-  (lambda (rt lo hi)
-    (mk-ugen (list "ExpRand" rt (list lo hi) #f 1 #f (incr-uid 1)))))
-(define fb-sinec
+  (lambda (lo hi)
+    (mk-ugen (list "ExpRand" ir (list lo hi) #f 1 #f (incr-uid 1)))))
+(define fb-sine-c
   (lambda (rt freq im fb a c xi yi)
     (mk-ugen (list "FBSineC" rt (list freq im fb a c xi yi) #f 1 #f #f))))
-(define fb-sinel
+(define fb-sine-l
   (lambda (rt freq im fb a c xi yi)
     (mk-ugen (list "FBSineL" rt (list freq im fb a c xi yi) #f 1 #f #f))))
-(define fb-sinen
+(define fb-sine-n
   (lambda (rt freq im fb a c xi yi)
     (mk-ugen (list "FBSineN" rt (list freq im fb a c xi yi) #f 1 #f #f))))
 (define fft
@@ -409,10 +409,10 @@
 (define gate
   (lambda (in trig)
     (mk-ugen (list "Gate" #f (list in trig) #f 1 #f #f))))
-(define gbmanl
+(define gbman-l
   (lambda (rt freq xi yi)
     (mk-ugen (list "GbmanL" rt (list freq xi yi) #f 1 #f #f))))
-(define gbmann
+(define gbman-n
   (lambda (rt freq xi yi)
     (mk-ugen (list "GbmanN" rt (list freq xi yi) #f 1 #f #f))))
 (define gendy1
@@ -451,13 +451,13 @@
 (define hasher
   (lambda (in)
     (mk-ugen (list "Hasher" #f (list in) #f 1 #f #f))))
-(define henonc
+(define henon-c
   (lambda (rt freq a b x0 x1)
     (mk-ugen (list "HenonC" rt (list freq a b x0 x1) #f 1 #f #f))))
-(define henonl
+(define henon-l
   (lambda (rt freq a b x0 x1)
     (mk-ugen (list "HenonL" rt (list freq a b x0 x1) #f 1 #f #f))))
-(define henonn
+(define henon-n
   (lambda (rt freq a b x0 x1)
     (mk-ugen (list "HenonN" rt (list freq a b x0 x1) #f 1 #f #f))))
 (define hilbert
@@ -473,8 +473,8 @@
   (lambda (rt buffer wintype winsize)
     (mk-ugen (list "IFFT" rt (list buffer wintype winsize) #f 1 #f #f))))
 (define i-rand
-  (lambda (rt lo hi)
-    (mk-ugen (list "IRand" rt (list lo hi) #f 1 #f (incr-uid 1)))))
+  (lambda (lo hi)
+    (mk-ugen (list "IRand" ir (list lo hi) #f 1 #f (incr-uid 1)))))
 (define impulse
   (lambda (rt freq phase)
     (mk-ugen (list "Impulse" rt (list freq phase) #f 1 #f #f))))
@@ -502,10 +502,10 @@
 (define index-in-between
   (lambda (rt bufnum in)
     (mk-ugen (list "IndexInBetween" rt (list bufnum in) #f 1 #f #f))))
-(define indexl
+(define index-l
   (lambda (rt bufnum in)
     (mk-ugen (list "IndexL" rt (list bufnum in) #f 1 #f #f))))
-(define info-u-gen-base
+(define info-ugen-base
   (lambda (rt)
     (mk-ugen (list "InfoUGenBase" rt nil #f 1 #f #f))))
 (define integrator
@@ -544,7 +544,7 @@
 (define lfd-noise3
   (lambda (rt freq)
     (mk-ugen (list "LFDNoise3" rt (list freq) #f 1 #f (incr-uid 1)))))
-(define lf-gauss
+(define lfgauss
   (lambda (rt duration width iphase loop doneAction)
     (mk-ugen (list "LFGauss" rt (list duration width iphase loop doneAction) #f 1 #f #f))))
 (define lf-noise0
@@ -607,13 +607,13 @@
 (define latch
   (lambda (in trig)
     (mk-ugen (list "Latch" #f (list in trig) #f 1 #f #f))))
-(define latoocarfianc
+(define latoocarfian-c
   (lambda (rt freq a b c d xi yi)
     (mk-ugen (list "LatoocarfianC" rt (list freq a b c d xi yi) #f 1 #f #f))))
-(define latoocarfianl
+(define latoocarfian-l
   (lambda (rt freq a b c d xi yi)
     (mk-ugen (list "LatoocarfianL" rt (list freq a b c d xi yi) #f 1 #f #f))))
-(define latoocarfiann
+(define latoocarfian-n
   (lambda (rt freq a b c d xi yi)
     (mk-ugen (list "LatoocarfianN" rt (list freq a b c d xi yi) #f 1 #f #f))))
 (define leak-dc
@@ -625,24 +625,24 @@
 (define limiter
   (lambda (in level dur)
     (mk-ugen (list "Limiter" #f (list in level dur) #f 1 #f #f))))
-(define lin-congc
+(define lin-cong-c
   (lambda (rt freq a c m xi)
     (mk-ugen (list "LinCongC" rt (list freq a c m xi) #f 1 #f #f))))
-(define lin-congl
+(define lin-cong-l
   (lambda (rt freq a c m xi)
     (mk-ugen (list "LinCongL" rt (list freq a c m xi) #f 1 #f #f))))
-(define lin-congn
+(define lin-cong-n
   (lambda (rt freq a c m xi)
     (mk-ugen (list "LinCongN" rt (list freq a c m xi) #f 1 #f #f))))
 (define lin-exp
   (lambda (in srclo srchi dstlo dsthi)
     (mk-ugen (list "LinExp" #f (list in srclo srchi dstlo dsthi) #f 1 #f #f))))
 (define lin-pan2
-  (lambda (rt in pos level)
-    (mk-ugen (list "LinPan2" rt (list in pos level) #f 2 #f #f))))
+  (lambda (in pos level)
+    (mk-ugen (list "LinPan2" #f (list in pos level) #f 2 #f #f))))
 (define lin-rand
-  (lambda (a)
-    (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 39 #f))))
+  (lambda (lo hi minmax)
+    (mk-ugen (list "LinRand" ir (list lo hi minmax) #f 1 #f (incr-uid 1)))))
 (define lin-x-fade2
   (lambda (rt inA inB pan level)
     (mk-ugen (list "LinXFade2" rt (list inA inB pan level) #f 1 #f #f))))
@@ -652,9 +652,9 @@
 (define linen
   (lambda (rt gate attackTime susLevel releaseTime doneAction)
     (mk-ugen (list "Linen" rt (list gate attackTime susLevel releaseTime doneAction) #f 1 #f #f))))
-(define list-du-gen
-  (lambda (rt list repeats)
-    (mk-ugen (list "ListDUGen" rt (list list repeats) #f 1 #f #f))))
+(define list-dugen
+  (lambda (rt list_ repeats)
+    (mk-ugen (list "ListDUGen" rt (list list_ repeats) #f 1 #f #f))))
 (define local-buf
   (lambda (rt numChannels numFrames)
     (mk-ugen (list "LocalBuf" rt (list numChannels numFrames) #f 1 #f (incr-uid 1)))))
@@ -667,7 +667,7 @@
 (define logistic
   (lambda (rt chaosParam freq init)
     (mk-ugen (list "Logistic" rt (list chaosParam freq init) #f 1 #f #f))))
-(define lorenzl
+(define lorenz-l
   (lambda (rt freq s r b h xi yi zi)
     (mk-ugen (list "LorenzL" rt (list freq s r b h xi yi zi) #f 1 #f #f))))
 (define loudness
@@ -700,15 +700,15 @@
 (define mouse-button
   (lambda (rt minval maxval lag)
     (mk-ugen (list "MouseButton" rt (list minval maxval lag) #f 1 #f #f))))
-(define mousex
+(define mouse-x
   (lambda (rt minval maxval warp lag)
     (mk-ugen (list "MouseX" rt (list minval maxval warp lag) #f 1 #f #f))))
-(define mousey
+(define mouse-y
   (lambda (rt minval maxval warp lag)
     (mk-ugen (list "MouseY" rt (list minval maxval warp lag) #f 1 #f #f))))
 (define n-rand
-  (lambda (rt lo hi n)
-    (mk-ugen (list "NRand" rt (list lo hi n) #f 1 #f (incr-uid 1)))))
+  (lambda (lo hi n)
+    (mk-ugen (list "NRand" ir (list lo hi n) #f 1 #f (incr-uid 1)))))
 (define normalizer
   (lambda (in level dur)
     (mk-ugen (list "Normalizer" #f (list in level dur) #f 1 #f #f))))
@@ -745,7 +745,7 @@
 (define osc
   (lambda (rt bufnum freq phase)
     (mk-ugen (list "Osc" rt (list bufnum freq phase) #f 1 #f #f))))
-(define oscn
+(define osc-n
   (lambda (rt bufnum freq phase)
     (mk-ugen (list "OscN" rt (list bufnum freq phase) #f 1 #f #f))))
 (define out
@@ -769,7 +769,7 @@
 (define pv-brick-wall
   (lambda (rt buffer wipe)
     (mk-ugen (list "PV_BrickWall" rt (list buffer wipe) #f 1 #f #f))))
-(define pv-chain-u-gen
+(define pv-chain-ugen
   (lambda (rt maxSize)
     (mk-ugen (list "PV_ChainUGen" rt (list maxSize) #f 1 #f #f))))
 (define pv-conformal-map
@@ -871,7 +871,7 @@
 (define pan-az
   (lambda (nc rt in pos level width orientation)
     (mk-ugen (list "PanAz" rt (list in pos level width orientation) #f nc #f #f))))
-(define panb
+(define pan-b
   (lambda (rt in azimuth elevation gain)
     (mk-ugen (list "PanB" rt (list in azimuth elevation gain) #f 4 #f #f))))
 (define pan-b2
@@ -925,19 +925,19 @@
 (define pulse-divider
   (lambda (trig div start)
     (mk-ugen (list "PulseDivider" #f (list trig div start) #f 1 #f #f))))
-(define pure-multi-out-u-gen
+(define pure-multi-out-ugen
   (lambda (rt maxSize)
     (mk-ugen (list "PureMultiOutUGen" rt (list maxSize) #f 1 #f #f))))
-(define pure-u-gen
+(define pure-ugen
   (lambda (rt maxSize)
     (mk-ugen (list "PureUGen" rt (list maxSize) #f 1 #f #f))))
-(define quadc
+(define quad-c
   (lambda (rt freq a b c xi)
     (mk-ugen (list "QuadC" rt (list freq a b c xi) #f 1 #f #f))))
-(define quadl
+(define quad-l
   (lambda (rt freq a b c xi)
     (mk-ugen (list "QuadL" rt (list freq a b c xi) #f 1 #f #f))))
-(define quadn
+(define quad-n
   (lambda (rt freq a b c xi)
     (mk-ugen (list "QuadN" rt (list freq a b c xi) #f 1 #f #f))))
 (define r-delay-map
@@ -946,7 +946,7 @@
 (define r-delay-set
   (lambda (rt in spec)
     (mk-ugen (list "RDelaySet" rt (list in spec) #f 1 #f #f))))
-(define r-delay-setb
+(define r-delay-set-b
   (lambda (rt bufnum in spec)
     (mk-ugen (list "RDelaySetB" rt (list bufnum in spec) #f 1 #f #f))))
 (define r-freezer
@@ -964,22 +964,22 @@
 (define r-play-trace
   (lambda (rt bufnum degree rate axis)
     (mk-ugen (list "RPlayTrace" rt (list bufnum degree rate axis) #f 1 #f #f))))
-(define r-shufflerb
+(define r-shuffler-b
   (lambda (rt bufnum readLocationMinima readLocationMaxima readIncrementMinima readIncrementMaxima durationMinima durationMaxima envelopeAmplitudeMinima envelopeAmplitudeMaxima envelopeShapeMinima envelopeShapeMaxima envelopeSkewMinima envelopeSkewMaxima stereoLocationMinima stereoLocationMaxima interOffsetTimeMinima interOffsetTimeMaxima ftableReadLocationIncrement readIncrementQuanta interOffsetTimeQuanta)
     (mk-ugen (list "RShufflerB" rt (list bufnum readLocationMinima readLocationMaxima readIncrementMinima readIncrementMaxima durationMinima durationMaxima envelopeAmplitudeMinima envelopeAmplitudeMaxima envelopeShapeMinima envelopeShapeMaxima envelopeSkewMinima envelopeSkewMaxima stereoLocationMinima stereoLocationMaxima interOffsetTimeMinima interOffsetTimeMaxima ftableReadLocationIncrement readIncrementQuanta interOffsetTimeQuanta) #f 2 #f #f))))
-(define r-shufflerl
+(define r-shuffler-l
   (lambda (rt in fragmentSize maxDelay)
     (mk-ugen (list "RShufflerL" rt (list in fragmentSize maxDelay) #f 1 #f #f))))
 (define r-trace-rd
   (lambda (rt bufnum degree index axis)
     (mk-ugen (list "RTraceRd" rt (list bufnum degree index axis) #f 1 #f #f))))
-(define r-trace-rdx
+(define r-trace-rd-x
   (lambda (rt bufnum degree index)
     (mk-ugen (list "RTraceRdX" rt (list bufnum degree index) #f 1 #f #f))))
-(define r-trace-rdy
+(define r-trace-rd-y
   (lambda (rt bufnum degree index)
     (mk-ugen (list "RTraceRdY" rt (list bufnum degree index) #f 1 #f #f))))
-(define r-trace-rdz
+(define r-trace-rd-z
   (lambda (rt bufnum degree index)
     (mk-ugen (list "RTraceRdZ" rt (list bufnum degree index) #f 1 #f #f))))
 (define radians-per-sample
@@ -989,8 +989,8 @@
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 52 #f))))
 (define rand
-  (lambda (a)
-    (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 37 #f))))
+  (lambda (lo hi)
+    (mk-ugen (list "Rand" ir (list lo hi) #f 1 #f (incr-uid 1)))))
 (define rand-id
   (lambda (rt id)
     (mk-ugen (list "RandID" rt (list id) #f 1 #f #f))))
@@ -1087,10 +1087,10 @@
 (define spring
   (lambda (rt in spring damp)
     (mk-ugen (list "Spring" rt (list in spring damp) #f 1 #f #f))))
-(define standardl
+(define standard-l
   (lambda (rt freq k xi yi)
     (mk-ugen (list "StandardL" rt (list freq k xi yi) #f 1 #f #f))))
-(define standardn
+(define standard-n
   (lambda (rt freq k xi yi)
     (mk-ugen (list "StandardN" rt (list freq k xi yi) #f 1 #f #f))))
 (define stepper
@@ -1103,11 +1103,11 @@
   (lambda (rt)
     (mk-ugen (list "SubsampleOffset" rt nil #f 1 #f #f))))
 (define sum3
-  (lambda (rt in0 in1 in2)
-    (mk-ugen (list "Sum3" rt (list in0 in1 in2) #f 1 #f #f))))
+  (lambda (in0 in1 in2)
+    (mk-ugen (list "Sum3" #f (list in0 in1 in2) #f 1 #f #f))))
 (define sum4
-  (lambda (rt in0 in1 in2 in3)
-    (mk-ugen (list "Sum4" rt (list in0 in1 in2 in3) #f 1 #f #f))))
+  (lambda (in0 in1 in2 in3)
+    (mk-ugen (list "Sum4" #f (list in0 in1 in2 in3) #f 1 #f #f))))
 (define sweep
   (lambda (trig rate)
     (mk-ugen (list "Sweep" #f (list trig rate) #f 1 #f #f))))
@@ -1130,17 +1130,17 @@
   (lambda (rt dur reset level doneAction gapFirst)
     (mk-ugen (list "TDuty" rt (list dur reset level doneAction gapFirst) #f 1 #f #f))))
 (define t-exp-rand
-  (lambda (rt lo hi trig)
-    (mk-ugen (list "TExpRand" rt (list lo hi trig) #f 1 #f (incr-uid 1)))))
-(define t-grains
+  (lambda (lo hi trig)
+    (mk-ugen (list "TExpRand" #f (list lo hi trig) #f 1 #f (incr-uid 1)))))
+(define tgrains
   (lambda (nc rt trigger bufnum rate centerPos dur pan amp interp)
     (mk-ugen (list "TGrains" rt (list trigger bufnum rate centerPos dur pan amp interp) #f nc #f #f))))
 (define ti-rand
-  (lambda (rt lo hi trig)
-    (mk-ugen (list "TIRand" rt (list lo hi trig) #f 1 #f (incr-uid 1)))))
+  (lambda (lo hi trig)
+    (mk-ugen (list "TIRand" #f (list lo hi trig) #f 1 #f (incr-uid 1)))))
 (define t-rand
-  (lambda (rt lo hi trig)
-    (mk-ugen (list "TRand" rt (list lo hi trig) #f 1 #f (incr-uid 1)))))
+  (lambda (lo hi trig)
+    (mk-ugen (list "TRand" #f (list lo hi trig) #f 1 #f (incr-uid 1)))))
 (define t-windex
   (lambda (rt in array normalize)
     (mk-ugen (list "TWindex" rt (list in array) normalize 1 #f (incr-uid 1)))))
@@ -1168,7 +1168,7 @@
 (define two-zero
   (lambda (in freq radius)
     (mk-ugen (list "TwoZero" #f (list in freq radius) #f 1 #f #f))))
-(define unary-op-u-gen
+(define unary-op-ugen
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 #f #f))))
 (define v-disk-in
@@ -1195,7 +1195,7 @@
 (define white-noise
   (lambda (rt)
     (mk-ugen (list "WhiteNoise" rt nil #f 1 #f (incr-uid 1)))))
-(define width-first-u-gen
+(define width-first-ugen
   (lambda (rt maxSize)
     (mk-ugen (list "WidthFirstUGen" rt (list maxSize) #f 1 #f #f))))
 (define wrap
@@ -1318,22 +1318,22 @@
 (define arc-tan
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 33 #f))))
-(define sinh
+(define sin-h
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 34 #f))))
-(define cosh
+(define cos-h
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 35 #f))))
-(define tanh
+(define tan-h
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 36 #f))))
-(define rand
+(define rand-
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 37 #f))))
 (define rand2
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 38 #f))))
-(define lin-rand
+(define lin-rand-
   (lambda (a)
     (mk-ugen (list "UnaryOpUGen" #f (list a) #f 1 39 #f))))
 (define bi-lin-rand
@@ -1396,16 +1396,16 @@
 (define mod
   (lambda (a b)
     (mk-ugen (list "BinaryOpUGen" #f (list a b) #f 1 5 #f))))
-(define eq_
+(define eq-
   (lambda (a b)
     (mk-ugen (list "BinaryOpUGen" #f (list a b) #f 1 6 #f))))
 (define ne
   (lambda (a b)
     (mk-ugen (list "BinaryOpUGen" #f (list a b) #f 1 7 #f))))
-(define lt_
+(define lt-
   (lambda (a b)
     (mk-ugen (list "BinaryOpUGen" #f (list a b) #f 1 8 #f))))
-(define gt_
+(define gt-
   (lambda (a b)
     (mk-ugen (list "BinaryOpUGen" #f (list a b) #f 1 9 #f))))
 (define le

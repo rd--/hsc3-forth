@@ -194,6 +194,13 @@ nil ; '()
 
 (1) ; ERROR
 
+; MATHEMATICAL LISP
+
+(+ 1 2) ; 3
+
+; binary op ugens are not optimising?  hence num_dict & float_dict & not ugen.lisp...
+(add 1 2) ; 3
+
 ; IO LISP
 
 (display 1) ; 1
@@ -230,13 +237,13 @@ three ; 3
 ; UGEN
 
 (stop nil)
-(draw (* (SinOsc ar 440 0) 0.1))
-(draw (* (SinOsc ar (MouseX kr 440 880 0 0.1) 0) 0.1))
-(draw (* (HPZ1 (WhiteNoise ar)) 0.1))
+(draw (* (sin-osc ar 440 0) 0.1))
+(draw (* (sin-osc ar (mouse-x kr 440 880 0 0.1) 0) 0.1))
+(draw (* (hpz1 (white-noise ar)) 0.1))
 (sc3-status nil)
 (play (* (sin-osc ar 440 0) 0.1))
 
 ; UID
 
 (set! uid 0) ; NIL
-(map incr-uid '(nil nil nil)) ; (1 2 3)
+(map incr-uid '(1 1 1)) ; (1 2 3)

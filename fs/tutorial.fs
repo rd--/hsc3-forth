@@ -188,7 +188,7 @@ WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
 ( NAMING FORTH )
 
-440 Rand 440 + 0 SinOsc.ar 0.1 * draw \ Rand is a unary operator
+440 Rand_ 440 + 0 SinOsc.ar 0.1 * draw \ Rand_ is a unary operator
 440 880 Rand.ir 0 SinOsc.ar 0.1 * draw \ Rand.ir is a UGen
 
 440 0 SinOsc.ar 0.1 * Neg draw \ Neg is a unary operator
@@ -202,7 +202,7 @@ stop
 
 \ Non-det operators are not marked
 
-50 Rand 50 Rand - draw
+50 Rand_ 50 Rand_ - draw
 
 ( UN-RANDOM FORTH )
 
