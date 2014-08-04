@@ -55,10 +55,13 @@ mk_ugen c =
         outp' = floor (constant_err outp)
         rt' = case rt of
                 Symbol sym -> fromJust (rate_parse (map toUpper sym))
-                _ -> maximum (map rateOf inp')
+                Cons _ _ ->
+                    let f = rateOf . (inp' !!) . ugen_to_int "RATE" . atom_err'
+                    in maximum (map f (to_list rt))
+                _ -> error ("UNKNOWN RATE INPUT: " ++ show rt)
         nm' = case nm of
                 String str -> str
-                _ -> error "UGEN NAME NOT STRING?"
+                _ -> error ("UGEN NAME NOT STRING: " ++ show nm)
     in ugen_optimise_const_operator (mk_plain rt' nm' inp' outp' sp' k')
 
 l_is_number :: Cell UGen -> Cell UGen
@@ -71,7 +74,7 @@ l_clone_star :: Cell UGen -> VM UGen (Cell UGen)
 l_clone_star c =
     case to_list c of
       [Atom k,Atom n,Atom u] -> return (Atom (uclone (ugen_to_int "CLONE-K" k) (ugen_to_int "CLONE-N" n) u))
-      _ -> throwError "clone*"
+      _ -> throwError ("clone*: " ++ show c)
 
 ugen_dict :: Dict UGen
 ugen_dict =
@@ -83,14 +86,14 @@ ugen_dict =
     ,("mce-channels",Fun (\c -> from_list (map Atom (mceChannels (atom_err' c)))))
     ,("mrg",Fun (\c -> Atom (mrg (map atom_err' (to_list c)))))
     ,("draw",Proc (\c -> atom_err c >>= \u -> lift_io (draw (out 0 u))))
-    ,("play",Proc (\c -> atom_err c >>= \u -> lift_io (audition (out 0 u))))
+    ,("audition",Proc (\c -> atom_err c >>= \u -> lift_io (audition u)))
     ,("stop",Proc (\_ -> lift_io (withSC3 reset)))
     ,("sc3-status",Proc (\_ -> lift_io (withSC3 serverStatus >>= mapM_ putStrLn)))]
 
 main :: IO ()
 main = do
   putStrLn "HSC3-LISP"
-  env <- gen_toplevel (M.unions [core_dict,num_dict,float_dict,ugen_dict]) :: IO (Env UGen)
+  env <- gen_toplevel (M.unions [core_dict,ugen_dict]) :: IO (Env UGen)
   let nm = ["stdlib.lisp","rhs.lisp","hsc3.lisp","ugen.lisp","rsc3-compat.lisp","rsc3.lisp"]
   repl env (load_files nm)
 

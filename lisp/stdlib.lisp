@@ -64,7 +64,7 @@
   (lambda (exp)
     (let ((test (cadr exp))
           (branch (caddr exp)))
-      (list 'if test branch nil))))
+      (list 'if test branch void))))
 
 (define when (macro when-rw))
 

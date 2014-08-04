@@ -29,7 +29,7 @@
 (defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-point "draw" nil nil))
 (defun hsc3-forth-see () "<word> SEE" (interactive) (hsc3-forth-point "false see" nil nil))
 
-(defun hsc3-forth-load-buffer ()
+(defun hsc3-forth-included ()
   "INCLUDED"
   (interactive)
   (save-buffer)
@@ -64,7 +64,7 @@
 
 (defun hsc3-forth-mode-keybindings (map)
   "Forth SuperCollider keybindings."
-  (define-key map [?\C-c ?<] 'hsc3-forth-load-buffer)
+  (define-key map [?\C-c ?<] 'hsc3-forth-included)
   (define-key map [?\C-c ?>] 'hsc3-forth-see-forth)
   (define-key map [?\C-c ?\C-a] 'hsc3-forth-play)
   (define-key map [?\C-c ?\C-g] 'hsc3-forth-draw)
@@ -79,27 +79,16 @@
   (define-key map [?\C-c ?\C-u] 'hsc3-forth-help))
 
 (defun hsc3-forth-mode-menu (map)
-  "Forth SuperCollider menu."
-  (define-key map [menu-bar hsc3]
-    (cons "Forth-SuperCollider" (make-sparse-keymap "Forth-SuperCollider")))
-  (define-key map [menu-bar hsc3 help]
-    (cons "Help" (make-sparse-keymap "Help")))
-  (define-key map [menu-bar hsc3 help ugen]
-    '("UGen parameter summary" . hsc3-forth-help))
-  (define-key map [menu-bar hsc3 expression]
-    (cons "Expression" (make-sparse-keymap "Expression")))
-  (define-key map [menu-bar hsc3 expression load-buffer]
-    '("Load buffer" . hsc3-forth-load-buffer))
-  (define-key map [menu-bar hsc3 expression run-line]
-    '("Run line" . hsc3-forth-send-line))
-  (define-key map [menu-bar hsc3 expression reset]
-    '("Reset scsynth" . hsc3-forth-stop))
-  (define-key map [menu-bar hsc3 forth]
-    (cons "Forth" (make-sparse-keymap "Forth")))
-  (define-key map [menu-bar hsc3 forth quit-forth]
-    '("Quit forth" . hsc3-forth-bye))
-  (define-key map [menu-bar hsc3 forth see-forth]
-    '("See forth" . hsc3-forth-see-forth)))
+  "FORTH SUPERCOLLIDER MENU."
+  (define-key map [menu-bar hsc3-forth] (cons "FORTH-SUPERCOLLIDER" map))
+  (define-key map [menu-bar hsc3-forth help] '("HELP" . hsc3-forth-help))
+  (define-key map [menu-bar hsc3-forth included] '("INCLUDED" . hsc3-forth-included))
+  (define-key map [menu-bar hsc3-forth send-line] '("SEND LINE" . hsc3-forth-send-line))
+  (define-key map [menu-bar hsc3-forth stop] '("STOP" . hsc3-forth-stop))
+  (define-key map [menu-bar hsc3-forth draw] '("DRAW" . hsc3-forth-draw))
+  (define-key map [menu-bar hsc3-forth play] '("PLAY" . hsc3-forth-play))
+  (define-key map [menu-bar hsc3-forth bye] '("BYE" . hsc3-forth-bye))
+  (define-key map [menu-bar hsc3-forth see-forth] '("SEE FORTH" . hsc3-forth-see-forth)))
 
 (if hsc3-forth-mode-map
     ()

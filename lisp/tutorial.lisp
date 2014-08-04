@@ -205,10 +205,19 @@ nil ; '()
 
 ; MATHEMATICAL LISP
 
+; Binary operator UGens are optimising.
+
+(add 1 2) ; 3
+
+; Symbolic aliases are given.
+
 (+ 1 2) ; 3
 
-; binary op ugens are not optimising?  hence num_dict & float_dict & not ugen.lisp...
-(add 1 2) ; 3
+; Constants are numbers.
+
+(number? 1) ; #t
+(number? 'one) ; #f
+(number? (sin-osc kr 5 0)) ; #f
 
 ; IO LISP
 
