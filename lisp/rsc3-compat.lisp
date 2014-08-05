@@ -30,4 +30,14 @@
 
 (define rand* (lambda (n) (rand 0 n)))
 
-(define with-sc3 (macro (lambda (_) '(stop))))
+(define play-at
+  (lambda (fd u nid act grp)
+    (play-at* (list fd u nid act grp))))
+
+(define reset (lambda (_) (stop)))
+
+(define audition (lambda (u) (play-at nil u -1 add-to-head 1)))
+
+(define with-sc3 (lambda (f) (f nil)))
+
+(define +inf.0 9e8)

@@ -57,6 +57,8 @@ nil ; NIL
 (cons (- 1 2) ((flip -) 1 2)) ; (cons -1 1)
 (id 1) ; 1
 
+(procedure? +)
+
 ; CHURCH LISP
 
 ((λ n (* n n)) 3) ; 9
@@ -235,6 +237,21 @@ nil ; '()
 (number? 1) ; #t
 (number? 'one) ; #f
 (number? (sin-osc kr 5 0)) ; #f
+
+; TEMPORAL LISP
+
+(begin (display "before\n") (pause-thread 1) (display "after\n"))
+
+(utcr)
+
+(let ((t (utcr)))
+  (begin
+    (display "before\n")
+    (pause-thread-until (+ t 1))
+    (display "after\n")))
+
+(define random-sine (mul (sin-osc ar (rand 220 440) 9) 0.01))
+(dt-rescheduler (lambda (t) (begin (hear random-sine) 1)) (utcr))
 
 ; IO LISP
 
