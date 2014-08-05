@@ -10,6 +10,7 @@
 (define u:floor floor)
 (define u:log log)
 (define u:max max)
+(define u:min min)
 (define u:mod mod)
 (define u:round round)
 (define u:sin sin)
@@ -25,6 +26,7 @@
 
 (define cps-midi cpsmidi)
 (define midi-cps midicps)
+(define tw-index t-windex)
 
 (define rand* (lambda (n) (rand 0 n)))
 

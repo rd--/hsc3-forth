@@ -1,6 +1,7 @@
-; HSC3-LISP, AMERICAN PRIMITIVE, VOL. 2
+; HSC3-LISP
 
-; SET!, LAMBDA (a -> b), MACRO, IF, BEGIN, QUOTE
+; AMERICAN PRIMITIVE, VOL. 2
+; SET!, λ, MACRO, IF, QUOTE
 
 ; EMACS LISP
 
@@ -41,8 +42,8 @@ nil ; NIL
 
 ; And another, for THUNKS
 
-(lambda () 1) ; (LAMBDA (_) 1)
-((lambda () 1)) ; 1
+(lambda () 1) ; (λ _ 1)
+((λ _ 1)) ; 1
 (newline) ; \n
 
 ; There is no VARARG
@@ -58,6 +59,13 @@ nil ; NIL
 
 ; CHURCH LISP
 
+((λ n (* n n)) 3) ; 9
+
+(lambda-rw '(lambda () x)) ; (λ _ x)
+(lambda-rw '(lambda (x) x)) ; (λ x x)
+(lambda-rw '(lambda (x y) (cons x y))) ; (λ x (λ y (cons x y)))
+(lambda-rw '(lambda (x y z) (list x y z))) ; (λ x (λ y (λ z (list x y z))))
+
 ((lambda (n) (* n n)) 3) ; 9
 ((lambda (x y z) (+ x (+ y ((lambda (n) (* n n)) z)))) 1 2 3) ; 12
 
@@ -68,12 +76,21 @@ a ; NIL
 (set! a 5) ; NIL
 a ; 5
 
-(set! b (lambda (_) a)) ; NIL
-(b nil) ; 5
+(set! b (λ _ a)) ; NIL
+(b) ; 5
 (set! a 4) ; NIL
-(b nil) ; 4
+(b) ; 4
 
-((lambda (x) (begin (display x) (set! x 5) (display x))) 0) ; 05
+; SEQUENTIAL LISP
+
+(begin-rw '(begin)) ; NIL
+(begin-rw '(begin (display 1))) ; ((λ _ (display 1)) nil)
+(begin-rw '(begin (display 1) (display 2))) ; ((λ _ (display 2)) ((λ _ (display 1)) nil))
+
+(begin (display 1) (display 2) (display 3))
+((λ _ (display 3)) ((λ _ (display 2)) ((λ _ (display 1)) nil)))
+
+((λ x (begin (display x) (set! x 5) (display x))) 0) ; 05
 
 ; DEFINING LISP
 
@@ -83,7 +100,7 @@ a ; 5
 (define one 1) ; NIL
 one ; 1
 
-(define sq (lambda (n) (* n n))) ; NIL
+(define sq (λ n (* n n))) ; NIL
 (sq 5) ; 25
 
 (define sum-sq (lambda (p q) (+ (sq p) (sq q)))) ; NIL
@@ -96,8 +113,8 @@ not-defined ; 1
 ; BINDING LISP
 
 (let-rw '(let () 1)) ; 1
-(let-rw '(let ((a 5)) (+ a 1))) ; ((lambda (a) (+ a 1)) 5)
-(let-rw '(let ((a 5) (b 6)) (+ a b))) ; ((lambda (a) ((lambda (b) (+ a b)) 6)) 5)
+(let-rw '(let ((a 5)) (+ a 1))) ; ((λ a (+ a 1)) 5)
+(let-rw '(let ((a 5) (b 6)) (+ a b))) ; ((λ a ((λ b (+ a b)) 6)) 5)
 
 (let ((a 5)) a) ; 5
 (let ((a 5) (b 6)) (cons a b)) ; (cons 5 6)

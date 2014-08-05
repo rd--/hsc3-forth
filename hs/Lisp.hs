@@ -122,7 +122,7 @@ instance Lisp_Ty a => Show (Cell a) where
           Cons p q -> if is_list c then list_pp c else concat ["(CONS ",show p," ",show q,")"]
           Fun _ -> "FUN"
           Proc _ -> "PROC"
-          Lambda _ nm code -> concat ["(","LAMBDA"," (",nm,") ",show code,")"]
+          Lambda _ nm code -> concat ["(λ ",nm," ",show code,")"]
           Macro m -> "MACRO: " ++ show m
           Error msg -> "ERROR: " ++ msg
 
@@ -168,10 +168,15 @@ parse_cell str = parse_sexp str >>= parse_cell'
 
 apply_lambda :: Lisp_Ty a => Env a -> String -> Cell a -> Cell a -> VM a (Cell a)
 apply_lambda l_env nm code arg = do
-  c_env <- get -- save caller environment
-  put =<< liftIO (env_add_frame nm arg l_env) -- put extended lambda environment
-  res <- eval code -- eval code in lambda environment
-  put c_env -- restore caller environment
+  -- save caller environment
+  c_env <- get
+  -- store extended lambda environment
+  put =<< liftIO (env_add_frame nm arg l_env)
+  -- eval code in lambda environment
+  res <- eval code
+  -- restore caller environment
+  put c_env
+  -- return result
   return res
 
 -- | Functions are one argument, but allow (+ 1 2) for ((+ 1) 2).
@@ -182,59 +187,49 @@ apply lhs arg var_arg = do
          Fun f -> eval arg >>= return . f
          Proc f -> eval arg >>= f
          Lambda env nm code -> eval arg >>= apply_lambda env nm code
-         _ -> throwError ("APPLY: " ++ show msg)
-  case (lhs,var_arg) of
-    (_,Nil) -> return r
-    (_,Cons e l') -> apply r e l'
-    _ -> throwError ("APPLY: RESULT: " ++ show msg)
+         _ -> throwError ("APPLY: INVALID LHS: " ++ show msg)
+  case var_arg of
+    Nil -> return r
+    Cons e l' -> apply r e l'
+    _ -> throwError ("APPLY: INVALID VAR-ARG: " ++ show msg)
 
--- allow (lambda () ...) as (lambda (_) ...)
-eval_lambda :: Lisp_Ty a => Cell a -> Cell a -> VM a (Cell a)
-eval_lambda param code =
-    case param of
-      Nil -> get >>= \env -> return (Lambda env "_" code)
-      Cons (Symbol nm) Nil -> get >>= \env -> return (Lambda env nm code)
-      Cons nm param' ->
-          let code' = from_list [Symbol "lambda",param',code]
-          in eval_lambda (Cons nm Nil) code'
-      _ -> throwError (show ("EVAL-LAMBDA",param,code))
+l_apply :: Lisp_Ty a => Cell a -> VM a (Cell a)
+l_apply c = do
+  let Cons lhs rhs = c
+  (p,l) <- case rhs of
+             Nil -> return (Nil,Nil)
+             Cons p' q' -> return (p',q')
+             _ -> throwError ("APPLY: RHS not NIL or CONS: " ++ show rhs)
+  f <- eval lhs
+  case f of
+    Macro f' -> apply f' (l_quote c) Nil >>= eval
+    _ -> apply f p l
 
-eval_begin :: Lisp_Ty a => Cell a -> VM a (Cell a)
-eval_begin l =
-    case l of
-      Cons e Nil -> eval e
-      Cons e l' -> eval e >> eval_begin l'
-      _ -> throwError ("BEGIN: " ++ show l)
+l_quote :: Cell a -> Cell a
+l_quote c = Cons (Symbol "quote") (Cons c Nil)
 
-quote :: Cell a -> Cell a
-quote c = from_list [Symbol "quote",c]
+l_lambda :: String -> Cell a -> VM a (Cell a)
+l_lambda nm code = get >>= \env -> return (Lambda env nm code)
+
+l_set :: Lisp_Ty a => String -> Cell a -> VM a (Cell a)
+l_set nm def = get >>= \env -> eval def >>= \def' -> liftIO (env_set env nm def') >> return Nil
+
+l_if :: Lisp_Ty a => Cell a -> Cell a -> Cell a -> VM a (Cell a)
+l_if p t f = eval p >>= \p' -> if p' == l_false then eval f else eval t
 
 eval :: Lisp_Ty a => Cell a -> VM a (Cell a)
 eval c =
-    -- liftIO (putStrLn ("RUN EVAL: " ++ show c)) >>
     case c of
       String _ -> return c
       Atom _ -> return c
       Nil -> return c
       Symbol nm -> get >>= \env -> env_lookup nm env
-      Cons (Symbol "set!") (Cons (Symbol nm) (Cons def Nil)) ->
-          get >>= \env -> eval def >>= \def' -> liftIO (env_set env nm def') >> return Nil
-      Cons (Symbol "if") (Cons p (Cons t (Cons f Nil))) ->
-          eval p >>= \p' -> if p' == l_false then eval f else eval t
-      Cons (Symbol "begin") codes -> eval_begin codes
+      Cons (Symbol "set!") (Cons (Symbol nm) (Cons def Nil)) -> l_set nm def
+      Cons (Symbol "if") (Cons p (Cons t (Cons f Nil))) -> l_if p t f
       Cons (Symbol "quote") (Cons code Nil) -> return code
-      Cons (Symbol "lambda") (Cons param (Cons code Nil)) -> eval_lambda param code
+      Cons (Symbol "λ") (Cons (Symbol nm) (Cons code Nil)) -> l_lambda nm code
       Cons (Symbol "macro") (Cons code Nil) -> fmap Macro (eval code)
-      Cons lhs rhs -> do
-          (p,l) <- case rhs of
-                     Nil -> return (Nil,Nil)
-                     Cons p' q' -> return (p',q')
-                     _ -> throwError ("EVAL: APPLY: RHS not Nil or Cons: " ++ show c)
-          -- liftIO (putStrLn ("EVAL: RUN APPLY"))
-          f <- eval lhs
-          case f of
-            Macro f' -> apply f' (quote c) Nil >>= eval
-            _ -> apply f p l
+      Cons _ _ -> l_apply c
       _ -> throwError ("EVAL: ILLEGAL FORM: " ++ show c)
 
 -- * LOAD
@@ -303,42 +298,3 @@ repl env initialise = do
   case r of
     Left msg -> error ("REPL: INIT ERROR: " ++ msg)
     Right () -> repl' env'
-
--- * NUM / FLOAT
-
-(.:) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
-(.:) = fmap . fmap
-
-map_atom :: Lisp_Ty a => (a -> a) -> Cell a -> Cell a
-map_atom f c = maybe (Error ("NOT-ATOM: " ++ show c)) (Atom . f) (atom c)
-
-lift_uop :: Lisp_Ty a => (a -> a) -> Cell a
-lift_uop f = Fun (map_atom f)
-
-lift_binop :: Lisp_Ty a => (a -> a -> a) -> Cell a
-lift_binop f =
-    let g p q = case (p,q) of
-                  (Just p',Just q') -> Atom (f p' q')
-                  _ -> Error "BINOP: NOT-ATOM?"
-    in Fun (\lhs -> Fun (\rhs -> g (atom lhs) (atom rhs)))
-
-num_dict :: Lisp_Ty a => Dict a
-num_dict =
-    M.fromList
-    [("+",lift_binop (+))
-    ,("*",lift_binop (*))
-    ,("-",lift_binop (-))
-    ,("/",lift_binop (/))
-    ,("<",lift_binop (ty_from_bool .: (<)))
-    ,(">",lift_binop (ty_from_bool .: (>)))
-    ,("<=",lift_binop (ty_from_bool .: (<=)))
-    ,(">=",lift_binop (ty_from_bool .: (>=)))
-    ,("negate",lift_uop negate)
-    ,("recip",lift_uop recip)]
-
-float_dict :: (Lisp_Ty a,Floating a) => Dict a
-float_dict =
-    M.fromList
-    [("sin",lift_uop sin)
-    ,("cos",lift_uop cos)]
-

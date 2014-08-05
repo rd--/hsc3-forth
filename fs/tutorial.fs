@@ -2,7 +2,7 @@
 
 \ HSC3-FORTH is a simple FORTH-ish interpreter.
 \ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, and one data stack.
-\ There is IF ELSE THEN, and DO LOOP, and (LOCAL) in the form { VAR ... }.
+\ There is :; and IF ELSE THEN and DO LOOP and (LOCAL) in the form { VAR ... }.
 \ There is a return stack.
 
 ( EMACS FORTH )

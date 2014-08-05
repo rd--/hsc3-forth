@@ -425,17 +425,17 @@
   (lambda (rt ampdist durdist adparam ddparam freq ampscale durscale initCPs knum)
     (mk-ugen (list "Gendy3" rt (list ampdist durdist adparam ddparam freq ampscale durscale initCPs knum) nil 1 nil (incr-uid 1)))))
 (define grain-buf
-  (lambda (nc rt trigger dur sndbuf rate pos interp pan envbufnum maxGrains)
-    (mk-ugen (list "GrainBuf" rt (list trigger dur sndbuf rate pos interp pan envbufnum maxGrains) nil nc nil nil))))
+  (lambda (nc trigger dur sndbuf rate pos interp pan envbufnum maxGrains)
+    (mk-ugen (list "GrainBuf" ar (list trigger dur sndbuf rate pos interp pan envbufnum maxGrains) nil nc nil nil))))
 (define grain-fm
-  (lambda (nc rt trigger dur carfreq modfreq index pan envbufnum maxGrains)
-    (mk-ugen (list "GrainFM" rt (list trigger dur carfreq modfreq index pan envbufnum maxGrains) nil nc nil nil))))
+  (lambda (nc trigger dur carfreq modfreq index pan envbufnum maxGrains)
+    (mk-ugen (list "GrainFM" ar (list trigger dur carfreq modfreq index pan envbufnum maxGrains) nil nc nil nil))))
 (define grain-in
-  (lambda (nc rt trigger dur in pan envbufnum maxGrains)
-    (mk-ugen (list "GrainIn" rt (list trigger dur in pan envbufnum maxGrains) nil nc nil nil))))
+  (lambda (nc trigger dur in pan envbufnum maxGrains)
+    (mk-ugen (list "GrainIn" ar (list trigger dur in pan envbufnum maxGrains) nil nc nil nil))))
 (define grain-sin
-  (lambda (nc rt trigger dur freq pan envbufnum maxGrains)
-    (mk-ugen (list "GrainSin" rt (list trigger dur freq pan envbufnum maxGrains) nil nc nil nil))))
+  (lambda (nc trigger dur freq pan envbufnum maxGrains)
+    (mk-ugen (list "GrainSin" ar (list trigger dur freq pan envbufnum maxGrains) nil nc nil nil))))
 (define gray-noise
   (lambda (rt)
     (mk-ugen (list "GrayNoise" rt nil nil 1 nil (incr-uid 1)))))
@@ -893,8 +893,8 @@
   (lambda (in trig)
     (mk-ugen (list "Peak" (list 0) (list in trig) nil 1 nil nil))))
 (define peak-follower
-  (lambda (rt in decay)
-    (mk-ugen (list "PeakFollower" rt (list in decay) nil 1 nil nil))))
+  (lambda (in decay)
+    (mk-ugen (list "PeakFollower" (list 0) (list in decay) nil 1 nil nil))))
 (define phasor
   (lambda (rt trig rate start end resetPos)
     (mk-ugen (list "Phasor" rt (list trig rate start end resetPos) nil 1 nil nil))))
@@ -1044,7 +1044,7 @@
     (mk-ugen (list "ScopeOut2" rt (list inputArray scopeNum maxFrames scopeFrames) nil 1 nil nil))))
 (define select
   (lambda (which array)
-    (mk-ugen (list "Select" (list 0) (list which) array 1 nil nil))))
+    (mk-ugen (list "Select" (list 0 1) (list which) array 1 nil nil))))
 (define send-trig
   (lambda (in id value)
     (mk-ugen (list "SendTrig" (list 0) (list in id value) nil 1 nil nil))))
@@ -1142,8 +1142,8 @@
   (lambda (lo hi trig)
     (mk-ugen (list "TRand" (list 2) (list lo hi trig) nil 1 nil (incr-uid 1)))))
 (define t-windex
-  (lambda (rt in array normalize)
-    (mk-ugen (list "TWindex" rt (list in array) normalize 1 nil (incr-uid 1)))))
+  (lambda (in array normalize)
+    (mk-ugen (list "TWindex" (list 0) (list in array) normalize 1 nil (incr-uid 1)))))
 (define tap
   (lambda (nc rt bufnum delaytime)
     (mk-ugen (list "Tap" rt (list bufnum delaytime) nil nc nil nil))))
@@ -1190,8 +1190,8 @@
   (lambda (rt freq rate depth delay onset rateVariation depthVariation iphase)
     (mk-ugen (list "Vibrato" rt (list freq rate depth delay onset rateVariation depthVariation iphase) nil 1 nil (incr-uid 1)))))
 (define warp1
-  (lambda (nc rt bufnum pointer freqScale windowSize envbufnum overlaps windowRandRatio interp)
-    (mk-ugen (list "Warp1" rt (list bufnum pointer freqScale windowSize envbufnum overlaps windowRandRatio interp) nil nc nil nil))))
+  (lambda (nc bufnum pointer freqScale windowSize envbufnum overlaps windowRandRatio interp)
+    (mk-ugen (list "Warp1" ar (list bufnum pointer freqScale windowSize envbufnum overlaps windowRandRatio interp) nil nc nil nil))))
 (define white-noise
   (lambda (rt)
     (mk-ugen (list "WhiteNoise" rt nil nil 1 nil (incr-uid 1)))))
