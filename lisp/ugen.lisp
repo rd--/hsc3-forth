@@ -184,12 +184,8 @@
 (define control
   (lambda (rt values)
     (mk-ugen (list "Control" rt (list values) nil 1 nil nil))))
-(define control-dur
-  (lambda (rt)
-    (mk-ugen (list "ControlDur" rt nil nil 1 nil nil))))
-(define control-rate
-  (lambda (rt)
-    (mk-ugen (list "ControlRate" rt nil nil 1 nil nil))))
+(define control-dur (mk-ugen (list "ControlDur" ir nil nil 1 nil nil)))
+(define control-rate (mk-ugen (list "ControlRate" ir nil nil 1 nil nil)))
 (define convolution
   (lambda (rt in kernel framesize)
     (mk-ugen (list "Convolution" rt (list in kernel framesize) nil 1 nil nil))))
@@ -270,10 +266,10 @@
     (mk-ugen (list "DetectSilence" rt (list in amp time doneAction) nil 1 nil nil))))
 (define dgeom
   (lambda (start grow length)
-    (mk-ugen (list "Dgeom" dr (list start grow length) nil 1 nil nil))))
+    (mk-ugen (list "Dgeom" dr (list start grow length) nil 1 nil (incr-uid 1)))))
 (define dibrown
   (lambda (lo hi step length)
-    (mk-ugen (list "Dibrown" dr (list lo hi step length) nil 1 nil nil))))
+    (mk-ugen (list "Dibrown" dr (list lo hi step length) nil 1 nil (incr-uid 1)))))
 (define disk-in
   (lambda (nc rt bufnum loop)
     (mk-ugen (list "DiskIn" rt (list bufnum loop) nil nc nil nil))))
@@ -282,16 +278,16 @@
     (mk-ugen (list "DiskOut" rt (list bufnum) channelsArray 1 nil nil))))
 (define diwhite
   (lambda (lo hi length)
-    (mk-ugen (list "Diwhite" dr (list lo hi length) nil 1 nil nil))))
+    (mk-ugen (list "Diwhite" dr (list lo hi length) nil 1 nil (incr-uid 1)))))
 (define donce
   (lambda (in)
-    (mk-ugen (list "Donce" dr (list in) nil 1 nil nil))))
+    (mk-ugen (list "Donce" dr (list in) nil 1 nil (incr-uid 1)))))
 (define done
   (lambda (rt src)
     (mk-ugen (list "Done" rt (list src) nil 1 nil nil))))
 (define dpoll
   (lambda (in label run trigid)
-    (mk-ugen (list "Dpoll" dr (list in label run trigid) nil 1 nil nil))))
+    (mk-ugen (list "Dpoll" dr (list in label run trigid) nil 1 nil (incr-uid 1)))))
 (define drand
   (lambda (list_ repeats)
     (mk-ugen (list "Drand" dr (list list_) repeats 1 nil (incr-uid 1)))))
@@ -303,10 +299,10 @@
     (mk-ugen (list "Dseq" dr (list list_) repeats 1 nil (incr-uid 1)))))
 (define dser
   (lambda (list_ repeats)
-    (mk-ugen (list "Dser" dr (list list_) repeats 1 nil nil))))
+    (mk-ugen (list "Dser" dr (list list_) repeats 1 nil (incr-uid 1)))))
 (define dseries
   (lambda (start step length)
-    (mk-ugen (list "Dseries" dr (list start step length) nil 1 nil nil))))
+    (mk-ugen (list "Dseries" dr (list start step length) nil 1 nil (incr-uid 1)))))
 (define dshuf
   (lambda (list_ repeats)
     (mk-ugen (list "Dshuf" dr (list list_ repeats) nil 1 nil (incr-uid 1)))))
@@ -315,10 +311,10 @@
     (mk-ugen (list "Dstutter" dr (list n in) nil 1 nil nil))))
 (define dswitch
   (lambda (list_ index)
-    (mk-ugen (list "Dswitch" dr (list list_) index 1 nil nil))))
+    (mk-ugen (list "Dswitch" dr (list list_) index 1 nil (incr-uid 1)))))
 (define dswitch1
   (lambda (list_ index)
-    (mk-ugen (list "Dswitch1" dr (list list_) index 1 nil nil))))
+    (mk-ugen (list "Dswitch1" dr (list list_) index 1 nil (incr-uid 1)))))
 (define dunique
   (lambda (source maxBufferSize protected)
     (mk-ugen (list "Dunique" dr (list source maxBufferSize protected) nil 1 nil nil))))
@@ -503,8 +499,8 @@
   (lambda (in coef)
     (mk-ugen (list "Integrator" (list 0) (list in coef) nil 1 nil nil))))
 (define k2a
-  (lambda (rt in)
-    (mk-ugen (list "K2A" rt (list in) nil 1 nil nil))))
+  (lambda (in)
+    (mk-ugen (list "K2A" ar (list in) nil 1 nil nil))))
 (define key-state
   (lambda (rt keycode minval maxval lag)
     (mk-ugen (list "KeyState" rt (list keycode minval maxval lag) nil 1 nil nil))))
@@ -1015,9 +1011,7 @@
 (define sos
   (lambda (in a0 a1 a2 b1 b2)
     (mk-ugen (list "SOS" (list 0) (list in a0 a1 a2 b1 b2) nil 1 nil nil))))
-(define sample-dur
-  (lambda (_)
-    (mk-ugen (list "SampleDur" ir nil nil 1 nil nil))))
+(define sample-dur (mk-ugen (list "SampleDur" ir nil nil 1 nil nil)))
 (define sample-rate (mk-ugen (list "SampleRate" ir nil nil 1 nil nil)))
 (define saw
   (lambda (rt freq)
@@ -1192,7 +1186,7 @@
     (mk-ugen (list "Wrap" (list 0) (list in lo hi) nil 1 nil nil))))
 (define wrap-index
   (lambda (bufnum in)
-    (mk-ugen (list "WrapIndex" (list 0) (list bufnum in) nil 1 nil nil))))
+    (mk-ugen (list "WrapIndex" (list 1) (list bufnum in) nil 1 nil nil))))
 (define x-fade2
   (lambda (rt inA inB pan level)
     (mk-ugen (list "XFade2" rt (list inA inB pan level) nil 1 nil nil))))

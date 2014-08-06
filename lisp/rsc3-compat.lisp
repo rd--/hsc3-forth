@@ -50,7 +50,7 @@
 ; the cardinality input is derived from the values input...
 (define set-buf
   (lambda (buf offset values)
-    (mk-ugen (list "SetBuf" ir (list buf (length values) offset) (make-mce values) 1 nil nil))))
+    (mk-ugen (list "SetBuf" ir (list buf offset (length values)) (make-mce values) 1 nil nil))))
 
 (define as-local-buf
   (lambda (l)

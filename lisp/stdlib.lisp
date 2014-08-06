@@ -92,6 +92,24 @@
 
 (define begin (macro begin-rw))
 
+; LETREC
+
+(define letrec-rw-code
+  (quote
+   (lambda (exp)
+     (let ((bindings (car exp))
+           (code (cadr exp))
+           (names (map car bindings))
+           (values (map cadr bindings))
+           (bindings* (zip-with list names (map (const nil) bindings)))
+           (initialisers (zip-with (lambda (p q) (list 'set! p q)) names values)))
+       (list 'let bindings* (cons 'begin (append initialisers (list code))))))))
+
+; (expand letrec-rw-code)
+(define letrec-rw (λ exp ((λ bindings ((λ code ((λ names ((λ values ((λ bindings* ((λ initialisers (cons (quote let) (cons bindings* (cons (cons (quote begin) (append initialisers (cons code nil))) nil)))) (zip-with (λ p (λ q (cons (quote set!) (cons p (cons q nil))))) names values))) (zip-with list names (map (const nil) bindings)))) (map cadr bindings))) (map car bindings))) (cadr exp))) (car exp))))
+
+(define letrec (macro letrec-rw))
+
 ; EXPAND
 
 (define expand

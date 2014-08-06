@@ -18,19 +18,24 @@
 ((+ 1) 2) ; 3
 
 ; The evaluator allows two notational simplifications.
+; The form (f p q) is read as ((f p) q) and so on.
+; The form (f) is read as (f nil).
 
 (+ 1 2) ; 3
 ((λ _ 1)) ; 1
 
-; This notation disallows the traditional variadic notation.
+; This notation is against the grain of the traditional variadic notation.
 
 (+ 1 2 3) ; ERROR: (3 3)
 
 #| CELLULAR LISP |#
 
-; The CONS cell is the primitive combining type, it is undone with CAR and CDR.
+; The CONS cell is the primitive composite value.
 
 (cons 1 2) ; (1 . 2)
+
+; CONS is undone with CAR and CDR.
+
 (car (cons 1 2)) ; 1
 (cdr (cons 1 2)) ; 2
 
@@ -46,11 +51,12 @@
 
 #| REWRITING LISP |#
 
-; A MACRO is a program that re-writes programs.
+; MACROS are programs that re-write S-EXPRESSION programs.
 
 ((λ exp (cons '- (cdr exp))) '(+ 1 2)) ; (- 1 2)
 
-; A MACRO receives the remainder of expression to which it is applied as a LIST.
+; The MACRO form takes an S-EXPRESSION re-writeing program.
+; When applied the MACRO receives the remainder of expression as a LIST.
 
 ((macro (λ exp (cons '- (cdr exp)))) + 1 2) ; -1
 
@@ -59,24 +65,23 @@
 #| MUTATING LISP |#
 
 ; SET! is the primitive environment editor.
+; SET! creates a new entry at the TOP-LEVEL if the variable is not otherwise located.
 
 (set! a nil) ; NIL
 a ; NIL
-(set! a 5) ; NIL
-a ; 5
-
 (set! b (λ _ a)) ; NIL
-(b) ; 5
-(set! a 4) ; NIL
-(b) ; 4
+(b) ; NIL
+(set! a 'a) ; NIL
+(b) ; a
 
 #| CONDITIONAL LISP |#
 
-(if #t 'a 'b) ; a
-(if #f 'a 'b) ; b
+; IF THEN ELSE is the primitive conditional.
+; The only false value is #f, all other values are #t.
 
-(set! t #t) ; NIL
-(if t 'a 'b) ; a
+(if #t 'a 'b) ; a
+(if #f (print 'a) (print 'b)) ; b NIL
+(if 'false 'true 'false) ; true
 
 #| EVALUATING LISP |#
 
@@ -183,6 +188,16 @@ not-defined ; 1
 ; LET is schemes LET*.
 
 (let ((x 2) (y 3)) (let ((x 7) (z (+ x y))) (* z x))) ; 70 (NOT 35)
+
+(letrec-rw (cdr '(letrec ((a 5) (b 6)) (cons a b))))
+; (let ((a NIL) (b NIL)) (begin (set! a 5) (set! b 6) (cons a b)))
+
+(define add-count
+  (lambda (l)
+    (letrec ((f (lambda (n l) (if (null? l) '() (cons (cons n (car l)) (f (+ n 1) (cdr l)))))))
+      (f 0 l))))
+
+(add-count (list 'a 'b 'c)) ; ((CONS 0 a) (CONS 1 b) (CONS 2 c))
 
 ; CONS LISP
 
@@ -413,6 +428,20 @@ three ; 3
 
 (let ((x 2) (y 3)) (let* ((x 7) (z (+ x y))) (* z x))) ; 70
 
+(define zero? (lambda (n) (equal? n 0)))
+
+(letrec ((even?
+          (lambda (n)
+            (if (zero? n)
+                #t
+                (odd? (- n 1)))))
+         (odd?
+          (lambda (n)
+            (if (zero? n)
+                #f
+                (even? (- n 1))))))
+  (even? 89))
+
 ; 4.2.3
 
 (define x 0) ; NIL
@@ -470,3 +499,4 @@ three ; 3
 (not '()) ; ?
 (not (list)) ; ?
 (not 'nil) ; ?
+
