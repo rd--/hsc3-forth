@@ -1,6 +1,6 @@
 ; DEFINE
 
-(set! define-rw (λ exp (cons 'set! (cdr exp))))
+(set! define-rw (λ exp (cons 'set! exp)))
 (set! define (macro define-rw))
 
 ; NIL
@@ -9,46 +9,41 @@
 
 ; LAMBDA
 
-(define lambda-rw*-code
+(define lambda-rw-code
   (quote
    (λ exp
      (let ((param (car exp))
            (code (car (cdr exp))))
        (cond ((null? param) (list 'λ '_ code))
              ((null? (cdr param)) (list 'λ (car param) code))
-             (else (list 'λ (car param) (lambda-rw* (list (cdr param) code)))))))))
+             (else (list 'λ (car param) (lambda-rw (list (cdr param) code)))))))))
 
-; (expand lambda-rw*-code)
-(define lambda-rw* (λ exp ((λ param ((λ code (if (null? param) (cons (quote λ) (cons (quote _) (cons code nil))) (if (null? (cdr param)) (cons (quote λ) (cons (car param) (cons code nil))) (cons (quote λ) (cons (car param) (cons (lambda-rw* (cons (cdr param) (cons code nil))) nil)))))) (car (cdr exp)))) (car exp))))
-
-(define lambda-rw (λ exp (lambda-rw* (cdr exp))))
+; (expand lambda-rw-code)
+(define lambda-rw (λ exp ((λ param ((λ code (if (null? param) (cons (quote λ) (cons (quote _) (cons code nil))) (if (null? (cdr param)) (cons (quote λ) (cons (car param) (cons code nil))) (cons (quote λ) (cons (car param) (cons (lambda-rw (cons (cdr param) (cons code nil))) nil)))))) (car (cdr exp)))) (car exp))))
 
 (define lambda (macro lambda-rw))
 
 ; LET
 
-(define let-rw*-code
+(define let-rw-code
   (quote
    (λ exp
      (if (null? (car exp))
          (cadr exp)
-         (list (list 'λ (caaar exp) (let-rw* (list (cdar exp) (cadr exp))))
+         (list (list 'λ (caaar exp) (let-rw (list (cdar exp) (cadr exp))))
                (cadr (caar exp)))))))
 
-; (expand let-rw*-code)
-(define let-rw* (λ exp (if (null? (car exp)) (cadr exp) (cons (cons (quote λ) (cons (caaar exp) (cons (let-rw* (cons (cdar exp) (cons (cadr exp) nil))) nil))) (cons (cadr (caar exp)) nil)))))
-
-(define let-rw (λ exp (let-rw* (cdr exp))))
+; (expand let-rw-code)
+(define let-rw (λ exp (if (null? (car exp)) (cadr exp) (cons (cons (quote λ) (cons (caaar exp) (cons (let-rw (cons (cdar exp) (cons (cadr exp) nil))) nil))) (cons (cadr (caar exp)) nil)))))
 
 (define let (macro let-rw))
 
 ; LIST
 
-; list is a macro because HSC3-LISP lambda is (a -> b) and not VARARG
 (define list-rw
   (λ exp
     (let ((f (lambda (e r) (append (cons 'cons (cons e nil)) (cons r '())))))
-      (foldr f 'nil (cdr exp)))))
+      (foldr f 'nil exp))))
 
 (define list (macro list-rw))
 
@@ -56,28 +51,27 @@
 
 (define not (λ p (if p #f #t)))
 
-(define and-rw (λ exp (list 'if (cadr exp) (caddr exp) #f)))
+(define and-rw (λ exp (list 'if (car exp) (cadr exp) #f)))
 (define and (macro and-rw))
 
-(define or-rw (λ exp (list 'if (cadr exp) #t (caddr exp))))
+(define or-rw (λ exp (list 'if (car exp) #t (cadr exp))))
 (define or (macro or-rw))
 
 (define cond-rw
   (λ exp
-    (let ((c (cdr exp)))
-      (if (null? c)
-          nil
-          (let ((c0 (car c)))
-            (if (equal? (car c0) 'else)
-                (cadr c0)
-                (list 'if (car c0) (cadr c0) (cond-rw (cons 'cond (cdr c))))))))))
+     (if (null? exp)
+         nil
+         (let ((c0 (car exp)))
+           (if (equal? (car c0) 'else)
+               (cadr c0)
+               (list 'if (car c0) (cadr c0) (cond-rw (cdr exp))))))))
 
 (define cond (macro cond-rw))
 
 (define when-rw
   (λ exp
-    (let ((test (cadr exp))
-          (branch (caddr exp)))
+    (let ((test (car exp))
+          (branch (cadr exp)))
       (list 'if test branch nil))))
 
 (define when (macro when-rw))
@@ -94,7 +88,7 @@
 ; (expand begin-rw*-code)
 (define begin-rw* (λ pre (λ code (if (null? code) pre (begin-rw* (cons (cons (quote λ) (cons (quote _) (cons (car code) nil))) (cons pre nil)) (cdr code))))))
 
-(define begin-rw (λ exp (begin-rw* nil (cdr exp))))
+(define begin-rw (λ exp (begin-rw* nil exp)))
 
 (define begin (macro begin-rw))
 
@@ -104,11 +98,11 @@
   (λ exp
     (if (list? exp)
         (let ((f (λ nm (equal? (car exp) nm))))
-          (cond ((f 'list) (expand (list-rw (map expand exp))))
-                ((f 'let) (expand (let-rw (map expand exp))))
-                ((f 'cond) (expand (cond-rw (map expand exp))))
-                ((f 'lambda) (expand (lambda-rw (map expand exp))))
-                ((f 'begin) (expand (begin-rw (map expand exp))))
+          (cond ((f 'list) (expand (list-rw (map expand (cdr exp)))))
+                ((f 'let) (expand (let-rw (map expand (cdr exp)))))
+                ((f 'cond) (expand (cond-rw (map expand (cdr exp)))))
+                ((f 'lambda) (expand (lambda-rw (map expand (cdr exp)))))
+                ((f 'begin) (expand (begin-rw (map expand (cdr exp)))))
                 (else (map expand exp))))
         exp)))
 
@@ -121,7 +115,6 @@
 ; COMPAT
 
 (define let* let)
-(define mce2 (lambda (p q) (mce (list p q))))
 
 ; MATH
 
@@ -131,7 +124,15 @@
 
 ; IO
 
-(define newline (λ _ (display "\n")))
+(define newline-char 10)
+(define newline (λ _ (write-char newline-char)))
+
+(define print (λ o (begin (display o) (newline))))
+
+(define space-char 32)
+(define space (λ _ (write-char space-char)))
+
+(define display* (λ o (begin (display o) (space))))
 
 ; C....R
 
@@ -163,3 +164,15 @@
 (define cddadr (λ c (cdr (cdr (car (cdr c))))))
 (define cdddar (λ c (cdr (cdr (cdr (car c))))))
 (define cddddr (λ c (cdr (cdr (cdr (cdr c))))))
+
+; NO DEFINE SYNTAX!
+
+(define define-syntax
+  (macro
+      (lambda (exp)
+        (begin (print "DEFINE-SYNTAX DISCARDED") (print exp) 'define-syntax))))
+
+; RHS
+
+(define replicate-m-rw (lambda (exp) (list 'replicate-m* (car exp) (list 'lambda '(_) (cadr exp)))))
+(define replicate-m (macro replicate-m-rw))

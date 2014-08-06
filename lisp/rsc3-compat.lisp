@@ -3,6 +3,8 @@
 (define dinf 9e8)
 
 (define make-mce mce)
+(define mce2 (lambda (p q) (mce (list p q))))
+
 (define make-mrg (lambda (p q) (mrg (list p q))))
 
 (define u:abs abs)
@@ -17,6 +19,7 @@
 
 (define string=? equal?)
 
+(define eq ==)
 (define lt <)
 (define gt >)
 
@@ -41,3 +44,16 @@
 (define with-sc3 (lambda (f) (f nil)))
 
 (define +inf.0 9e8)
+
+; actually rsc3 doesn't have these...
+
+; the cardinality input is derived from the values input...
+(define set-buf
+  (lambda (buf offset values)
+    (mk-ugen (list "SetBuf" ir (list buf (length values) offset) (make-mce values) 1 nil nil))))
+
+(define as-local-buf
+  (lambda (l)
+    (let ((b (local-buf (length l) 1))
+          (s (set-buf b 0 l)))
+      (mrg2 b s))))

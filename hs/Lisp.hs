@@ -17,6 +17,7 @@ import qualified Language.Scheme.Types as S {- husk-scheme -}
 
 class (Eq a,Ord a,Num a,Fractional a) => Lisp_Ty a where
     ty_show :: a -> String -- ^ String representation of /a/, pretty printer.
+    ty_to_int :: a -> Int -- ^ Coercion, ie. for Char.
     ty_from_bool :: Bool -> a -- ^ Boolean value represented in /a/, by convention @1@ and @0@.
 
 type Dict a = M.Map String (Cell a)
@@ -93,6 +94,12 @@ atom c =
       Atom a -> Just a
       _ -> Nothing
 
+maybe_to_err :: String -> Maybe a -> VM a a
+maybe_to_err msg = maybe (throwError msg) return
+
+atom_err :: Lisp_Ty a => Cell a -> VM a a
+atom_err c = maybe_to_err ("NOT ATOM: " ++ show c) (atom c)
+
 is_list :: Eq a => Cell a -> Bool
 is_list c =
     case c of
@@ -132,8 +139,8 @@ l_false = Atom (ty_from_bool False)
 l_true :: Lisp_Ty a => Cell a
 l_true = Atom (ty_from_bool True)
 
-cell_equal :: Lisp_Ty a => Eq a => Cell a
-cell_equal = Fun (\lhs -> Fun (\rhs -> if lhs == rhs then l_true else l_false))
+l_equal :: Lisp_Ty a => Cell a -> Cell a
+l_equal lhs = Fun (\rhs -> if lhs == rhs then l_true else l_false)
 
 -- * SEXP
 
@@ -182,7 +189,7 @@ apply_lambda l_env nm code arg = do
 -- | Functions are one argument, but allow (+ 1 2) for ((+ 1) 2).
 apply :: Lisp_Ty a => Cell a -> Cell a -> Cell a -> VM a (Cell a)
 apply lhs arg var_arg = do
-  let msg = from_list [Symbol "LHS:",lhs,Symbol "RHS:",arg,var_arg]
+  let msg = from_list [Symbol "LHS:",lhs,Symbol "RHS:",arg,Symbol "REM:",var_arg]
   r <- case lhs of
          Fun f -> eval arg >>= return . f
          Proc f -> eval arg >>= f
@@ -202,7 +209,7 @@ l_apply c = do
              _ -> throwError ("APPLY: RHS not NIL or CONS: " ++ show rhs)
   f <- eval lhs
   case f of
-    Macro f' -> apply f' (l_quote c) Nil >>= eval
+    Macro f' -> apply f' (l_quote rhs) Nil >>= eval
     _ -> apply f p l
 
 l_quote :: Cell a -> Cell a
@@ -255,6 +262,9 @@ load_files nm = do
 
 -- * CORE
 
+l_write_char :: Lisp_Ty a => Cell a -> VM a (Cell a1)
+l_write_char c = atom_err c >>= \a -> liftIO (putChar (toEnum (ty_to_int a)) >> return Nil)
+
 core_dict :: Lisp_Ty a => Dict a
 core_dict =
     M.fromList
@@ -268,7 +278,8 @@ core_dict =
     ,("null?",Fun (\c -> case c of {Nil -> l_true; _ -> l_false}))
     ,("pair?",Fun (\c -> case c of {Cons _ _ -> l_true; _ -> l_false}))
     ,("list?",Fun (Atom . ty_from_bool . is_list))
-    ,("equal?",cell_equal)
+    ,("equal?",Fun l_equal)
+    ,("write-char",Proc l_write_char)
     ,("display",Proc (\c -> liftIO (putStr (show c)) >> return c))
     ,("load",Proc (\c -> load c >> return Nil))
     ,("eval",Proc (\c -> eval c >>= eval))

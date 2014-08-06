@@ -3,7 +3,7 @@ rsc3_dir=$(HOME)/sw/rsc3/src
 rsc3_lang_dir=$(HOME)/sw/rsc3-lang/src
 lisp_dir=$(HOME)/sw/hsc3-forth/lisp
 
-rhs_lib=data/ord.scm data/function.scm data/list.scm data/tree.scm data/tree.scm prelude.scm
+rhs_lib=control/monad.scm data/ord.scm data/function.scm data/list.scm data/tree.scm data/tree.scm prelude.scm
 rsc3_lib=composite.scm enum.scm env.scm list.scm time.scm
 
 rhs:
@@ -12,3 +12,8 @@ rhs:
 rsc3:
 	(cd $(rsc3_dir) ; cat $(rsc3_lib) > $(lisp_dir)/rsc3.lisp)
 	cat $(rsc3_lang_dir)/overlap-texture.scm >> $(lisp_dir)/rsc3.lisp
+
+all: rhs rsc3
+
+clean:
+	rm -f rhs.lisp rsc3.lisp

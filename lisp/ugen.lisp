@@ -4,9 +4,6 @@
 (define mul-add
   (lambda (in mul add)
     (mk-ugen (list "MulAdd" (list 0) (list in mul add) nil 1 nil nil))))
-(define set-buf
-  (lambda (rt buf numValues offset values)
-    (mk-ugen (list "SetBuf" rt (list buf numValues offset) values 1 nil nil))))
 (define a2k
   (lambda (rt in)
     (mk-ugen (list "A2K" rt (list in) nil 1 nil nil))))
@@ -167,8 +164,8 @@
   (lambda (rt)
     (mk-ugen (list "ClipNoise" rt nil nil 1 nil (incr-uid 1)))))
 (define coin-gate
-  (lambda (rt prob in)
-    (mk-ugen (list "CoinGate" rt (list prob in) nil 1 nil (incr-uid 1)))))
+  (lambda (prob in)
+    (mk-ugen (list "CoinGate" (list 1) (list prob in) nil 1 nil (incr-uid 1)))))
 (define comb-c
   (lambda (in maxdelaytime delaytime decaytime)
     (mk-ugen (list "CombC" (list 0) (list in maxdelaytime delaytime decaytime) nil 1 nil nil))))
@@ -346,12 +343,6 @@
 (define dxrand
   (lambda (list_ repeats)
     (mk-ugen (list "Dxrand" dr (list list_) repeats 1 nil (incr-uid 1)))))
-(define dyn-klang
-  (lambda (rt specificationsArrayRef freqscale freqoffset)
-    (mk-ugen (list "DynKlang" rt (list specificationsArrayRef freqscale freqoffset) nil 1 nil nil))))
-(define dyn-klank
-  (lambda (rt specificationsArrayRef input freqscale freqoffset decayscale)
-    (mk-ugen (list "DynKlank" rt (list specificationsArrayRef input freqscale freqoffset decayscale) nil 1 nil nil))))
 (define env-gen
   (lambda (rt envelope gate levelScale levelBias timeScale doneAction)
     (mk-ugen (list "EnvGen" rt (list envelope gate levelScale levelBias timeScale) doneAction 1 nil nil))))
@@ -473,8 +464,8 @@
   (lambda (rt buffer wintype winsize)
     (mk-ugen (list "IFFT" rt (list buffer wintype winsize) nil 1 nil nil))))
 (define i-rand
-  (lambda (rt lo hi)
-    (mk-ugen (list "IRand" rt (list lo hi) nil 1 nil (incr-uid 1)))))
+  (lambda (lo hi)
+    (mk-ugen (list "IRand" (list 0 1) (list lo hi) nil 1 nil (incr-uid 1)))))
 (define impulse
   (lambda (rt freq phase)
     (mk-ugen (list "Impulse" rt (list freq phase) nil 1 nil nil))))
@@ -656,11 +647,11 @@
   (lambda (list_ repeats)
     (mk-ugen (list "ListDUGen" dr (list list_ repeats) nil 1 nil nil))))
 (define local-buf
-  (lambda (rt numChannels numFrames)
-    (mk-ugen (list "LocalBuf" rt (list numChannels numFrames) nil 1 nil (incr-uid 1)))))
+  (lambda (numChannels numFrames)
+    (mk-ugen (list "LocalBuf" ir (list numChannels numFrames) nil 1 nil (incr-uid 1)))))
 (define local-in
   (lambda (nc rt default)
-    (mk-ugen (list "LocalIn" rt (list default) nil nc nil nil))))
+    (mk-ugen (list "LocalIn" rt nil default nc nil nil))))
 (define local-out
   (lambda (channelsArray)
     (mk-ugen (list "LocalOut" (list 0) nil channelsArray 1 nil nil))))
@@ -1010,8 +1001,8 @@
   (lambda (in freq decaytime)
     (mk-ugen (list "Ringz" (list 0) (list in freq decaytime) nil 1 nil nil))))
 (define rotate2
-  (lambda (rt x y pos)
-    (mk-ugen (list "Rotate2" rt (list x y pos) nil 2 nil nil))))
+  (lambda (x y pos)
+    (mk-ugen (list "Rotate2" (list 0 1) (list x y pos) nil 2 nil nil))))
 (define running-max
   (lambda (in trig)
     (mk-ugen (list "RunningMax" (list 0) (list in trig) nil 1 nil nil))))
@@ -1025,11 +1016,9 @@
   (lambda (in a0 a1 a2 b1 b2)
     (mk-ugen (list "SOS" (list 0) (list in a0 a1 a2 b1 b2) nil 1 nil nil))))
 (define sample-dur
-  (lambda (rt)
-    (mk-ugen (list "SampleDur" rt nil nil 1 nil nil))))
-(define sample-rate
-  (lambda (rt)
-    (mk-ugen (list "SampleRate" rt nil nil 1 nil nil))))
+  (lambda (_)
+    (mk-ugen (list "SampleDur" ir nil nil 1 nil nil))))
+(define sample-rate (mk-ugen (list "SampleRate" ir nil nil 1 nil nil)))
 (define saw
   (lambda (rt freq)
     (mk-ugen (list "Saw" rt (list freq) nil 1 nil nil))))
@@ -1049,8 +1038,8 @@
   (lambda (in id value)
     (mk-ugen (list "SendTrig" (list 0) (list in id value) nil 1 nil nil))))
 (define set-buf
-  (lambda (rt buf numValues offset values)
-    (mk-ugen (list "SetBuf" rt (list buf numValues offset) values 1 nil nil))))
+  (lambda (buf numValues offset values)
+    (mk-ugen (list "SetBuf" ir (list buf numValues offset) values 1 nil nil))))
 (define set-reset-ff
   (lambda (trig reset)
     (mk-ugen (list "SetResetFF" (list 0) (list trig reset) nil 1 nil nil))))
@@ -1067,8 +1056,8 @@
   (lambda (in up dn)
     (mk-ugen (list "Slew" (list 0) (list in up dn) nil 1 nil nil))))
 (define slope
-  (lambda (rt in)
-    (mk-ugen (list "Slope" rt (list in) nil 1 nil nil))))
+  (lambda (in)
+    (mk-ugen (list "Slope" (list 0) (list in) nil 1 nil nil))))
 (define spec-centroid
   (lambda (rt buffer)
     (mk-ugen (list "SpecCentroid" rt (list buffer) nil 1 nil nil))))
