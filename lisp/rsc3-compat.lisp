@@ -1,11 +1,6 @@
 ;; COMPAT
 
-(define dinf 9e8)
-
-(define make-mce mce)
-(define mce2 (lambda (p q) (mce (list p q))))
-
-(define make-mrg (lambda (p q) (mrg (list p q))))
+(define make-mrg (lambda (p q) (make-mrg* (list p q))))
 
 (define u:abs abs)
 (define u:cos cos)
@@ -17,15 +12,11 @@
 (define u:round round)
 (define u:sin sin)
 
-(define string=? equal?)
-
 (define eq ==)
 (define lt <)
 (define gt >)
 
 (define fdiv f-div)
-
-(define show-graph draw)
 
 (define cps-midi cpsmidi)
 (define midi-cps midicps)
@@ -37,13 +28,11 @@
   (lambda (fd u nid act grp)
     (play-at* (list fd u nid act grp))))
 
-(define reset (lambda (_) (stop)))
+(define reset (lambda (_) (reset*)))
 
 (define audition (lambda (u) (play-at nil u -1 add-to-head 1)))
 
 (define with-sc3 (lambda (f) (f nil)))
-
-(define +inf.0 9e8)
 
 ; actually rsc3 doesn't have these...
 

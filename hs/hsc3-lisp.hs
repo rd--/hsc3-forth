@@ -116,12 +116,12 @@ ugen_dict =
     ,("number?",Fun l_is_number)
     ,("procedure?",Fun l_is_procedure)
     ,("clone*",Proc l_clone_star)
-    ,("mce",Proc (\c -> fmap (Atom . mce) (mapM atom_err (to_list c))))
+    ,("make-mce",Proc (\c -> fmap (Atom . mce) (mapM atom_err (to_list c))))
     ,("mce-channels",Proc (\c -> fmap (from_list . map Atom . mceChannels) (atom_err c)))
-    ,("mrg",Proc (\c -> fmap (Atom . mrg) (mapM atom_err (to_list c))))
-    ,("draw",Proc (\c -> atom_err c >>= \u -> lift_io (draw (out 0 u))))
+    ,("make-mrg*",Proc (\c -> fmap (Atom . mrg) (mapM atom_err (to_list c))))
+    ,("show-graph",Proc (\c -> atom_err c >>= \u -> lift_io (draw (out 0 u))))
     ,("play-at*",Proc l_play_at_star)
-    ,("stop",Proc (\_ -> lift_io (withSC3 reset)))
+    ,("reset*",Proc (\_ -> lift_io (withSC3 reset)))
     ,("thread-sleep",Proc l_thread_sleep)
     ,("utcr",Proc (\_ -> liftIO time >>= return . Atom . constant))
     ,("sc3-status",Proc (\_ -> lift_io (withSC3 serverStatus >>= mapM_ putStrLn)))]
@@ -130,8 +130,14 @@ main :: IO ()
 main = do
   putStrLn "HSC3-LISP"
   env <- gen_toplevel (M.unions [core_dict,ugen_dict]) :: IO (Env UGen)
-  let nm = ["stdlib.lisp","rhs.lisp","hsc3.lisp","ugen.lisp","rsc3-compat.lisp","rsc3.lisp"]
-  repl env (load_files nm)
+  let lib = ["stdlib.lisp"
+            ,"scheme.lisp"
+            ,"rhs.lisp"
+            ,"hsc3.lisp"
+            ,"ugen.lisp"
+            ,"rsc3-compat.lisp"
+            ,"rsc3.lisp"]
+  repl env (load_files lib)
 
 {-
 

@@ -19,6 +19,7 @@
              (else (list 'λ (car param) (lambda-rw (list (cdr param) code)))))))))
 
 ; (expand lambda-rw-code)
+
 (define lambda-rw (λ exp ((λ param ((λ code (if (null? param) (cons (quote λ) (cons (quote _) (cons code nil))) (if (null? (cdr param)) (cons (quote λ) (cons (car param) (cons code nil))) (cons (quote λ) (cons (car param) (cons (lambda-rw (cons (cdr param) (cons code nil))) nil)))))) (car (cdr exp)))) (car exp))))
 
 (define lambda (macro lambda-rw))
@@ -34,6 +35,7 @@
                (cadr (caar exp)))))))
 
 ; (expand let-rw-code)
+
 (define let-rw (λ exp (if (null? (car exp)) (cadr exp) (cons (cons (quote λ) (cons (caaar exp) (cons (let-rw (cons (cdar exp) (cons (cadr exp) nil))) nil))) (cons (cadr (caar exp)) nil)))))
 
 (define let (macro let-rw))
@@ -47,15 +49,15 @@
 
 (define list (macro list-rw))
 
-; LOGIC
-
-(define not (λ p (if p #f #t)))
+; AND / OR
 
 (define and-rw (λ exp (list 'if (car exp) (cadr exp) #f)))
 (define and (macro and-rw))
 
 (define or-rw (λ exp (list 'if (car exp) #t (cadr exp))))
 (define or (macro or-rw))
+
+; COND
 
 (define cond-rw
   (λ exp
@@ -86,6 +88,7 @@
          (begin-rw* (list (list 'λ '_ (car code)) pre) (cdr code))))))
 
 ; (expand begin-rw*-code)
+
 (define begin-rw* (λ pre (λ code (if (null? code) pre (begin-rw* (cons (cons (quote λ) (cons (quote _) (cons (car code) nil))) (cons pre nil)) (cdr code))))))
 
 (define begin-rw (λ exp (begin-rw* nil exp)))
@@ -106,6 +109,7 @@
        (list 'let bindings* (cons 'begin (append initialisers (list code))))))))
 
 ; (expand letrec-rw-code)
+
 (define letrec-rw (λ exp ((λ bindings ((λ code ((λ names ((λ values ((λ bindings* ((λ initialisers (cons (quote let) (cons bindings* (cons (cons (quote begin) (append initialisers (cons code nil))) nil)))) (zip-with (λ p (λ q (cons (quote set!) (cons p (cons q nil))))) names values))) (zip-with list names (map (const nil) bindings)))) (map cadr bindings))) (map car bindings))) (cadr exp))) (car exp))))
 
 (define letrec (macro letrec-rw))
@@ -124,21 +128,9 @@
                 (else (map expand exp))))
         exp)))
 
-; UID
-
-(define uid 0)
-
-(define incr-uid (λ n (begin (set! uid (+ uid n)) uid)))
-
-; COMPAT
-
-(define let* let)
-
 ; MATH
 
 (define pi 3.141592653589793)
-
-(define = equal?)
 
 ; IO
 
