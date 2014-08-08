@@ -46,7 +46,7 @@ l_mk_ugen c = do
   inp_mce' <- case inp_mce of
                 Atom u -> return (mceChannels u)
                 Nil -> return []
-                _ -> throwError "MK-UGEN: MCE-INPUT?"
+                _ -> throwError ("MK-UGEN: MCE-INPUT: " ++ show inp_mce)
   sp' <- case sp of
            Atom u -> return (Special (ugen_to_int "SPECIAL" u))
            Nil -> return (Special 0)
@@ -112,9 +112,11 @@ l_thread_sleep c = do
 ugen_dict :: Dict UGen
 ugen_dict =
     M.fromList
-    [("mk-ugen",Proc l_mk_ugen)
-    ,("number?",Fun l_is_number)
+    [("number?",Fun l_is_number)
+    ,("string?",Fun (\c -> case c of {String _ -> l_true; _ -> l_false}))
+    ,("symbol?",Fun (\c -> case c of {Symbol _ -> l_true; _ -> l_false}))
     ,("procedure?",Fun l_is_procedure)
+    ,("mk-ugen",Proc l_mk_ugen)
     ,("clone*",Proc l_clone_star)
     ,("make-mce",Proc (\c -> fmap (Atom . mce) (mapM atom_err (to_list c))))
     ,("mce-channels",Proc (\c -> fmap (from_list . map Atom . mceChannels) (atom_err c)))
@@ -124,7 +126,7 @@ ugen_dict =
     ,("reset*",Proc (\_ -> lift_io (withSC3 reset)))
     ,("thread-sleep",Proc l_thread_sleep)
     ,("utcr",Proc (\_ -> liftIO time >>= return . Atom . constant))
-    ,("sc3-status",Proc (\_ -> lift_io (withSC3 serverStatus >>= mapM_ putStrLn)))]
+    ,("display-server-status",Proc (\_ -> lift_io (withSC3 serverStatus >>= mapM_ putStrLn)))]
 
 main :: IO ()
 main = do

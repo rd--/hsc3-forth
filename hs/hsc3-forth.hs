@@ -34,15 +34,15 @@ pop_n n = replicateM n pop
 push_l :: [a] -> Forth w a ()
 push_l = mapM_ push
 
-pop_double :: Forth w UGen Double
-pop_double =
+pop_double :: String -> Forth w UGen Double
+pop_double msg =
     let f u = case constant_opt u of
-                Nothing -> throw_error "POP_DOUBLE"
+                Nothing -> throw_error ("POP_DOUBLE: " ++ msg ++ ": " ++ show u)
                 Just n -> return n
     in pop >>= f
 
-pop_int :: Forth w UGen Int
-pop_int = fmap floor pop_double
+pop_int :: String -> Forth w UGen Int
+pop_int = fmap floor . pop_double
 
 -- | Get UId counter.
 get_uid :: Forth Int a Int
@@ -73,7 +73,7 @@ get_nc :: Maybe Int -> U_Forth Int
 get_nc nc =
     case nc of
       Just n -> return n
-      Nothing -> pop_int
+      Nothing -> pop_int "get_nc"
 
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
@@ -96,7 +96,7 @@ gen_plain w = do
   i <- pop_n inp
   let rt' = fromMaybe (maximum (map rateOf i)) rt
       i' = (if DB.u_halts_mce u then halt_mce_transform else id) (reverse i)
-  push (mk_plain rt' nm' i' nc' sp' z)
+  push (ugen_optimise_const_operator (mk_plain rt' nm' i' nc' sp' z))
 
 sched :: Time -> UGen -> IO ()
 sched t u =
@@ -115,33 +115,33 @@ fw_help = do
 
 fw_play_at :: U_Forth ()
 fw_play_at = do
-  grp <- pop_int
-  act <- pop_int
-  nid <- pop_int
+  grp <- pop_int "PLAY-AT: GRP"
+  act <- pop_int "PLAY-AT: ACT"
+  nid <- pop_int "PLAY-AT: NID"
   u <- pop
   fw_assert_empty
   liftIO (audition_at (nid,toEnum act,grp) u)
 
 fw_see :: U_Forth ()
-fw_see = pop_int >>= \k -> pop >>= \u -> liftIO (putStrLn (ugen_graph_forth_pp (toEnum k) u))
+fw_see = pop_int "SEE" >>= \k -> pop >>= \u -> liftIO (putStrLn (ugen_graph_forth_pp (toEnum k) u))
 
 ugen_dict :: Dict Int UGen
 ugen_dict =
     M.fromList
-    [("clone",pop_int >>= \n -> pop >>= \u -> incr_uid >>= \z -> push (uclone z n u))
+    [("clone",pop_int "CLONE" >>= \n -> pop >>= \u -> incr_uid >>= \z -> push (uclone z n u))
     ,("draw",pop >>= \u -> fw_assert_empty >> liftIO (draw (out 0 u)))
-    ,("mce",pop_int >>= \n -> pop_n n >>= push . mce . reverse)
+    ,("mce",pop_int "MCE" >>= \n -> pop_n n >>= push . mce . reverse)
     ,("mix",pop >>= push . mix)
-    ,("mrg",pop_int >>= \n -> pop_n n >>= push . mrg . reverse)
+    ,("mrg",pop_int "MRG" >>= \n -> pop_n n >>= push . mrg . reverse)
     ,("play-at",fw_play_at)
-    ,("sched",pop_double >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
+    ,("sched",pop_double "SCHED" >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= push_l . mceChannels)
-    ,("pause",pop_double >>= pauseThread)
+    ,("pause",pop_double "PAUSE" >>= pauseThread)
     ,("time",liftIO time >>= push . constant)
     ,("label",pop_string >>= push . label)
     ,("get-uid",get_uid >>= push . constant)
-    ,("set-uid",pop_int >>= set_uid)
+    ,("set-uid",pop_int "SET-UID" >>= set_uid)
     ,("unrand",pop >>= push . ugen_optimise_ir_rand)
     ,("chan",pop >>= push . constant . length . mceChannels)
     ,("sc3-status",liftIO (withSC3 serverStatus >>= mapM_ putStrLn))
