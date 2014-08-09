@@ -1,7 +1,3 @@
-(define local-buf
-  (lambda (numFrames numChannels)
-    (mk-ugen (list "LocalBuf" ir (list numFrames numChannels) nil 1 nil (incr-uid 1)))))
-
 (define mul-add
   (lambda (input mul add)
     (mk-ugen (list "MulAdd" (list 0) (list input mul add) nil 1 nil nil))))
@@ -177,10 +173,6 @@
 (define buf-frames
   (lambda (rt bufnum)
     (mk-ugen (list "BufFrames" rt (list bufnum) nil 1 nil nil))))
-
-(define buf-info-ugen-base
-  (lambda (rt bufnum)
-    (mk-ugen (list "BufInfoUGenBase" rt (list bufnum) nil 1 nil nil))))
 
 (define buf-rate-scale
   (lambda (rt bufnum)
@@ -456,14 +448,6 @@
   (lambda (repeats list_)
     (mk-ugen (list "Dxrand" dr (list repeats) list_ 1 nil (incr-uid 1)))))
 
-(define dyn-klang
-  (lambda (rt specificationsArrayRef freqscale freqoffset)
-    (mk-ugen (list "DynKlang" rt (list specificationsArrayRef freqscale freqoffset) nil 1 nil nil))))
-
-(define dyn-klank
-  (lambda (rt specificationsArrayRef input freqscale freqoffset decayscale)
-    (mk-ugen (list "DynKlank" rt (list specificationsArrayRef input freqscale freqoffset decayscale) nil 1 nil nil))))
-
 (define env-gen
   (lambda (rt doneAction envelope gate levelScale levelBias timeScale)
     (mk-ugen (list "EnvGen" rt (list doneAction envelope gate levelScale levelBias) timeScale 1 nil nil))))
@@ -635,10 +619,6 @@
 (define in
   (lambda (nc rt bus)
     (mk-ugen (list "In" rt (list bus) nil nc nil nil))))
-
-(define in-bus
-  (lambda (rt bus offset clip)
-    (mk-ugen (list "InBus" rt (list bus offset clip) nil 1 nil nil))))
 
 (define in-feedback
   (lambda (nc rt bus)
@@ -864,13 +844,9 @@
   (lambda (rt gate attackTime susLevel releaseTime doneAction)
     (mk-ugen (list "Linen" rt (list gate attackTime susLevel releaseTime doneAction) nil 1 nil nil))))
 
-(define list-dugen
-  (lambda (rt list_ repeats)
-    (mk-ugen (list "ListDUGen" rt (list list_ repeats) nil 1 nil nil))))
-
 (define local-buf
-  (lambda (numFrames numChannels)
-    (mk-ugen (list "LocalBuf" ir (list numFrames numChannels) nil 1 nil (incr-uid 1)))))
+  (lambda (numChannels numFrames)
+    (mk-ugen (list "LocalBuf" ir (list numChannels numFrames) nil 1 nil (incr-uid 1)))))
 
 (define local-in
   (lambda (nc rt default_)
@@ -1187,8 +1163,8 @@
     (mk-ugen (list "PitchShift" (list 0) (list input windowSize pitchRatio pitchDispersion timeDispersion) nil 1 nil nil))))
 
 (define play-buf
-  (lambda (rt bufnum rate_ trigger startPos loop doneAction)
-    (mk-ugen (list "PlayBuf" rt (list bufnum rate_ trigger startPos loop doneAction) nil 1 nil nil))))
+  (lambda (nc rt bufnum rate_ trigger startPos loop doneAction)
+    (mk-ugen (list "PlayBuf" rt (list bufnum rate_ trigger startPos loop doneAction) nil nc nil nil))))
 
 (define pluck
   (lambda (input trig maxdelaytime delaytime decaytime coef)
@@ -1365,10 +1341,6 @@
   (lambda (input id_ value)
     (mk-ugen (list "SendTrig" (list 0) (list input id_ value) nil 1 nil nil))))
 
-(define set-buf
-  (lambda (buf offset numValues values)
-    (mk-ugen (list "SetBuf" ir (list buf offset numValues) values 1 nil nil))))
-
 (define set-reset-ff
   (lambda (trig reset)
     (mk-ugen (list "SetResetFF" (list 0) (list trig reset) nil 1 nil nil))))
@@ -1404,14 +1376,6 @@
 (define spec-pcile
   (lambda (rt buffer fraction interpolate)
     (mk-ugen (list "SpecPcile" rt (list buffer fraction interpolate) nil 1 nil nil))))
-
-(define splay
-  (lambda (rt inArray spread level center levelComp)
-    (mk-ugen (list "Splay" rt (list inArray spread level center levelComp) nil 2 nil nil))))
-
-(define splay-az
-  (lambda (rt inArray spread level width center orientation levelComp)
-    (mk-ugen (list "SplayAz" rt (list inArray spread level width center orientation levelComp) nil 1 nil nil))))
 
 (define spring
   (lambda (rt input spring damp)
