@@ -7,12 +7,13 @@ import Data.Maybe {- base -}
 import System.IO {- base -}
 
 import Sound.OSC {- hosc -}
-import Sound.SC3.ID {- hsc3 -}
+import Sound.SC3 {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
+import qualified Sound.SC3.UGen.DB.PP as DB {- hsc3-db -}
 
 import Sound.SC3.UGen.Dot {- hsc3-dot -}
 
@@ -95,7 +96,7 @@ gen_plain w = do
   nc' <- get_nc nc
   i <- pop_n inp
   let rt' = fromMaybe (maximum (map rateOf i)) rt
-      i' = (if DB.u_halts_mce u then halt_mce_transform else id) (reverse i)
+      i' = (if DB.ugen_std_mce u then halt_mce_transform else id) (reverse i)
   push (ugen_optimise_const_operator (mk_plain rt' nm' i' nc' sp' z))
 
 sched :: Time -> UGen -> IO ()
@@ -123,7 +124,7 @@ fw_play_at = do
   liftIO (audition_at (nid,toEnum act,grp) u)
 
 fw_see :: U_Forth ()
-fw_see = pop_int "SEE" >>= \k -> pop >>= \u -> liftIO (putStrLn (ugen_graph_forth_pp (toEnum k) u))
+fw_see = pop_int "SEE" >>= \k -> pop >>= \u -> liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k) u))
 
 ugen_dict :: Dict Int UGen
 ugen_dict =

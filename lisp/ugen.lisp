@@ -2,10 +2,6 @@
   (lambda (input mul add)
     (mk-ugen (list "MulAdd" (list 0) (list input mul add) nil 1 nil nil))))
 
-(define set-buf
-  (lambda (buf offset numValues values)
-    (mk-ugen (list "SetBuf" ir (list buf offset numValues) values 1 nil nil))))
-
 (define a2k
   (lambda (input)
     (mk-ugen (list "A2K" kr (list input) nil 1 nil nil))))

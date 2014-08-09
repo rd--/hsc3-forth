@@ -5,7 +5,7 @@ import Data.Maybe {- base -}
 import Safe {- safe -}
 
 import Sound.OSC {- hsc3 -}
-import Sound.SC3.ID {- hsc3 -}
+import Sound.SC3 {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
 
