@@ -46,84 +46,6 @@ It is known to work as far as the translated graphs at [HSC3-GRAPHS](?t=hsc3-gra
 
 Search for `FS` in the [INDEX](?t=hsc3-graphs&m=md/ix.md).
 
-* * *
-
-AMERICAN PRIMITIVE, VOL. 2
-
-Continuing the series, `HSC3-LISP` is a simple minded [LISP][lisp] interpreter.
-
-`HSC3-LISP` is not `SCHEME`.  Still, the following [RSC3][rsc3] graphs are working:
-
-- aleatoric-quartet
-- alien-meadow
-- analog-bubbles
-- analogue-daze
-- babbling-brook
-- bit-reduction
-- blips 001
-- bottle
-- bowed-string
-- ccomb
-- choip
-- chrdn
-- cricket
-- crotale
-- cut-outs
-- cymbalism
-- data-space
-- demanding-studies
-- diffraction
-- discretion
-- doppler
-- drummer
-- eggcrate
-- f-lets
-- fm-iter
-- forest-sounds
-- half-life
-- hard-sync-sawtooth-with-lfo
-- harmonic-swimming
-- harmonic-tumbling
-- h-chatter
-- hh-808
-- implosion
-- impulse-sequencer
-- k-ppr
-- lfo-modulation
-- lf-pulses
-- lg-timed
-- modal-space-local
-- moto-rev
-- noise-burst-sweep
-- one-line
-- oscillator-cluster
-- plucked-strings
-- police-state
-- pulsing-bottles
-- reverberated-sine-percussion
-- rzblp
-- sample-and-hold-liquidities
-- scratchy
-- shifting-pulses
-- snare-909
-- spe
-- sprinkler
-- strummable-guitar
-- sweepy-noise
-- synthetic-piano
-- tank
-- theremin
-- three-cpsw
-- tipnso
-- tremulate
-- trkl
-- trmlo
-- tsort
-- what-was-i-thinking
-- why-supercollider
-- wind-metals
-- zizle
-
 © [rohan drape][rd], 2014, [gpl][gpl].
 
 [rd]: http://rd.slavepianos.org/
@@ -134,5 +56,3 @@ Continuing the series, `HSC3-LISP` is a simple minded [LISP][lisp] interpreter.
 [gpl]: http://gnu.org/copyleft/
 [gforth]: http://www.gnu.org/software/gforth/
 [emacs]: http://www.gnu.org/software/emacs/
-[lisp]: http://www-formal.stanford.edu/jmc/history/lisp/lisp.html
-[rsc3]: http://rd.slavepianos.org/?t=rsc3
