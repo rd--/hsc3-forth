@@ -2,6 +2,7 @@ import Control.Concurrent {- base -}
 import Control.Monad {- base -}
 import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
+import Data.Hashable {- hash -}
 import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
 import System.IO {- base -}
@@ -99,9 +100,12 @@ gen_plain w = do
       i' = (if DB.ugen_std_mce u then halt_mce_transform else id) (reverse i)
   push (ugen_optimise_const_operator (mk_plain rt' nm' i' nc' sp' z))
 
+gen_nm :: UGen -> String
+gen_nm = show . hash . show
+
 sched :: Time -> UGen -> IO ()
 sched t u =
-    let nm = show (hashUGen u)
+    let nm = gen_nm u
         sy = synthdef nm (out 0 u)
         b0 = bundle immediately [d_recv sy]
         b1 = bundle t [s_new nm (-1) AddToHead 1 []]
