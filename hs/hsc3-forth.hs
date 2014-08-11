@@ -71,12 +71,17 @@ ugen_sep = maybe (throw_error "UGEN NAME RATE SEPARATOR FAILED") return . sc3_ug
 
 -- * UForth
 
-get_nc :: Maybe Int -> U_Forth Int
-get_nc nc =
+-- DEMAND makes this two stage, since inputs are known until we know if to pop NC.
+get_nc :: DB.U -> Maybe Int -> U_Forth (Maybe Int)
+get_nc u nc =
     case nc of
-      Just n -> return n
-      Nothing -> pop_int "get_nc"
+      Just n -> return (Just n)
+      Nothing -> case DB.ugen_nc_mce u of
+                   Just _ -> return Nothing
+                   Nothing -> fmap Just (pop_int "GET_NC")
 
+-- > fmap ugen_io (DB.uLookup "Dseq")
+-- > fmap ugen_io (DB.uLookup "Demand")
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
 
@@ -94,11 +99,12 @@ gen_plain w = do
        (throw_error ("OSC: NO RATE?: " ++ tick_quotes nm'))
   let (inp,nc) = ugen_io u
   z <- if DB.ugen_nondet u then fmap UId incr_uid else return NoId
-  nc' <- get_nc nc
+  nc' <- get_nc u nc
   i <- pop_n inp
+  let nc'' = fromMaybe (length (mceChannels (last i))) nc'
   let rt' = fromMaybe (maximum (map rateOf i)) rt
       i' = (if DB.ugen_std_mce u then halt_mce_transform else id) (reverse i)
-  push (ugen_optimise_const_operator (mk_plain rt' nm' i' nc' sp' z))
+  push (ugen_optimise_const_operator (mk_plain rt' nm' i' nc'' sp' z))
 
 gen_nm :: UGen -> String
 gen_nm = show . hash . show
@@ -113,7 +119,7 @@ sched t u =
 
 fw_help :: Forth_Type a => Forth w a ()
 fw_help = do
-  (nm,_) <- ugen_sep =<< pop_string
+  (nm,_) <- ugen_sep =<< pop_string "HELP: NAME"
   case DB.ugenSummary' True nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
@@ -130,6 +136,15 @@ fw_play_at = do
 fw_see :: U_Forth ()
 fw_see = pop_int "SEE" >>= \k -> pop >>= \u -> liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k) u))
 
+fw_b_allocRead :: U_Forth ()
+fw_b_allocRead = do
+  nf <- pop_int "B_ALLOCREAD: FRAME-COUNT"
+  f0 <- pop_int "B_ALLOCREAD: START-FRAME"
+  nm <- pop_string "B_ALLOCREAD: FILE-NAME"
+  b <- pop_int "B_ALLOCREAD: BUFFER-ID"
+  _ <- liftIO (withSC3 (async (b_allocRead b nm f0 nf)))
+  return ()
+
 ugen_dict :: Dict Int UGen
 ugen_dict =
     M.fromList
@@ -142,9 +157,10 @@ ugen_dict =
     ,("sched",pop_double "SCHED" >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= push_l . mceChannels)
+    ,("b_allocRead",fw_b_allocRead)
     ,("pause",pop_double "PAUSE" >>= pauseThread)
     ,("time",liftIO time >>= push . constant)
-    ,("label",pop_string >>= push . label)
+    ,("label",pop_string "LABEL" >>= push . label)
     ,("get-uid",get_uid >>= push . constant)
     ,("set-uid",pop_int "SET-UID" >>= set_uid)
     ,("unrand",pop >>= push . ugen_optimise_ir_rand)

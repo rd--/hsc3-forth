@@ -212,12 +212,12 @@ popc :: Forth w a (CC w a)
 popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
 
 -- | ( id len -- )
-pop_string :: Forth_Type a => Forth w a String
-pop_string = do
+pop_string :: Forth_Type a => String -> Forth w a String
+pop_string msg = do
   vm <- get_vm
   case stack vm of
     DC _ : DC_String str : s' -> put vm {stack = s'} >> return str
-    _ -> throw_error "NOT-STRING?"
+    _ -> throw_error ("NOT-STRING?" ++ msg)
 
 -- * Token / Expr
 
@@ -532,7 +532,7 @@ fw_s_quote_interpet :: Forth_Type a => Forth w a ()
 fw_s_quote_interpet = scan_until (== '"') >>=  push_str
 
 fw_type :: Forth_Type a => Forth w a ()
-fw_type = pop_string >>= write
+fw_type = pop_string "TYPE" >>= write
 
 -- * Forth words
 
@@ -554,7 +554,7 @@ fw_included' nm = do
   liftIO (readFile nm) >>= fw_evaluate'
 
 fw_included :: (Eq a,Forth_Type a) => Forth w a ()
-fw_included = pop_string >>= fw_included'
+fw_included = pop_string "INCLUDED" >>= fw_included'
 
 fw_i :: Forth w a ()
 fw_i = popr >>= \x -> pushr x >> push x
