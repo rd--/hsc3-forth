@@ -556,6 +556,7 @@ fw_evaluate' str = do
 -- | Variant on @included@, argument not on stack.
 fw_included' :: (Eq a,Forth_Type a) => FilePath -> Forth w a ()
 fw_included' nm = do
+  trace 0 ("INCLUDED: " ++ nm)
   x <- liftIO (doesFileExist nm)
   when (not x) (throw_error ("INCLUDED': FILE MISSING: " ++ tick_quotes nm))
   liftIO (readFile nm) >>= fw_evaluate'
@@ -746,6 +747,7 @@ repl vm init_f = do
 
 load_files :: (Eq a,Forth_Type a) => [String] -> Forth w a ()
 load_files nm = do
+  trace 0 ("LOAD-FILES: " ++ intercalate "," nm)
   r <- liftIO (lookupEnv "HSC3_FORTH_DIR")
   case r of
     Nothing -> throw_error "HSC3_FORTH_DIR NOT SET"

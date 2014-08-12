@@ -177,7 +177,8 @@ main = do
   let d :: Dict Int UGen
       d = M.unions [core_dict,ugen_dict]
       vm = (empty_vm 0 parse_constant sig) {dynamic = Just gen_plain
-                                           ,dict = d}
+                                           ,dict = d
+                                           ,input_port = Just stdin}
       init_f = load_files ["stdlib.fs","hsc3.fs","overlap-texture.fs"]
   putStrLn "HSC3-FORTH"
-  repl (vm {input_port = Just stdin}) init_f
+  repl vm init_f

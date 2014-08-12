@@ -4,8 +4,7 @@
 : div IDiv ;
 : not 0= ; \ NOT is not in ANS FORTH, see DPAN for discussion
 
-\ : abs Abs ; \ stdlib REDEFINE
-\ : negate Neg ; \ stdlib REDEFINE
+: negate Neg ; \ stdlib REDEFINE
 
 \ CONSTANTS
 

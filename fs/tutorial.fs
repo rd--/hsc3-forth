@@ -1,9 +1,15 @@
 ( HSC3 FORTH -- AMERICAN PRIMITIVE, VOL. 1 )
 
 \ HSC3-FORTH is a simple FORTH interpreter.
-\ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, and one data stack.
-\ There is :; and IF ELSE THEN and DO LOOP and (LOCAL) in the form of { VAR ... }.
-\ There is a return stack.
+
+\ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, a data stack, and a return stack.
+
+\ The primitive words are:
+\   - : ;
+\   - IF ELSE THEN
+\   - DO I J LOOP
+\   - { } (LOCAL)
+\   - ' EXECUTE
 
 ( EMACS FORTH )
 
@@ -12,311 +18,330 @@
 \ HSC3-FORTH MODE
 \ Commands are C-cC- prefixed.
 \ <point> is the word at the cursor.
-\ > -- Start & see the HSC3-FORTH interpreter
-\ c -- Send current line
-\ d -- Send current region (selection)
-\ g -- Send <point> DRAW
-\ e -- Send <point> false SEE
-\ a -- Send <point> PLAY
-\ u -- Send <point> ?
-\ k -- Send STOP
-\ s -- Send KILLALL
-\ q -- Send BYE
-\ i -- Send !SIGINT!
-\ p -- Send SC3-STATUS
+\   > -- Start & see the HSC3-FORTH interpreter
+\   c -- Send current line
+\   d -- Send current region (selection)
+\   g -- Send <point> DRAW
+\   e -- Send <point> FALSE SEE
+\   a -- Send <point> PLAY
+\   u -- Send <point> ?
+\   k -- Send STOP
+\   s -- Send KILLALL
+\   q -- Send BYE
+\   i -- Send !SIGINT!
+\   p -- Send SC3-STATUS
 
 ( HELP FORTH )
 
-s" SinOsc" ?
+\ ? prints information about a UGEN, in EMACS type C-cC-u.
+
+S" SINOSC" ?
 
 \ SinOsc [KR,AR] freq=440.0 phase=0.0
 
-s" ENVGEN" ?
+S" ENVGEN" ?
 
 \ EnvGen [KR,AR] gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
-\     MCE, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction, 5=Envelope UGen
+\     MCE, REORDERS INPUTS: [5,0,1,2,3,4,5], ENUMERATION INPUTS: 4=DoneAction, 5=Envelope UGen
 
 ( NUM FORTH )
+
+\ SC3 UGENS are numerical.
+\ UGENS may be constant, math operations at constants render constants.
 
 2 2 + . \ 4 \
 2 1 - . \ 1 \
 3 4 + 5 * . \ 35 \
 3 4 5 * + . \ 23 \
-2 negate . \ -2 \
+2 NEGATE . \ -2 \
+-1 ABS . \ 1 \
 
 ( FRACTIONAL FORTH )
 
+\ UGENS are real valued, / is real valued division, and % real valued modulo.
+
 1.1 2.2 3.3 . . . \ 3.3 2.2 1.1 \
 5 2 / . \ 2.5 \
+7.5 3.75 % . \ 0 \
 
 ( INTEGRAL FORTH )
 
-\ There is an integer division uop, IDiv and a floating point modulo operator %.
+\ The printer prints integer constants without a fractional part.
+\ There is an integer division UGEN.
 
-10 2 IDiv . \ IDiv 5? \
-5 2 IDiv . \ IDiv 2? \
+10 2 DIV . \ 5 \
+5 2 DIV . \ 2 \
 7 3 % . \ 1 \
 
 ( EQ FORTH )
 
-0 1 = . \ false \
-1 1 = . \ true \
+\ SC3 treats signals less than or equal to zero as FALSE and greater than zero as TRUE.
+\ HSC3-FORTH adopts 1 as TRUE.
+
+0 1 = . \ FALSE \
+1 1 = . \ TRUE \
 
 ( ORD FORTH )
 
-1 2 < . \ true \
-2 1 < . \ false \
-1 1 < . \ false \
-1 1 <= . \ true \
+\ The comparison operators.
+
+1 2 < . \ TRUE \
+2 1 < . \ FALSE \
+1 1 < . \ FALSE \
+1 1 <= . \ TRUE \
+2 3 MIN . \ 2 \
+3 2 MIN . \ 2 \
+1 3 MAX . \ 3 \
 
 ( STACK FORTH )
 
-1 2 drop . \ 1 \
-1 2 .s over .s drop drop drop .s \ <2> 1 2 <3> 1 2 1 <0> \
-1 2 .s swap .s drop drop .s \ <2> 1 2 <2> 2 1 <0> \
-1 2 3 .s rot .s drop drop drop .s \ <3> 1 2 3 <3> 2 3 1 <0> \
-1 2 .s nip .s drop .s \ <2> 1 2 <1> 2 <0> \
-1 2 .s tuck .s drop drop drop .s \ <2> 1 2 <3> 2 1 2 <0> \
-1 2 2dup .s . . . . .s \ <4> 1 2 1 2 2 1 2 1 <0> \
-1 2 3 4 5 2 pick .s . . . . . . .s \ <6> 1 2 3 4 5 3 3 5 4 3 2 1 <0> \
+1 2 DROP . \ 1 \
+1 2 .S OVER .S DROP DROP DROP .S \ <2> 1 2 <3> 1 2 1 <0> \
+1 2 .S SWAP .S DROP DROP .S \ <2> 1 2 <2> 2 1 <0> \
+1 2 3 .S ROT .S DROP DROP DROP .S \ <3> 1 2 3 <3> 2 3 1 <0> \
+1 2 .S NIP .S DROP .S \ <2> 1 2 <1> 2 <0> \
+1 2 .S TUCK .S DROP DROP DROP .S \ <2> 1 2 <3> 2 1 2 <0> \
+1 2 2DUP .S . . . . .S \ <4> 1 2 1 2 2 1 2 1 <0> \
+1 2 3 4 5 2 PICK .S . . . . . . .S \ <6> 1 2 3 4 5 3 3 5 4 3 2 1 <0> \
 
 ( BLOCK FORTH )
 
-: squared dup * ;
-5 squared . \ 25 \
-7 squared . \ 49 \
-: cubed dup squared * ;
--5 cubed . \ -125 \
-: fourth-power squared squared ;
-3 fourth-power . \ 81 \
+: SQUARED DUP * ;
+5 SQUARED . \ 25 \
+7 SQUARED . \ 49 \
+
+: CUBED DUP SQUARED * ;
+-5 CUBED . \ -125 \
+
+: FOURTH-POWER SQUARED SQUARED ;
+3 FOURTH-POWER . \ 81 \
 
 ( CONDITIONAL FORTH )
 
-\ There are Abs and Min unary operators, but also abs and min in the stdlib.
-
-5 abs . \ 5
--5 abs . \ 5
--5 Abs . \ 5
-2 3 min . \ 2
-3 2 Min . \ 2
+: _ FALSE IF S" TRUE" TYPE ELSE S" FALSE" TYPE THEN ; _ \ FALSE \
 
 ( DO FORTH )
 
-: five 5 0 do 5 loop ;
-five .s . . . . . \ <5> 5 5 5 5 5 5 5 5 5 5 \
+: FIVE 5 0 DO 5 LOOP ;
+FIVE .S . . . . . \ <5> 5 5 5 5 5 5 5 5 5 5 \
 
-: n-dup 0 do dup loop ;
-: n-drop 0 do drop loop ;
-5 4 n-dup .s \ <5> 5 5 5 5 5 \
-5 n-drop .s \ <0> \
+: N-DUP 0 DO DUP LOOP ;
+: N-DROP 0 DO DROP LOOP ;
+5 4 N-DUP .S \ <5> 5 5 5 5 5 \
+5 N-DROP .S \ <0> \
 
 \ I fetches the loop counter
 
-: seven-eleven 11 7 do i . loop ;
-seven-eleven \ 7 8 9 10 \
+: SEVEN-ELEVEN 11 7 DO I . LOOP ;
+SEVEN-ELEVEN \ 7 8 9 10 \
 
-: mtable 11 1 do dup i * . loop drop ;
-5 mtable \ 5 10 15 20 25 30 35 40 45 50 \
+: MTABLE 11 1 DO DUP I * . LOOP DROP ;
+5 MTABLE \ 5 10 15 20 25 30 35 40 45 50 \
 
 \ J fetches the outer loop counter
 
-: tbl 3 1 do 12 10 do i j / . loop loop ;
-tbl \ 10 11 5 5.5 \
+: TBL 3 1 DO 12 10 DO I J / . LOOP LOOP ;
+TBL \ 10 11 5 5.5 \
 
-( PRINTING FORTH)
+( PRINTING FORTH )
 
 \ EMIT prints a character
 
-: star 42 emit ; star star star \ *** \
-: stars 0 do star loop ; 10 stars \ ********** \
-: f 5 0 do cr loop ; f \ \n\n\n\n\n \
-: box 0 do cr dup stars loop drop ; 3 3 box \ \n***\n***\n*** \
-: \stars 0 do cr i spaces 10 stars loop ; 3 \stars
+: STAR 42 EMIT ; STAR STAR STAR \ *** \
+: STARS 0 DO STAR LOOP ; 10 STARS \ ********** \
+: F 5 0 DO CR LOOP ; F \ \N\N\N\N\N \
+: BOX 0 DO CR DUP STARS LOOP DROP ; 3 3 BOX \ \N***\N***\N*** \
+: \STARS 0 DO CR I SPACES 10 STARS LOOP ; 3 \STARS
 
 \ TYPE prints a string
 
-s" STRING" type \ STRING
-: _ s" STRING" type ; _ \ STRING
+S" STRING" TYPE \ STRING
+: _ S" STRING" TYPE ; _ \ STRING
 
-( LOCALS FORTH )
+( LOCAL FORTH )
 
-: swap' { a b } b a ;
-1 2 swap' . . \ 1 2 \
+: SWAP' { A B } B A ;
+1 2 SWAP' . . \ 1 2 \
 
-: pattern { a b c } a b c b c b a ;
-1 2 3 pattern . . . . . . . \ 1 2 3 2 3 2 1 \
+: PATTERN { A B C } A B C B C B A ;
+1 2 3 PATTERN . . . . . . . \ 1 2 3 2 3 2 1 \
 
-: f { a } 2 { b } a b a ;
-1 f . . . \ 1 2 1 \
+: F { A } 2 { B } A B A ;
+1 F . . . \ 1 2 1 \
 
 ( UGEN FORTH )
 
-440 0 SinOsc.ar 0.1 * 0 swap Out  -1 add-to-head 1 play-at
-440 441 2 mce 0 SinOsc.ar 0.1 * play
-440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * play
-WhiteNoise.ar 0.1 * play
+440 0 SINOSC.AR 0.1 * 0 SWAP OUT  -1 ADD-TO-HEAD 1 PLAY-AT
+440 441 2 MCE 0 SINOSC.AR 0.1 * PLAY
+440 441 2 MCE 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * ABS * PLAY
+WHITENOISE.AR 0.1 * PLAY
 
-\ Filters may elide rate
+\ Filters may elide the operating rate.
 
-WhiteNoise.ar HPZ1.ar 0.1 * .
-WhiteNoise.ar HPZ1 0.1 * .
+WHITENOISE.AR HPZ1.AR 0.1 * .
+WHITENOISE.AR HPZ1 0.1 * .
 
-\ Oscillators may not
+\ Oscillators may not.
 
-440 0 SinOsc 0.1 * . \ ERROR
+440 0 SINOSC 0.1 * . \ ERROR
 
-\ Operators have text and symbolic names.
+\ Operators have both text and symbolic names.
 
-440 0 SinOsc.ar WhiteNoise.ar Add -45 DbAmp Mul play \ QUIETLY NOW
+440 0 SINOSC.AR WHITENOISE.AR ADD -45 DBAMP MUL PLAY \ QUIETLY NOW
 
-\ STOP frees all nodes at scsynth (C-cC-k)
+\ STOP frees all nodes at SCSYNTH (C-cC-k)
 
-stop
+STOP
 
 ( INSENSITIVE FORTH )
 
 440 0 SINOSC.AR 0.1 MUL PLAY \ CASE INSENSITIVE
+441 0 sinosc.ar 0.1 mul play \ case insensitive
+442 0 SinOsc.ar 0.1 Mul Play \ Case Insensitive
 
 ( SEE FORTH )
 
 \ SEE prints an HSC3-FORTH representation of the graph.
-\ true SEE prints the uid of each non-det UGen, false SEE (C-cC-e) doesn't.
+\ TRUE SEE prints the UID of each NON-DET UGEN, FALSE SEE (C-cC-e) doesn't.
 \ SEE is likely not perspicuous.
 
-: g 440 441 2 mce 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * * WhiteNoise.ar 0.1 * + ;
-g true see
-g false see
+: G 440 441 2 MCE 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * * WHITENOISE.AR 0.1 * + ;
+G TRUE SEE
+G FALSE SEE
 
 ( DRAWING FORTH )
 
-\ DRAW draws a unit-generator graph via the graphviz dot language interpreter (C-cC-g)
+\ DRAW draws a UGEN graph via the graphviz DOT language interpreter (C-cC-g)
 
-WhiteNoise.ar 0.1 * dup - draw \ silence \
-WhiteNoise.ar 0.1 * 2 clone unmce - draw \ noise \
+WHITENOISE.AR 0.1 * DUP - DRAW \ SILENCE \
+WHITENOISE.AR 0.1 * 2 CLONE UNMCE - DRAW \ NOISE \
 
 ( NAMING FORTH )
 
-440 Rand_ 440 + 0 SinOsc.ar 0.1 * draw \ Rand_ is a unary operator
-440 880 Rand.ir 0 SinOsc.ar 0.1 * draw \ Rand.ir is a UGen
-
-440 0 SinOsc.ar 0.1 * Neg draw \ Neg is a unary operator
-440 0 SinOsc.ar 0.1 * negate draw \ negate is a stdlib word
+440 RAND_ 440 + 0 SINOSC.AR 0.1 * DRAW \ RAND_ IS A UNARY OPERATOR
+440 880 RAND.IR 0 SINOSC.AR 0.1 * DRAW \ RAND.IR IS A UGEN
 
 ( RANDOM FORTH )
 
-: random-sine 1900 2300 Rand.ir 0 SinOsc.ar -1 1 Rand.ir 0.05 0.15 Rand.ir Pan2.ar ;
-: _ 4 0 do random-sine play loop ; _
-stop
+: RANDOM-SINE 1900 2300 RAND.IR 0 SINOSC.AR -1 1 RAND.IR 0.05 0.1 RAND.IR PAN2.AR ;
+: _ 4 0 DO RANDOM-SINE PLAY LOOP ; _
+STOP
 
-\ Non-det operators are not marked
+\ NON-DET operators are not marked
 
-50 Rand_ 50 Rand_ - draw
+500 RAND_ 500 RAND_ - 0 SINOSC.AR 0.1 * DRAW
 
 ( UN-RANDOM FORTH )
 
-\ The non-deterministic UGens get identifiers from a counter, which can be set.
+\ The non-deterministic UGENS get identifiers from a counter, which can be set.
 
-1376523 set-uid
+1376523 SET-UID
 
-\ The UNRAND transformation lifts scalar random UGens to constants.
+\ The UNRAND transformation lifts scalar random UGENS to constants.
 
-0 1 Rand.ir 2 clone .s \ <1> [UGEN:Rand UGEN:Rand]
-unrand . \ [0.6768026553207348 0.21705544209066452]
+0 1 RAND.IR 2 CLONE .S \ <1> [UGEN:RAND UGEN:RAND]
+UNRAND . \ [0.6768026553207348 0.21705544209066452]
 
 \ How un-random is it?  Not very.....  This requires attention.
 
-: rnd Rand.ir unrand ;
-: _ 100 0 do 0 1 rnd . loop ; _
+: RND RAND.IR UNRAND ;
+: _ 100 0 DO 0 1 RND . LOOP ; _
 
-\ UNRAND is used internally when a constant value is required, ie. for pause.
+\ UNRAND is applied internally when a constant value is required, ie. for PAUSE.
 
-: _ 20 0 do 0 1 Rand.ir i . dup dup . unrand . cr pause loop ; _
+: _ 20 0 DO 0 1 RAND.IR I . DUP DUP . UNRAND . CR PAUSE LOOP ; _
 
 ( ENVELOPED FORTH )
 
-: with-triangle-env { dur lvl } 1 1 0 1 remove-synth dur lvl env-tri EnvGen.kr * ;
-WhiteNoise.ar 10 0.1 with-triangle-env play
-random-sine 5 0.1 with-triangle-env play
-stop
+: WITH-TRIANGLE-ENV { DUR LVL } 1 1 0 1 REMOVE-SYNTH DUR LVL ENV-TRI ENVGEN.KR * ;
+WHITENOISE.AR 10 0.1 WITH-TRIANGLE-ENV PLAY
+RANDOM-SINE 5 0.1 WITH-TRIANGLE-ENV PLAY
+STOP
 
 ( PAUSING FORTH )
 
 \ PAUSE suspends the thread of the current VM.
 
-: anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-triangle-env play loop ;
-anon 5 pause stop
+: ANON 11 1 DO I 4 / DUP . CR PAUSE RANDOM-SINE 5 0.1 WITH-TRIANGLE-ENV PLAY LOOP ;
+ANON 5 PAUSE STOP
 
 \ PAUSE doesn't re-instate interrupts
 
-10 pause \ non-interruptible
-.s
+10 PAUSE \ NON-INTERRUPTIBLE
+.S
 
 ( SCHEDULE FORTH )
 
-\ Since random-sine takes time, there is audible scattering.
+\ Since RANDOM-SINE takes time, there is audible scattering.
 
-: _ 25 0 do random-sine play loop ; _
-stop
+: _ 25 0 DO RANDOM-SINE PLAY LOOP ; _
+STOP
 
-\ SCHED is a variant of play that forward schedules, allowing for precise alignment.
+\ SCHED is a variant of PLAY that forward schedules, allowing for precise alignment.
 
-: _ time 0.1 + { t } 25 0 do random-sine t sched loop ; _
-stop
+: _ TIME 0.1 + { T } 25 0 DO RANDOM-SINE T SCHED LOOP ; _
+STOP
 
 ( TEXTURAL FORTH )
 
-random-sine 2 3 5 xfade-texture
-random-sine 2 3 6 12 overlap-texture
+\ The SC2 TEXTURE functions are implemented, see OVERLAP-TEXTURE.FS.
+
+RANDOM-SINE 2 3 5 XFADE-TEXTURE
+RANDOM-SINE 2 3 6 12 OVERLAP-TEXTURE
 
 ( INTERRUPTING FORTH )
 
 \ SIGINT is caught and the next VM operation will raise an error.
 
-: endless inf 0 do s" MSG: " type i . cr 0.1 pause loop ;
-endless
+: ENDLESS INF 0 DO S" MSG: " TYPE I . CR 0.1 PAUSE LOOP ;
+ENDLESS
 
-\ To send SIGINT from Emacs type C-cC-i
+\ To send SIGINT from EMACS type C-cC-i
 
 ( FORK FORTH )
 
 \ The VM can be FORKed, and the fork can be KILLed
 
-: endless inf 0 do s" MSG" type cr 1 pause loop ;
-fork endless .s
-kill .s
+: ENDLESS INF 0 DO S" MSG" TYPE CR 1 PAUSE LOOP ;
+FORK ENDLESS .S
+KILL .S
 
 \ The forked word can read from the stack, but it does so in the new thread.
 
-: n-messages 0 do i . cr dup pause loop ;
-0.5 10 fork n-messages .s \ <3> 0.5 10 THREAD-ID
+: N-MESSAGES 0 DO I . CR DUP PAUSE LOOP ;
+0.5 10 FORK N-MESSAGES .S \ <3> 0.5 10 THREAD-ID
 
-\ Here the interval and the count remain on the stack, along with the thread-id.
+\ Here the interval and the count remain on the stack, along with the THREAD-ID.
 
-kill . . .s \ 10 0.5 <0>
+KILL . . .S \ 10 0.5 <0>
 
 \ The VM keeps a list of all running threads, and they can call be killed together (C-cC-s)
 
-killall
+KILLALL
 
 ( INCLUSIVE FORTH )
 
-s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" included
+s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" INCLUDED
 
-\ If the included file is a process we can fork included, with the normal fork stack rules.
+\ If the file is a process we can FORK INCLUDED, with the normal FORK stack rules.
 
-s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" fork included .s
-kill . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
+s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" FORK INCLUDED .S
+KILL . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
 
 ( QUOTING FORTH )
 
-' + 1 2 rot execute . \ 3
+\ ' puts the EXECUTION TOKEN (XT) of the subsequent word onto the stack.
+\ EXECUTE takes the token and applies it.
 
-: sig 1 50 20 remove-synth XLine.kr 0 Impulse.ar 0.01 0.2 Decay2 600 0 FSinOsc.ar 0.25 * * ;
-: cmb 0.1 0.1 1 CombN ;
-: post-proc { f } 0 2 In.ar f execute 0 swap Out -1 add-to-tail 1 play-at ;
+' + . \ XT:+ \
+' + 1 2 ROT EXECUTE . \ 3 \
 
-sig play ' cmb post-proc
-stop
+: SIG 1 50 20 REMOVE-SYNTH XLINE.KR 0 IMPULSE.AR 0.01 0.2 DECAY2 600 0 FSINOSC.AR 0.25 * * ;
+: CMB 0.1 0.1 1 COMBN ;
+: POST-PROC { F } 0 2 IN.AR F EXECUTE 0 SWAP OUT -1 ADD-TO-TAIL 1 PLAY-AT ;
+
+SIG PLAY ' CMB POST-PROC
+STOP
 
 ( RETURN FORTH )
 
@@ -325,38 +350,38 @@ stop
 
 ( LABELED FORTH )
 
-s" LABEL" label . \ "LABEL"
+s" LABEL" LABEL . \ "LABEL"
 
 ( FIBONACCI FORTH )
 
-: fib 0 1 rot 0 do over + swap loop drop ;
-: fibs 0 do i fib . loop ;
-50 fibs \ 0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 ...
-.s
+: FIB 0 1 ROT 0 DO OVER + SWAP LOOP DROP ;
+: FIBS 0 DO I FIB . LOOP ;
+50 FIBS \ 0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 ...
+.S
 
 ( DYNAMIC FORTH )
 
-\ The UGen words are not all pre-defined but are created dynamically.
-\ The dictionary initially contains no UGen words.
+\ The UGEN words are not all pre-defined but are created dynamically.
+\ The dictionary initially contains no UGEN words.
 \ The dynamic lookup happens if the word is not in the dictionary.
 \ This is why eventual lookup failure is reported as DYNAMIC FAILED.
 
-Not_A_UGen.ar
-mistyped-word
+NOT_A_UGEN.AR \ ERROR
+MISTYPED-WORD \ ERROR
 
 ( TROUBLE FORTH )
 
-0 0.1 Rand.ir pause
-440 0 SinOsc.ar pause \ NON-CONSTANT ERROR
+0 1 RAND.IR DUP . PAUSE \ RAND
+440 0 SINOSC.AR PAUSE \ ERROR (NON-CONSTANT)
 
-: _ WhiteNoise.ar 0 do i . loop ; _ \ THIS _SHOULD_ BE A NON-CONSTANT ERROR
+: _ WHITENOISE.AR 0 DO I . LOOP ; _ \ THIS _SHOULD_ BE A NON-CONSTANT ERROR
 
-vmstat \ PRINT VM STATUS
-2 trace \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
+VMSTAT \ PRINT VM STATUS
+2 TRACE \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
 
 ( FINISHING FORTH )
 
-bye \ C-cC-q
+BYE \ C-cC-q
 
 ( RAT FORTH )
 
@@ -364,9 +389,9 @@ bye \ C-cC-q
 \ RAT-FORTH knows only rational numbers.
 
 5 2 / . \ 5/2 \
-5 2 div . \ 2 \
-5 2 mod . \ 1 \
-5 2 div-mod . . \ 2 1 \
+5 2 DIV . \ 2 \
+5 2 MOD . \ 1 \
+5 2 DIV-MOD . . \ 2 1 \
 1/10 .  \ 1/10 \
 0.1 . \ 3602879701896397/36028797018963968 \
 
@@ -377,5 +402,5 @@ bye \ C-cC-q
 \ ANS FORTH requires floating point literals be written 1.1e0 etc.
 \ ANS FORTH has a separate floating point stack, printed using f.
 
-: f. . ;
-1.1e0 2.2e0 3.3e0 f. f. f. \ 3.3 2.2 1.1 \
+: F. . ;
+1.1E0 2.2E0 3.3E0 F. F. F. \ 3.3 2.2 1.1 \

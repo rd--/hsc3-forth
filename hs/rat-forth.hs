@@ -14,9 +14,11 @@ instance (Show i,Integral i) => Forth_Type (Ratio i) where
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 
+{-
 -- | Unary stack operation.
 unary_op :: (a -> a) -> Forth w a ()
 unary_op f = pop >>= push . f
+-}
 
 binary_op'' :: (i -> a) -> (a -> i) -> (a -> a -> a) -> Forth w i ()
 binary_op'' f g h = pop >>= \y -> pop >>= \x -> push (g (h (f x) (f y)))
@@ -44,11 +46,8 @@ rat_dict = M.fromList
     [("+",binary_op (+))
     ,("*",binary_op (*))
     ,("-",binary_op (-))
-    ,("negate",unary_op negate)
-    ,("abs",unary_op abs)
      -- FRACTIONAL
     ,("/",binary_op (/))
-    ,("recip",unary_op recip)
      -- INTEGRAL
     ,("mod",binary_op' mod)
     ,("div",binary_op' div)
@@ -66,6 +65,7 @@ main = do
   sig <- newMVar False
   let d :: Dict () Rational
       d = M.unions [core_dict,rat_dict]
-      vm = (empty_vm () parse_rat sig) {dict = d,input_port = Just stdin}
+      vm = (empty_vm () parse_rat sig) {dict = d, input_port = Just stdin}
+      init_f = load_files ["stdlib.fs","ratlib.fs"]
   putStrLn "RAT-FORTH"
-  repl vm (load_files ["stdlib.fs"])
+  repl vm init_f
