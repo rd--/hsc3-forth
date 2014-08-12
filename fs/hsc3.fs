@@ -80,8 +80,6 @@
 
 : LinLin_muladd { sl sr dl dr } dr dl - sr sl - / { m } m dl m sl * - ;
 
-: MulAdd { m a } m * a + ; ( Not in hsc3-db )
-
 : LinLin LinLin_muladd MulAdd ;
 
 \ LOCAL BUFFERS
