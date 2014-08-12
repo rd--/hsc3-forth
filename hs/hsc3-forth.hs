@@ -2,6 +2,7 @@ import Control.Concurrent {- base -}
 import Control.Monad {- base -}
 import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
+import Data.Char {- hash -}
 import Data.Hashable {- hash -}
 import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
@@ -75,8 +76,8 @@ get_nc u nc =
                    Just _ -> return Nothing
                    Nothing -> fmap Just (pop_int "GET_NC")
 
--- > fmap ugen_io (DB.uLookup_ci "DSEQ")
--- > fmap ugen_io (DB.uLookup_ci "DEMAND")
+-- > fmap ugen_io (DB.uLookup CI "DSEQ")
+-- > fmap ugen_io (DB.uLookup CI "DEMAND")
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
 
@@ -87,7 +88,7 @@ gen_plain w = do
                    Nothing -> resolve_operator CI nm
                    _ -> (nm,Nothing)
       sp' = Special (fromMaybe 0 sp)
-  u <- case DB.uLookup_ci nm' of
+  u <- case DB.uLookup CI nm' of
          Nothing -> throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ tick_quotes nm')
          Just r -> return r
   when (isNothing rt && isNothing (DB.ugen_filter u))
@@ -95,10 +96,10 @@ gen_plain w = do
   let (inp,nc) = ugen_io u
   z <- if DB.ugen_nondet u then fmap UId incr_uid else return NoId
   nc' <- get_nc u nc
-  i <- pop_n inp
+  i <- fmap reverse (pop_n inp)
   let nc'' = fromMaybe (length (mceChannels (last i))) nc'
   let rt' = fromMaybe (maximum (map rateOf i)) rt
-      i' = (if DB.ugen_std_mce u then halt_mce_transform else id) (reverse i)
+      i' = (if DB.ugen_std_mce u then halt_mce_transform else id) i
   push (ugen_optimise_const_operator (mk_plain rt' (DB.ugen_name u) i' nc'' sp' z))
 
 gen_nm :: UGen -> String
@@ -142,7 +143,7 @@ fw_b_allocRead = do
 
 ugen_dict :: Dict Int UGen
 ugen_dict =
-    M.fromList
+    M.fromList $ map (\(nm,en) -> (map toLower nm,en))
     [("clone",pop_int "CLONE" >>= \n -> pop >>= \u -> incr_uid >>= \z -> push (uclone z n u))
     ,("draw",pop >>= \u -> fw_assert_empty >> liftIO (draw (out 0 u)))
     ,("mce",pop_int "MCE" >>= \n -> pop_n n >>= push . mce . reverse)

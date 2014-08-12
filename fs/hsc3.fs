@@ -10,6 +10,7 @@
 \ CONSTANTS
 
 : inf 9e8 ; \ Pseudo infinity
+: epsilon 1e-8 ; \ Psuedo epsilon (instead of zero in EXP contexts)
 : pi 3.141592653589793 ;
 
 \ ABBREVIATIONS
