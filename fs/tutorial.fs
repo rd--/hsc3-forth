@@ -1,8 +1,8 @@
 ( HSC3 FORTH -- AMERICAN PRIMITIVE, VOL. 1 )
 
-\ HSC3-FORTH is a simple FORTH-ish interpreter.
+\ HSC3-FORTH is a simple FORTH interpreter.
 \ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, and one data stack.
-\ There is :; and IF ELSE THEN and DO LOOP and (LOCAL) in the form { VAR ... }.
+\ There is :; and IF ELSE THEN and DO LOOP and (LOCAL) in the form of { VAR ... }.
 \ There is a return stack.
 
 ( EMACS FORTH )
@@ -29,12 +29,12 @@
 
 s" SinOsc" ?
 
-\ SinOsc [AR,KR] freq=440.0 phase=0.0
+\ SinOsc [KR,AR] freq=440.0 phase=0.0
 
 s" ENVGEN" ?
 
-\ EnvGen [AR,KR] *envelope=0 gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0
-\     MCE INPUT: #5, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction
+\ EnvGen [KR,AR] gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
+\     MCE, REORDERS INPUTS: [5,0,1,2,3,4], ENUMERATION INPUTS: 4=DoneAction, 5=Envelope UGen
 
 ( NUM FORTH )
 
@@ -165,9 +165,17 @@ WhiteNoise.ar HPZ1 0.1 * .
 
 440 0 SinOsc 0.1 * . \ ERROR
 
+\ Operators have text and symbolic names.
+
+440 0 SinOsc.ar WhiteNoise.ar Add -45 DbAmp Mul play \ QUIETLY NOW
+
 \ STOP frees all nodes at scsynth (C-cC-k)
 
 stop
+
+( INSENSITIVE FORTH )
+
+440 0 SINOSC.AR 0.1 MUL PLAY \ CASE INSENSITIVE
 
 ( SEE FORTH )
 
@@ -337,8 +345,6 @@ Not_A_UGen.ar
 mistyped-word
 
 ( TROUBLE FORTH )
-
-440 0 SINOSC.AR \ CASE SENSITIVE
 
 0 0.1 Rand.ir pause
 440 0 SinOsc.ar pause \ NON-CONSTANT ERROR

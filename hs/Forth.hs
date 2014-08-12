@@ -8,6 +8,7 @@ import Data.Char {- base -}
 import Data.Hashable {- hashable -}
 import Data.List {- base -}
 import qualified Data.Map as M {- containers -}
+import Data.Maybe {- base -}
 import System.Directory {- directory -}
 import System.Environment {- base -}
 import System.Exit {- base -}
@@ -23,13 +24,16 @@ type Dict w a = M.Map String (Forth w a ())
 -- | Class of values that can constitute a 'Forth'.
 class Forth_Type a where
     ty_show :: a -> String -- ^ String representation of /a/, pretty printer.
-    ty_to_int :: a -> Int -- ^ Coercion, ie. for loop counters.
+    ty_to_int :: a -> Maybe Int -- ^ Coercion, ie. for loop counters.
     ty_from_int :: Int -> a -- ^ Coercion
     ty_from_bool :: Bool -> a -- ^ Boolean value represented in /a/, by convention @-1@ and @0@.
 
+ty_to_int' :: Forth_Type a => String -> a -> Int
+ty_to_int' msg = fromMaybe (error ("NOT-INTEGER: " ++ msg)) . ty_to_int
+
 instance Forth_Type Integer where
     ty_show = show
-    ty_to_int = fromInteger
+    ty_to_int = Just . fromInteger
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 
@@ -200,6 +204,9 @@ pop' = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
 pop :: Forth w a a
 pop = pop' >>= dc_plain
 
+pop_int :: Forth_Type a => String -> Forth w a Int
+pop_int msg = pop >>= return . ty_to_int' msg
+
 popr' :: Forth w a (DC a)
 popr' = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s})
 
@@ -231,7 +238,7 @@ expr_pp e =
       Literal a -> ty_show a
       Word nm -> nm
 
--- | Dictionary lookup.
+-- | Dictionary lookup, word should be lower case.
 lookup_word :: String -> VM w a -> Maybe (Forth w a ())
 lookup_word k vm =
     case locals vm of
@@ -251,7 +258,7 @@ parse_token s = do
           Just l  -> return (Literal l)
           Nothing ->
               case dynamic vm of
-                Just _ -> return (Word s) -- if there is an dynamic reader, defer...
+                Just _ -> return (Word s) -- if there is a dynamic reader, defer...
                 Nothing -> unknown_error s
 
 -- | Read buffer until predicate holds, if /pre/ delete preceding white space.
@@ -295,12 +302,12 @@ fw_refill = do
       x <- liftIO (hGetLine h)
       put (vm {buffer = x})
 
--- | If 'scan_token' is 'Nothing', then 'fw_refill' and retry.
+-- | If 'scan_token' is 'Nothing', then 'fw_refill' and retry.  Tokens are lower case.
 read_token :: Forth w a String
 read_token = do
   r <- scan_token
   case r of
-    Just str -> return str
+    Just str -> return (map toLower str)
     Nothing -> fw_refill >> read_token
 
 -- | 'parse_token' of 'read_token'.
@@ -319,7 +326,7 @@ interpret_word w = do
     Nothing ->
         case dynamic vm of
           Just f -> let d_r = f w in put vm {dict = M.insert w d_r (dict vm)} >> d_r
-          Nothing -> throw_error ("unknown word: " ++ tick_quotes w)
+          Nothing -> throw_error ("UNKNOWN WORD: " ++ tick_quotes w)
 
 -- | Either 'interpret_word' or 'push' literal.
 interpret_expr :: Expr a -> Forth w a ()
@@ -417,7 +424,7 @@ interpret_do_loop code = do
   let step = do
         code
         i <- popr
-        let i' = ty_from_int (ty_to_int i + 1)
+        let i' = ty_from_int (ty_to_int' "DO-LOOP: I" i + 1)
         pushr i'
   let loop = do
         r <- loop_end
@@ -580,7 +587,7 @@ fw_pick :: Forth_Type a => Forth w a ()
 fw_pick = do
   vm <- get_vm
   case stack vm of
-    DC n : s' -> let n' = ty_to_int n
+    DC n : s' -> let n' = ty_to_int' "PICK" n
                      e = s' !! n'
                  in put vm {stack = e : s'}
     _ -> throw_error "PICK"
@@ -591,7 +598,7 @@ write_ln = write . (++ "\n")
 write_sp = write . (++ " ")
 
 fw_emit,fw_dot :: Forth_Type a => Forth w a ()
-fw_emit = write . return . toEnum . ty_to_int =<< pop
+fw_emit = write . return . toEnum =<< pop_int "EMIT"
 fw_dot = write_sp . show =<< pop'
 
 fw_dot_s :: Forth_Type a => Forth w a ()
@@ -625,13 +632,12 @@ fw_fork = do
 
 fw_kill :: Forth_Type a => Forth w a ()
 fw_kill = do
-  k <- pop
+  k <- pop_int "KILL: PID?"
   vm <- get_vm
-  let k' = ty_to_int k
-      threads' = threads vm
-  case M.lookup k' threads' of
-    Nothing -> throw_error ("KILL: UNKNOWN THREAD: " ++ show k')
-    Just th -> liftIO (killThread th) >> put vm {threads = M.delete k' threads'}
+  let threads' = threads vm
+  case M.lookup k threads' of
+    Nothing -> throw_error ("KILL: UNKNOWN THREAD: " ++ show k)
+    Just th -> liftIO (killThread th) >> put vm {threads = M.delete k threads'}
 
 fw_kill_all :: Forth w a ()
 fw_kill_all = do
@@ -695,7 +701,7 @@ core_dict =
     ,("key",liftIO getChar >>= \c -> push (ty_from_int (fromEnum c)))
     -- DEBUG
     ,("vmstat",fw_vmstat)
-    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int k},())))]
+    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int' "TRACE" k},())))]
 
 core_words :: [String]
 core_words = M.keys (core_dict :: Dict w Integer)

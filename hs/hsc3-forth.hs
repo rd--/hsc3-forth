@@ -9,6 +9,7 @@ import System.IO {- base -}
 
 import Sound.OSC {- hosc -}
 import Sound.SC3 {- hsc3 -}
+import Sound.SC3.Common {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
 
@@ -25,9 +26,6 @@ import Forth
 -- | hsc3-forth word.
 type U_Forth r = Forth Int UGen r
 
--- | hsc3-forth reader.
-type U_Reader = String -> U_Forth ()
-
 -- | 'replicateM' of 'pop'.
 pop_n :: Int -> Forth w a [a]
 pop_n n = replicateM n pop
@@ -42,9 +40,6 @@ pop_double msg =
                 Nothing -> throw_error ("POP_DOUBLE: " ++ msg ++ ": " ++ show u)
                 Just n -> return n
     in pop >>= f
-
-pop_int :: String -> Forth w UGen Int
-pop_int = fmap floor . pop_double
 
 -- | Get UId counter.
 get_uid :: Forth Int a Int
@@ -80,19 +75,19 @@ get_nc u nc =
                    Just _ -> return Nothing
                    Nothing -> fmap Just (pop_int "GET_NC")
 
--- > fmap ugen_io (DB.uLookup "Dseq")
--- > fmap ugen_io (DB.uLookup "Demand")
+-- > fmap ugen_io (DB.uLookup_ci "DSEQ")
+-- > fmap ugen_io (DB.uLookup_ci "DEMAND")
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
 
-gen_plain :: U_Reader
+gen_plain :: String -> U_Forth ()
 gen_plain w = do
   (nm,rt) <- ugen_sep w
   let (nm',sp) = case rt of
-                   Nothing -> resolve_operator nm
-                   _ -> (nm,Nothing) -- Rand.ir is UGen
+                   Nothing -> resolve_operator CI nm
+                   _ -> (nm,Nothing)
       sp' = Special (fromMaybe 0 sp)
-  u <- case DB.uLookup nm' of
+  u <- case DB.uLookup_ci nm' of
          Nothing -> throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ tick_quotes nm')
          Just r -> return r
   when (isNothing rt && isNothing (DB.ugen_filter u))
@@ -104,7 +99,7 @@ gen_plain w = do
   let nc'' = fromMaybe (length (mceChannels (last i))) nc'
   let rt' = fromMaybe (maximum (map rateOf i)) rt
       i' = (if DB.ugen_std_mce u then halt_mce_transform else id) (reverse i)
-  push (ugen_optimise_const_operator (mk_plain rt' nm' i' nc'' sp' z))
+  push (ugen_optimise_const_operator (mk_plain rt' (DB.ugen_name u) i' nc'' sp' z))
 
 gen_nm :: UGen -> String
 gen_nm = show . hash . show
@@ -120,7 +115,7 @@ sched t u =
 fw_help :: Forth_Type a => Forth w a ()
 fw_help = do
   (nm,_) <- ugen_sep =<< pop_string "HELP: NAME"
-  case DB.ugenSummary' True nm of
+  case DB.ugenSummary' CI nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
 
@@ -171,7 +166,7 @@ ugen_dict =
 
 instance Forth_Type UGen where
     ty_show = ugen_concise_pp
-    ty_to_int = floor . fromMaybe (error "TY_TO_INT") . u_constant
+    ty_to_int = fmap floor . u_constant
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 

@@ -10,7 +10,7 @@ import Rational
 
 instance (Show i,Integral i) => Forth_Type (Ratio i) where
     ty_show = rat_pp
-    ty_to_int = floor
+    ty_to_int = Just . floor
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
 
