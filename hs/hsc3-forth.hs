@@ -129,8 +129,11 @@ fw_play_at = do
   fw_assert_empty
   liftIO (audition_at (nid,toEnum act,grp) u)
 
-fw_see :: U_Forth ()
-fw_see = pop_int "SEE" >>= \k -> pop >>= \u -> liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k) u))
+fw_pretty_print :: U_Forth ()
+fw_pretty_print = do
+  k <- pop_int "PRETTY-PRINT"
+  u <- pop
+  liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k) u))
 
 fw_b_allocRead :: U_Forth ()
 fw_b_allocRead = do
@@ -162,7 +165,7 @@ ugen_dict =
     ,("unrand",pop >>= push . ugen_optimise_ir_rand)
     ,("chan",pop >>= push . constant . length . mceChannels)
     ,("sc3-status",liftIO (withSC3 serverStatus >>= mapM_ putStrLn))
-    ,("see",fw_see)
+    ,("pretty-print",fw_pretty_print)
     ,("?",fw_help)]
 
 instance Forth_Type UGen where

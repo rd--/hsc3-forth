@@ -27,7 +27,7 @@
 (defun hsc3-forth-help () "s\" <word>\"" (interactive) (hsc3-forth-point "?" nil t))
 (defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-point "play" nil nil))
 (defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-point "draw" nil nil))
-(defun hsc3-forth-see () "<word> SEE" (interactive) (hsc3-forth-point "false see" nil nil))
+(defun hsc3-forth-pp () "<word> PP" (interactive) (hsc3-forth-point "pp" nil nil))
 
 (defun hsc3-forth-included ()
   "INCLUDED"
@@ -68,7 +68,7 @@
   (define-key map [?\C-c ?>] 'hsc3-forth-see-forth)
   (define-key map [?\C-c ?\C-a] 'hsc3-forth-play)
   (define-key map [?\C-c ?\C-g] 'hsc3-forth-draw)
-  (define-key map [?\C-c ?\C-e] 'hsc3-forth-see)
+  (define-key map [?\C-c ?\C-e] 'hsc3-forth-pp)
   (define-key map [?\C-c ?\C-s] 'hsc3-forth-killall)
   (define-key map [?\C-c ?\C-c] 'hsc3-forth-send-line)
   (define-key map [?\C-c ?\C-d] 'hsc3-forth-send-region)
@@ -85,6 +85,7 @@
   (define-key map [menu-bar hsc3-forth included] '("INCLUDED" . hsc3-forth-included))
   (define-key map [menu-bar hsc3-forth send-line] '("SEND LINE" . hsc3-forth-send-line))
   (define-key map [menu-bar hsc3-forth stop] '("STOP" . hsc3-forth-stop))
+  (define-key map [menu-bar hsc3-forth pp] '("PP" . hsc3-forth-pp))
   (define-key map [menu-bar hsc3-forth draw] '("DRAW" . hsc3-forth-draw))
   (define-key map [menu-bar hsc3-forth play] '("PLAY" . hsc3-forth-play))
   (define-key map [menu-bar hsc3-forth bye] '("BYE" . hsc3-forth-bye))

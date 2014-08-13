@@ -18,6 +18,7 @@
 : mrg2 2 mrg ;
 : clone2 2 clone ;
 : play 0 swap Out -1 add-to-head 1 play-at ;
+: pp false pretty-print ;
 
 \ ENVELOPE CURVE ENUMERATION
 
