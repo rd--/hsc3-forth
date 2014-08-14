@@ -89,3 +89,7 @@
     1 len LocalBuf.ir { buf }
     buf 0 len arr SetBuf.ir { set }
     buf set 2 mrg ;
+
+\ COMMANDS
+
+: b_allocRead s" ,isii" s" /b_allocRead" async ;

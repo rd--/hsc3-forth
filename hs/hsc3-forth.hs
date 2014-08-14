@@ -135,13 +135,20 @@ fw_pretty_print = do
   u <- pop
   liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k) u))
 
-fw_b_allocRead :: U_Forth ()
-fw_b_allocRead = do
-  nf <- pop_int "B_ALLOCREAD: FRAME-COUNT"
-  f0 <- pop_int "B_ALLOCREAD: START-FRAME"
-  nm <- pop_string "B_ALLOCREAD: FILE-NAME"
-  b <- pop_int "B_ALLOCREAD: BUFFER-ID"
-  _ <- liftIO (withSC3 (async (b_allocRead b nm f0 nf)))
+fw_load_datum :: Char -> U_Forth Datum
+fw_load_datum c =
+    case c of
+      'i' -> pop_int "LOAD-DATUM: I" >>= return . int32
+      'f' -> pop_double "LOAD-DATUM: F" >>= return . float
+      's' -> pop_string "LOAD-DATUM: S" >>= return . string
+      _ -> throw_error ("LOAD-DATUM: UNKNOWN TYPE: " ++ tick_quotes [c])
+
+fw_async :: U_Forth ()
+fw_async = do
+  nm <- pop_string "ASYNC: MESSAGE-NAME"
+  ty <- pop_string "ASYNC: OSC-TYPE-SIG"
+  param <- mapM fw_load_datum (reverse (tail ty))
+  _ <- liftIO (withSC3 (async (message nm (reverse param))))
   return ()
 
 ugen_dict :: Dict Int UGen
@@ -156,7 +163,7 @@ ugen_dict =
     ,("sched",pop_double "SCHED" >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= push_l . mceChannels)
-    ,("b_allocRead",fw_b_allocRead)
+    ,("async",fw_async)
     ,("pause",pop_double "PAUSE" >>= pauseThread)
     ,("time",liftIO time >>= push . constant)
     ,("label",pop_string "LABEL" >>= push . label)
