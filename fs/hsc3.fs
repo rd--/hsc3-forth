@@ -76,6 +76,8 @@
 
 \ COMPOSITE UGENS
 
+: Choose { u } 0 u chan 1 - IRand.ir u Select ;
+
 : TChoose { t a } 0 a chan t TIRand a Select ;
 
 : LinLin_muladd { sl sr dl dr } dr dl - sr sl - / { m } m dl m sl * - ;
@@ -93,3 +95,9 @@
 \ COMMANDS
 
 : b_allocRead s" ,isii" s" /b_allocRead" async ;
+
+\ COLLECTION
+
+: series { n z k } n 0 do k i * z + loop n mce ;
+: geom { n z k } n 0 do k i ** z * loop n mce ;
+
