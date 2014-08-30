@@ -78,14 +78,11 @@
 \ COMPOSITE UGENS
 
 : Choose { u } 0 u chan 1 - IRand.ir u Select ;
-
-: TChoose { t a } 0 a chan t TIRand a Select ;
-
 : LinLin_muladd { sl sr dl dr } dr dl - sr sl - / { m } m dl m sl * - ;
-
 : LinLin LinLin_muladd MulAdd ;
-
+: Rand2.ir { n } n Neg n Rand.ir ;
 : SoundIn { u } NumOutputBuses.ir u + 1 In.ar ;
+: TChoose { t a } 0 a chan t TIRand a Select ;
 
 \ LOCAL BUFFERS
 
