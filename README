@@ -35,19 +35,25 @@ hsc3-forth < ~/sw/hsc3-graphs/gr/why-supercollider.fs
 
 To quieten there is the forth word `STOP`.
 
-There is a terse [tutorial](?t=hsc3-forth&e=help/tutorial.fs).
+There is a rather terse [tutorial](?t=hsc3-forth&e=help/tutorial.fs),
+and [translations](?t=hsc3-forth&e=help/jmcc.fs) of graphs by [James
+McCartney](http://audiosynth.com/autobio/emu.jpg) from the `SC2`
+manual.
 
-`HSC3-FORTH` is CASE-INSENSITIVE.
+`HSC3-FORTH` is CASE-INSENSITIVE, in EMACS you can type `C-x C-l` to
+time travel.
 
 It follows the [HASKELL][hs] supercollider ([HSC3][hsc3]) rules.
 
 It is very partial.
 
-It is known to work as far as the translated graphs at [HSC3-GRAPHS](?t=hsc3-graphs).
+It is known to work as far as the translated graphs at
+[HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
+[INDEX](?t=hsc3-graphs&e=md/ix.md).
 
-Search for `FS` in the [INDEX](?t=hsc3-graphs&e=md/ix.md).
+It is for AG and SD, for the obvious reasons.
 
-© [rohan drape][rd], 2014, [gpl][gpl].
+© [RD][rd], 2014, [gpl][gpl].
 
 [rd]: http://rd.slavepianos.org/
 [hsc3]: ?t=hsc3
