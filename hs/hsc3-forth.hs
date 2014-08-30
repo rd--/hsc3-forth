@@ -120,6 +120,13 @@ fw_help = do
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
 
+fw_manual :: Forth_Type a => Forth w a ()
+fw_manual = do
+  (nm,_) <- ugen_sep =<< pop_string "MANUAL: NAME"
+  case DB.uLookup CI nm of
+    Nothing -> throw_error ("MANUAL: NO ENTRY: " ++ nm)
+    Just u -> liftIO (viewSC3Help (DB.ugen_name u))
+
 fw_play_at :: U_Forth ()
 fw_play_at = do
   grp <- pop_int "PLAY-AT: GRP"
@@ -173,7 +180,8 @@ ugen_dict =
     ,("chan",pop >>= push . constant . length . mceChannels)
     ,("sc3-status",liftIO (withSC3 serverStatus >>= mapM_ putStrLn))
     ,("pretty-print",fw_pretty_print)
-    ,("?",fw_help)]
+    ,("?",fw_help)
+    ,("manual",fw_manual)]
 
 instance Forth_Type UGen where
     ty_show = ugen_concise_pp

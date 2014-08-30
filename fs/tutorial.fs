@@ -2,14 +2,14 @@
 
 \ HSC3-FORTH is a simple FORTH interpreter.
 
-\ There is one data type, the SUPERCOLLIER UNIT GENERATOR, a data stack, and a return stack.
+\ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, a data stack, and a return stack.
 
 \ The primitive words are:
-\   - : ;
-\   - IF ELSE THEN
-\   - DO I J LOOP
-\   - { } (LOCAL)
-\   - ' EXECUTE
+\   : ;
+\   IF ELSE THEN
+\   DO I J LOOP
+\   { } (LOCAL)
+\   ' EXECUTE
 
 ( EMACS FORTH )
 
@@ -24,6 +24,7 @@
 \   e -- Send <point> PP
 \   a -- Send <point> PLAY
 \   u -- Send <point> ?
+\   j -- Send <point> MANUAL
 \   k -- Send STOP
 \   s -- Send KILLALL
 \   q -- Send BYE
@@ -34,6 +35,7 @@
 
 \ Many words have more or less the same meaning as in ANS.
 \ In these cases DPANS'94 numbers are given for reference.
+\ These can be resolved as http://forth.sf.net/std/dpans/dpans6.htm#6.1.2165
 
 \ ? prints information about a UGEN, in EMACS type C-cC-u.
 
@@ -45,6 +47,8 @@ S" ENVGEN" ?
 
 \ EnvGen [KR,AR] gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
 \     MCE, REORDERS INPUTS: [5,0,1,2,3,4,5], ENUMERATION INPUTS: 4=DoneAction, 5=Envelope UGen
+
+\ MANUAL opens the SUPERCOLLIDER manual at the required page, in EMACS type C-cC-j.
 
 ( DISCARDING FORTH )
 
@@ -220,10 +224,14 @@ WHITENOISE.AR HPZ1 0.1 * .
 \ PRETTY-PRINT prints an HSC3-FORTH representation of the graph.
 \ A flag tells whether to print the UID of each NON-DET UGEN.
 \ PP is an abreviation of FALSE PRETTY-PRINT (C-cC-e).
-\ PP is likely not perspicuous.
+
+: G 440 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * * WHITENOISE.AR 0.1 * + ;
+G TRUE PRETTY-PRINT
+G PP
+
+\ PP is only moderately perspicuous, it does not see through MCE.
 
 : G 440 441 2 MCE 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * * WHITENOISE.AR 0.1 * + ;
-G TRUE PRETTY-PRINT
 G PP
 
 ( DRAWING FORTH )
@@ -245,7 +253,7 @@ WHITENOISE.AR 0.1 * 2 CLONE UNMCE - DRAW \ NOISE \
 
 STOP
 
-\ NON-DET operators are not marked
+\ NON-DET operators are not marked, the below has one Rand_ operator.
 
 500 RAND_ 500 RAND_ - 0 SINOSC.AR 0.1 * DRAW
 
@@ -281,6 +289,15 @@ WHITENOISE.AR 10 0.1 WITH-TRIANGLE-ENV PLAY
 RANDOM-SINE 5 0.1 WITH-TRIANGLE-ENV PLAY
 STOP
 
+( INTERRUPTING FORTH )
+
+\ SIGINT is caught and the next VM operation will raise an error.
+
+: ENDLESS INF 0 DO S" MSG: " TYPE I . CR 0.1 PAUSE LOOP ;
+ENDLESS
+
+\ To send SIGINT from EMACS type C-cC-i
+
 ( PAUSING FORTH )
 
 \ PAUSE suspends the thread of the current VM.
@@ -311,15 +328,6 @@ STOP
 
 RANDOM-SINE 2 3 5 XFADE-TEXTURE
 RANDOM-SINE 2 3 6 12 OVERLAP-TEXTURE
-
-( INTERRUPTING FORTH )
-
-\ SIGINT is caught and the next VM operation will raise an error.
-
-: ENDLESS INF 0 DO S" MSG: " TYPE I . CR 0.1 PAUSE LOOP ;
-ENDLESS
-
-\ To send SIGINT from EMACS type C-cC-i
 
 ( FORK FORTH )
 
@@ -358,6 +366,8 @@ KILL . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
 
 ' + . \ XT:+ \ ' = 6.1.0070 \
 ' + 1 2 ROT EXECUTE . \ 3 \
+
+\ Words can be somewhat higher order.
 
 : SIG 1 50 20 REMOVE-SYNTH XLINE.KR 0 IMPULSE.AR 0.01 0.2 DECAY2 600 0 FSINOSC.AR 0.25 * * ;
 : CMB 0.1 0.1 1 COMBN ;
@@ -398,6 +408,8 @@ MISTYPED-WORD \ ERROR
 440 0 SINOSC.AR PAUSE \ ERROR (NON-CONSTANT)
 
 : _ WHITENOISE.AR 0 DO I . LOOP ; _ \ THIS _SHOULD_ BE A NON-CONSTANT ERROR
+
+0 1 2 3 4 4 MCE OUT.KR PP \ THIS _SHOULD_ ADD THE MCE CONSTRUCTOR TO THE MCE INPUT
 
 VMSTAT \ PRINT VM STATUS
 2 TRACE \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
