@@ -1,7 +1,7 @@
 FORTH SUPERCOLLIDER
 -------------------
 
-`HSC3-FORTH` is a simple-minded [FORTH][forth] interpreter.
+`HSC3-FORTH` is a simple [FORTH][forth] interpreter.
 
 The only data type is the [SUPERCOLLIDER][sc3] `UNIT GENERATOR`.
 
@@ -19,9 +19,9 @@ A FORTH answer to the eternal question,
 
 [img]: sw/hsc3-graphs/svg/why-supercollider.svg
 
-There is an `HSC3-FORTH` [EMACS][emacs] mode, a derivative of [FORTH-MODE][gforth].
+There is an HSC3-FORTH [EMACS][emacs] mode, a derivative of [FORTH-MODE][gforth].
 
-To build type:
+There are no binaries, to build type:
 
 ~~~~
 cd hs ; prefix=~/opt make install
@@ -33,25 +33,27 @@ To hear the above type `C-cC-r` in EMACS, or in a shell type:
 hsc3-forth < ~/sw/hsc3-graphs/gr/why-supercollider.fs
 ~~~~
 
-To quieten there is the forth word `STOP`.
+To quieten there is the word `STOP`.
 
-There is a rather terse [tutorial](?t=hsc3-forth&e=help/tutorial.fs),
-and [translations](?t=hsc3-forth&e=help/jmcc.fs) of graphs by [James
-McCartney](http://audiosynth.com/autobio/emu.jpg) from the `SC2`
+There is a [TUTORIAL](?t=hsc3-forth&e=help/tutorial.fs), and
+[TRANSLATIONS](?t=hsc3-forth&e=help/jmcc.fs) of graphs by [JAMES
+MCCARTNEY](http://audiosynth.com/autobio/emu.jpg) from the `SC2`
 manual.
 
-`HSC3-FORTH` is CASE-INSENSITIVE, in EMACS you can type `C-x C-l` to
+HSC3-FORTH is `CASE-INSENSITIVE`, in EMACS you can type `C-xC-l` to
 time travel.
 
-It follows the [HASKELL][hs] supercollider ([HSC3][hsc3]) rules.
+It follows the [HASKELL][hs] SUPERCOLLIDER ([HSC3][hsc3]) rules.
 
-It is very partial.
-
-It is known to work as far as the translated graphs at
-[HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
+<!--
+It is very partial, it is known to work as far as the translated
+graphs at [HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
 [INDEX](?t=hsc3-graphs&e=md/ix.md).
 
-It is for AG and SD, for the obvious reasons.
+It is for [AG](http://www.alexandergarsden.com/) and
+[SD](http://www.samueldunscombe.com/), for the [OBVIOUS
+REASONS](http://forthimpact.bandcamp.com/).
+-->
 
 © [RD][rd], 2014, [gpl][gpl].
 

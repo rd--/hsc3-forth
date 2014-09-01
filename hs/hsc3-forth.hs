@@ -164,7 +164,7 @@ ugen_dict =
     [("clone",pop_int "CLONE" >>= \n -> pop >>= \u -> incr_uid >>= \z -> push (uclone z n u))
     ,("draw",pop >>= \u -> fw_assert_empty >> liftIO (draw (out 0 u)))
     ,("mce",pop_int "MCE" >>= \n -> pop_n n >>= push . mce . reverse)
-    ,("mix",pop >>= push . mix)
+    ,("mix",pop >>= push . mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...
     ,("mrg",pop_int "MRG" >>= \n -> pop_n n >>= push . mrg . reverse)
     ,("play-at",fw_play_at)
     ,("sched",pop_double "SCHED" >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
