@@ -49,10 +49,12 @@ It follows the [HASKELL][hs] SUPERCOLLIDER ([HSC3][hsc3]) rules.
 It is very partial, it is known to work as far as the translated
 graphs at [HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
 [INDEX](?t=hsc3-graphs&e=md/ix.md).
+-->
 
-It is for [AG](http://www.alexandergarsden.com/) and
-[SD](http://www.samueldunscombe.com/), for the [OBVIOUS
-REASONS](http://forthimpact.bandcamp.com/).
+HSC3-FORTH is for [FORTH IMPACT](http://forthimpact.bandcamp.com/).
+
+<!--
+([AG](http://www.alexandergarsden.com/) and [SD](http://www.samueldunscombe.com/)
 -->
 
 © [RD][rd], 2014, [gpl][gpl].
