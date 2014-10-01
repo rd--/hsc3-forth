@@ -21,10 +21,17 @@ A FORTH answer to the eternal question,
 
 There is an HSC3-FORTH [EMACS][emacs] mode, a derivative of [FORTH-MODE][gforth].
 
-There are no binaries, to build type:
+There is an OSX (10.9.3) binary ([hsc3-forth](sw/hsc3-forth/osx/hsc3-forth.xz).[xz](http://tukaani.org/xz/)),
+or to build type:
 
 ~~~~
 cd hs ; prefix=~/opt make install
+~~~~
+
+An environment variable locates the HSC3-FORTH library files:
+
+~~~~
+export HSC3_FORTH_DIR=$HOME/sw/hsc3-forth/fs
 ~~~~
 
 To hear the above type `C-cC-r` in EMACS, or in a shell type:
@@ -44,6 +51,8 @@ HSC3-FORTH is `CASE-INSENSITIVE`, in EMACS you can type `C-xC-l` to
 time travel.
 
 It follows the [HASKELL][hs] SUPERCOLLIDER ([HSC3][hsc3]) rules.
+
+It thinks `scsynth` is listening at the standard port (57110).
 
 <!--
 It is very partial, it is known to work as far as the translated
