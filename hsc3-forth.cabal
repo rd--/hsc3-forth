@@ -1,5 +1,5 @@
 Name:              hsc3-forth
-Version:           0.15
+Version:           0.16
 Synopsis:          FORTH SUPERCOLLIDER
 Description:       FORTH SUPERCOLLIDER
 License:           GPL
@@ -21,10 +21,10 @@ executable hsc3-forth
                    directory,
                    filepath,
                    hashable,
-                   hosc == 0.15.*,
-                   hsc3 == 0.15.*,
-                   hsc3-db == 0.15.*,
-                   hsc3-dot == 0.15.*,
+                   hosc == 0.16.*,
+                   hsc3 == 0.16.*,
+                   hsc3-db == 0.16.*,
+                   hsc3-dot == 0.16.*,
                    mtl,
                    unix
   hs-source-dirs:  hs
