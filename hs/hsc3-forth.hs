@@ -134,7 +134,7 @@ fw_play_at = do
   nid <- pop_int "PLAY-AT: NID"
   u <- pop
   fw_assert_empty
-  liftIO (audition_at (nid,toEnum act,grp) u)
+  liftIO (audition_at (nid,toEnum act,grp,[]) u)
 
 fw_pretty_print :: U_Forth ()
 fw_pretty_print = do
@@ -197,6 +197,6 @@ main = do
       vm = (empty_vm 0 parse_constant sig) {dynamic = Just gen_plain
                                            ,dict = d
                                            ,input_port = Just stdin}
-      init_f = load_files ["stdlib.fs","hsc3.fs","overlap-texture.fs"]
+      init_f = load_files ["stdlib.fs","hsc3.fs","overlap-texture.fs","sapf.fs"]
   putStrLn "HSC3-FORTH"
   repl vm init_f

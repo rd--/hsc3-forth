@@ -12,6 +12,10 @@
 : epsilon 1e-8 ; \ Psuedo epsilon (instead of zero in EXP contexts)
 : pi 3.141592653589793 ;
 
+\ MATH
+
+: exp2 2 swap ** ;
+
 \ ABBREVIATIONS
 
 : mce2 2 mce ;
