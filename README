@@ -6,7 +6,7 @@ FORTH SUPERCOLLIDER
 The only data type is the [SUPERCOLLIDER][sc3] `UNIT GENERATOR`.
 
 A FORTH answer to the eternal question,
-[WHY SUPERCOLLIDER?](sw/hsc3-graphs/html/why-supercollider.scd.html)
+[WHY SUPERCOLLIDER?](?t=hsc3-graphs&e=gr/why-supercollider.scd)
 
 ~~~~
 : RVB 5 0 DO 0.05 0 0.05 RAND.IR 2 CLONE 1 ALLPASSN LOOP ; 0.2 DUST.AR
