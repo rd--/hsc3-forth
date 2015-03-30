@@ -67,10 +67,11 @@ HSC3-FORTH is for [FORTH IMPACT](http://forthimpact.bandcamp.com/).
 -->
 
 initial announcement:
-[[bham](http://www.listarc.bham.ac.uk/lists/sc-users/msg42055.html),
- [gmane](http://article.gmane.org/gmane.comp.lang.haskell.art/1025)]
+[[gmane](http://article.gmane.org/gmane.comp.lang.haskell.art/1025)]
 
-© [RD][rd], 2014, [gpl][gpl].
+<!-- [bham](http://www.listarc.bham.ac.uk/lists/sc-users/msg42055.html) -->
+
+© [RD][rd], 2014-2015, [gpl][gpl].
 
 [rd]: http://rd.slavepianos.org/
 [hsc3]: ?t=hsc3
