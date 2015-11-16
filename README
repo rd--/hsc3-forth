@@ -25,7 +25,7 @@ There is an OSX (10.9.3) binary ([hsc3-forth](sw/hsc3-forth/osx/hsc3-forth.xz).[
 or to build type:
 
 ~~~~
-cd hs ; prefix=~/opt make install
+cd ~/sw/hsc3-forth/hs ; prefix=~/opt make install
 ~~~~
 
 An environment variable locates the HSC3-FORTH library files:
@@ -50,12 +50,12 @@ manual.
 HSC3-FORTH is `CASE-INSENSITIVE`, in EMACS you can type `C-xC-l` to
 time travel.
 
-It follows the [HASKELL][hs] SUPERCOLLIDER ([HSC3][hsc3]) rules.
+HSC3-FORTH follows the [HASKELL][hs] SUPERCOLLIDER ([HSC3][hsc3]) rules.
 
-It thinks `scsynth` is listening at the standard port (57110).
+HSC3-FORTH thinks `scsynth` is listening at the standard port (57110).
 
 <!--
-It is very partial, it is known to work as far as the translated
+HSC3-FORTH is partial, it is known to work as far as the translated
 graphs at [HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
 [INDEX](?t=hsc3-graphs&e=md/ix.md).
 -->
@@ -67,7 +67,8 @@ HSC3-FORTH is for [FORTH IMPACT](http://forthimpact.bandcamp.com/).
 -->
 
 initial announcement:
-[[gmane](http://article.gmane.org/gmane.comp.lang.haskell.art/1025)]
+[[gmane](http://article.gmane.org/gmane.comp.lang.haskell.art/1025),
+ [local](?t=hsc3-forth&e=help/announce.text)]
 2014-10-15 04:52:53 GMT
 
 <!-- [bham](http://www.listarc.bham.ac.uk/lists/sc-users/msg42055.html) -->
