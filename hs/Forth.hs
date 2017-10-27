@@ -219,7 +219,7 @@ popc :: Forth w a (CC w a)
 popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
 
 -- | ( id len -- )
-pop_string :: Forth_Type a => String -> Forth w a String
+pop_string :: String -> Forth w a String
 pop_string msg = do
   vm <- get_vm
   case stack vm of
@@ -538,7 +538,7 @@ fw_s_quote_compiler = do
 fw_s_quote_interpet :: Forth_Type a => Forth w a ()
 fw_s_quote_interpet = scan_until (== '"') >>=  push_str
 
-fw_type :: Forth_Type a => Forth w a ()
+fw_type :: Forth w a ()
 fw_type = pop_string "TYPE" >>= write
 
 -- * Forth words

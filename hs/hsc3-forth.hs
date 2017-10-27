@@ -10,7 +10,7 @@ import System.IO {- base -}
 
 import Sound.OSC {- hosc -}
 import Sound.SC3 {- hsc3 -}
-import Sound.SC3.Common {- hsc3 -}
+import Sound.SC3.Common.Prelude {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
 
@@ -113,14 +113,14 @@ sched t u =
         b1 = bundle t [s_new nm (-1) AddToHead 1 []]
     in withSC3 (sendBundle b0 >> sendBundle b1)
 
-fw_help :: Forth_Type a => Forth w a ()
+fw_help :: Forth w a ()
 fw_help = do
   (nm,_) <- ugen_sep =<< pop_string "HELP: NAME"
   case DB.ugenSummary' CI nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
 
-fw_manual :: Forth_Type a => Forth w a ()
+fw_manual :: Forth w a ()
 fw_manual = do
   (nm,_) <- ugen_sep =<< pop_string "MANUAL: NAME"
   case DB.uLookup CI nm of

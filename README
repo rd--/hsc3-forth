@@ -1,9 +1,9 @@
 FORTH SUPERCOLLIDER
 -------------------
 
-`HSC3-FORTH` is a simple [FORTH][forth] interpreter.
+`HSC3-FORTH` is a simple [FORTH](http://www.forth.org/) interpreter.
 
-The only data type is the [SUPERCOLLIDER][sc3] `UNIT GENERATOR`.
+The only data type is the [SUPERCOLLIDER](http://audiosynth.com/) `UNIT GENERATOR`.
 
 A FORTH answer to the eternal question,
 [WHY SUPERCOLLIDER?](?t=hsc3-graphs&e=gr/why-supercollider.scd)
@@ -15,13 +15,13 @@ A FORTH answer to the eternal question,
 0.2 * + PLAY
 ~~~~
 
-[![][img]][img]
+![](sw/hsc3-graphs/svg/why-supercollider.svg)
 
-[img]: sw/hsc3-graphs/svg/why-supercollider.svg
+There is an HSC3-FORTH [EMACS](http://www.gnu.org/software/emacs/) mode,
+a derivative of [FORTH-MODE](http://www.gnu.org/software/gforth/).
 
-There is an HSC3-FORTH [EMACS][emacs] mode, a derivative of [FORTH-MODE][gforth].
-
-There is an OSX (10.9.3) binary ([hsc3-forth](sw/hsc3-forth/osx/hsc3-forth.xz).[xz](http://tukaani.org/xz/)),
+There is an OSX (10.9.3) binary
+([hsc3-forth](sw/hsc3-forth/osx/hsc3-forth.xz).[xz](http://tukaani.org/xz/)),
 or to build type:
 
 ~~~~
@@ -50,7 +50,7 @@ manual.
 HSC3-FORTH is `CASE-INSENSITIVE`, in EMACS you can type `C-xC-l` to
 time travel.
 
-HSC3-FORTH follows the [HASKELL][hs] SUPERCOLLIDER ([HSC3][hsc3]) rules.
+HSC3-FORTH follows the [HASKELL](http://haskell.org/) SUPERCOLLIDER ([HSC3](?t=hsc3)) rules.
 
 HSC3-FORTH thinks `scsynth` is listening at the standard port (57110).
 
@@ -73,13 +73,4 @@ initial announcement:
 
 <!-- [bham](http://www.listarc.bham.ac.uk/lists/sc-users/msg42055.html) -->
 
-© [RD][rd], 2014-2015, [gpl][gpl].
-
-[rd]: http://rd.slavepianos.org/
-[hsc3]: ?t=hsc3
-[hs]: http://haskell.org/
-[sc3]: http://audiosynth.com/
-[forth]: http://www.forth.org/
-[gpl]: http://gnu.org/copyleft/
-[gforth]: http://www.gnu.org/software/gforth/
-[emacs]: http://www.gnu.org/software/emacs/
+© [RD](http://rd.slavepianos.org/), 2014-2017, [gpl](http://gnu.org/copyleft/).
