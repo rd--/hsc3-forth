@@ -10,9 +10,10 @@ import System.IO {- base -}
 
 import Sound.OSC {- hosc -}
 import Sound.SC3 {- hsc3 -}
-import Sound.SC3.Common.Prelude {- hsc3 -}
+import Sound.SC3.Common.Base {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
+import Sound.SC3.UGen.Protect {- hsc3 -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
@@ -116,7 +117,7 @@ sched t u =
 fw_help :: Forth w a ()
 fw_help = do
   (nm,_) <- ugen_sep =<< pop_string "HELP: NAME"
-  case DB.ugenSummary' CI nm of
+  case DB.ugenSummary_maybe CI nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just h -> liftIO (putStrLn h)
 
