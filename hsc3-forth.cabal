@@ -1,5 +1,5 @@
 Name:              hsc3-forth
-Version:           0.17
+Version:           0.18
 Synopsis:          FORTH SUPERCOLLIDER
 Description:       FORTH SUPERCOLLIDER
 License:           GPL
@@ -9,22 +9,22 @@ Author:            Rohan Drape
 Maintainer:        rd@rohandrape.net
 Stability:         Experimental
 Homepage:          http://rohandrape.net/t/hsc3-forth
-Tested-With:       GHC == 8.2.2
+Tested-With:       GHC == 8.4.3
 Build-Type:        Simple
 Cabal-Version:     >= 1.8
 
 Data-files:        README
 
 executable hsc3-forth
-  build-depends:   base >= 4.8,
+  build-depends:   base >= 4.8 && < 5,
                    containers,
                    directory,
                    filepath,
                    hashable,
-                   hosc == 0.17.*,
-                   hsc3 == 0.17.*,
-                   hsc3-db == 0.17.*,
-                   hsc3-dot == 0.17.*,
+                   hosc == 0.18.*,
+                   hsc3 == 0.18.*,
+                   hsc3-db == 0.18.*,
+                   hsc3-dot == 0.18.*,
                    mtl,
                    unix
   hs-source-dirs:  hs

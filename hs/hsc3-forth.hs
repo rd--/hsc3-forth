@@ -100,7 +100,7 @@ gen_plain w = do
   i <- fmap reverse (pop_n inp)
   let nc'' = fromMaybe (length (mceChannels (last i))) nc'
   let rt' = fromMaybe (maximum (map rateOf i)) rt
-      i' = (if DB.ugen_std_mce u then halt_mce_transform else id) i
+      i' = (if DB.ugen_std_mce u  > 0 then halt_mce_transform else id) i
   push (ugen_optimise_const_operator (mk_plain rt' (DB.ugen_name u) i' nc'' sp' z))
 
 gen_nm :: UGen -> String
