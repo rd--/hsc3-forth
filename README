@@ -6,7 +6,7 @@ FORTH SUPERCOLLIDER
 The only data type is the [SUPERCOLLIDER](http://audiosynth.com/) `UNIT GENERATOR`.
 
 A FORTH answer to the eternal question,
-[WHY SUPERCOLLIDER?](?t=hsc3-graphs&e=gr/why-supercollider.scd)
+[WHY SUPERCOLLIDER?](?t=hsc3-graphs&e=gr/jmcc/why-supercollider.scd)
 
 ~~~~
 : RVB 5 0 DO 0.05 0 0.05 RAND.IR 2 CLONE 1 ALLPASSN LOOP ; 0.2 DUST.AR
@@ -15,7 +15,7 @@ A FORTH answer to the eternal question,
 0.2 * + PLAY
 ~~~~
 
-![](sw/hsc3-graphs/svg/why-supercollider.svg)
+<!-- ![](sw/hsc3-graphs/svg/why-supercollider.svg) -->
 
 There is an HSC3-FORTH [EMACS](http://www.gnu.org/software/emacs/) mode,
 a derivative of [FORTH-MODE](http://www.gnu.org/software/gforth/).
@@ -37,15 +37,16 @@ export HSC3_FORTH_DIR=$HOME/sw/hsc3-forth/fs
 To hear the above type `C-cC-r` in EMACS, or in a shell type:
 
 ~~~~
-hsc3-forth < ~/sw/hsc3-graphs/gr/why-supercollider.fs
+hsc3-forth < ~/sw/hsc3-graphs/gr/jmcc/why-supercollider.fs
 ~~~~
 
 To quieten there is the word `STOP`.
 
-There is a [TUTORIAL](?t=hsc3-forth&e=help/tutorial.fs), and
-[TRANSLATIONS](?t=hsc3-forth&e=help/jmcc.fs) of graphs by [JAMES
-MCCARTNEY](http://audiosynth.com/autobio/emu.jpg) from the `SC2`
-manual.
+There is a
+[TUTORIAL](?t=hsc3-forth&e=help/tutorial.fs), and
+[TRANSLATIONS](?t=hsc3-forth&e=help/jmcc.fs) of graphs by
+JAMES MCCARTNEY <!-- (http://audiosynth.com/autobio/emu.jpg) -->
+from the `SC2` manual.
 
 HSC3-FORTH is `CASE-INSENSITIVE`, in EMACS you can type `C-xC-l` to
 time travel.
@@ -60,20 +61,20 @@ graphs at [HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
 [INDEX](?t=hsc3-graphs&e=md/ix.md).
 -->
 
-HSC3-FORTH is for [FORTH IMPACT](http://forthimpact.bandcamp.com/).
+<!-- HSC3-FORTH is for [FORTH IMPACT](http://forthimpact.bandcamp.com/). -->
 
 <!--
 ([AG](http://www.alexandergarsden.com/) and [SD](http://www.samueldunscombe.com/)
 -->
 
 initial announcement:
-[[haskell-art](https://lurk.org/groups/haskell-art/messages/topic/znDbu2Xon6WryqsEvlaZf/),
- [local](?t=hsc3-forth&e=help/announce.text)]
+[[local](?t=hsc3-forth&e=help/announce.text)]
 2014-10-15 04:52:53 GMT
 
 <!--
+[haskell-art](https://lurk.org/groups/haskell-art/messages/topic/znDbu2Xon6WryqsEvlaZf/),
 [gmane](http://article.gmane.org/gmane.comp.lang.haskell.art/1025),
 [bham](http://www.listarc.bham.ac.uk/lists/sc-users/msg42055.html)
 -->
 
-© [RD](http://rohandrape.net/), 2014-2018, [gpl](http://gnu.org/copyleft/).
+© [RD](http://rohandrape.net/), 2014-2019, [gpl](http://gnu.org/copyleft/).

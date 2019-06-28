@@ -8,3 +8,6 @@ push-rd:
 
 pull-rd:
 	darcs pull -a http://rohandrape.net/sw/hsc3-forth
+
+get-forth-mode:
+	wget http://git.savannah.gnu.org/cgit/gforth.git/plain/gforth.el

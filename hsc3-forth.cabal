@@ -4,7 +4,7 @@ Synopsis:          FORTH SUPERCOLLIDER
 Description:       FORTH SUPERCOLLIDER
 License:           GPL
 Category:          Sound
-Copyright:         (c) Rohan Drape, 2014-2018
+Copyright:         (c) Rohan Drape, 2014-2019
 Author:            Rohan Drape
 Maintainer:        rd@rohandrape.net
 Stability:         Experimental
@@ -25,9 +25,12 @@ executable hsc3-forth
                    hsc3 == 0.18.*,
                    hsc3-db == 0.18.*,
                    hsc3-dot == 0.18.*,
+                   hsc3-lang == 0.18.*,
+                   hsc3-rw == 0.18.*,
                    mtl,
                    unix
   hs-source-dirs:  hs
+  other-modules:   Forth
   main-is:         hsc3-forth.hs
   ghc-options:     -Wall -fno-warn-orphans -fwarn-tabs
 

@@ -13,7 +13,10 @@ import Sound.SC3 {- hsc3 -}
 import Sound.SC3.Common.Base {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
-import Sound.SC3.UGen.Protect {- hsc3 -}
+
+import Sound.SC3.UGen.Protect {- hsc3-rw -}
+
+import Sound.SC3.Lang.Help {- hsc3-lang -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
@@ -119,7 +122,7 @@ fw_help = do
   (nm,_) <- ugen_sep =<< pop_string "HELP: NAME"
   case DB.ugenSummary_maybe CI nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
-    Just h -> liftIO (putStrLn h)
+    Just (_,h) -> liftIO (putStrLn h)
 
 fw_manual :: Forth w a ()
 fw_manual = do
@@ -162,7 +165,7 @@ fw_async = do
 ugen_dict :: Dict Int UGen
 ugen_dict =
     M.fromList $ map (\(nm,en) -> (map toLower nm,en))
-    [("clone",pop_int "CLONE" >>= \n -> pop >>= \u -> incr_uid >>= \z -> push (uclone z n u))
+    [("clone",pop_int "CLONE" >>= \n -> pop >>= \u -> incr_uid >>= \z -> push (uclone_all z n u))
     ,("draw",pop >>= \u -> fw_assert_empty >> liftIO (draw (out 0 u)))
     ,("mce",pop_int "MCE" >>= \n -> pop_n n >>= push . mce . reverse)
     ,("mix",pop >>= push . mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...

@@ -352,11 +352,11 @@ KILLALL
 
 ( INCLUSIVE FORTH )
 
-s" /home/rohan/sw/hsc3-graphs/gr/why-supercollider.fs" INCLUDED
+s" /home/rohan/sw/hsc3-graphs/gr/jmcc/why-supercollider.fs" INCLUDED
 
 \ If the file is a process we can FORK INCLUDED, with the normal FORK stack rules.
 
-s" /home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs" FORK INCLUDED .S
+s" /home/rohan/sw/hsc3-graphs/gr/jmcc/alien-meadow.fs" FORK INCLUDED .S
 KILL . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/alien-meadow.fs"
 
 ( QUOTING FORTH )
