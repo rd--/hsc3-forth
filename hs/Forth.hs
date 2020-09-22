@@ -82,7 +82,7 @@ data VM w a =
        ,dynamic :: Maybe (String -> Forth w a ()) -- ^ Dynamic post-dictionary lookup.
        ,input_port :: Maybe Handle
        ,tracing :: Int
-       ,sigint :: MVar Bool -- ^ True is a SIGINT signal (user interrupt) has been received.
+       ,sigint :: MVar Bool -- ^ True if a SIGINT signal (user interrupt) has been received.
        }
 
 instance Forth_Type a => Show (VM w a) where
