@@ -80,8 +80,8 @@ get_nc u nc =
                    Just _ -> return Nothing
                    Nothing -> fmap Just (pop_int "GET_NC")
 
--- > fmap ugen_io (DB.uLookup CI "DSEQ")
--- > fmap ugen_io (DB.uLookup CI "DEMAND")
+-- > fmap ugen_io (DB.u_lookup CI "DSEQ")
+-- > fmap ugen_io (DB.u_lookup CI "DEMAND")
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
 
@@ -92,7 +92,7 @@ gen_plain w = do
                    Nothing -> resolve_operator CI nm
                    _ -> (nm,Nothing)
       sp' = Special (fromMaybe 0 sp)
-  u <- case DB.uLookup CI nm' of
+  u <- case DB.u_lookup CI nm' of
          Nothing -> throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ tick_quotes nm')
          Just r -> return r
   when (isNothing rt && isNothing (DB.ugen_filter u))
@@ -120,14 +120,14 @@ sched t u =
 fw_help :: Forth w a ()
 fw_help = do
   (nm,_) <- ugen_sep =<< pop_string "HELP: NAME"
-  case DB.ugenSummary_maybe CI nm of
+  case DB.ugen_summary_maybe CI nm of
     Nothing -> throw_error ("?: NO HELP: " ++ nm)
     Just (_,h) -> liftIO (putStrLn h)
 
 fw_manual :: Forth w a ()
 fw_manual = do
   (nm,_) <- ugen_sep =<< pop_string "MANUAL: NAME"
-  case DB.uLookup CI nm of
+  case DB.u_lookup CI nm of
     Nothing -> throw_error ("MANUAL: NO ENTRY: " ++ nm)
     Just u -> liftIO (viewSC3Help (DB.ugen_name u))
 
