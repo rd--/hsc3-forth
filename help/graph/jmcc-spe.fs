@@ -5,4 +5,3 @@
 9 0 Impulse.kr 0 inf seq Dseq.dr Demand.kr 32 + MIDICPS
 0 LFSaw.ar 9 0 Impulse.kr env * 1 LFNoise1.kr
 36 * 110 + MIDICPS 0.1 RLPF ra
-play

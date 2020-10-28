@@ -5,4 +5,3 @@
 : d 1 50 100 t TRand.kr 0 15 t TRand.kr + 7 - 50 120 Fold MIDICPS / ;
 : sw WhiteNoise.ar 0.008 * 0.01 d d 1000 * CombC -1 1 t TRand.kr e Pan2 mix ;
 sw
-play

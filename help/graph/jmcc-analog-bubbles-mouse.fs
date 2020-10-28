@@ -6,4 +6,3 @@
 MIDICPS ( convert to frequency )
 0 SinOsc.ar 0.04 *
 0.2 0.2 4 CombN ( echoing sine wave )
-play

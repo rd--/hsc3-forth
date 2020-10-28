@@ -15,4 +15,3 @@
 ;
 : mp 0 n 0 do nd + loop ;
 mp
-play

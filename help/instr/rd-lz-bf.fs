@@ -5,4 +5,4 @@
 : p 0 l 24 * 0 BufRateScale.kr * 0 0 BufFrames.kr 0 Phasor.ar ;
 0 s" /home/rohan/data/audio/pf-c5.aif" 0 0 b_allocRead
 0 p no-loop 4 1 BufRd.ar
-play
+

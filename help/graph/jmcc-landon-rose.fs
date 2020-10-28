@@ -9,4 +9,3 @@
 : k { p z e } PinkNoise.ar 2 clone 0.001 * e * 1 0 1 p klank.ar z + ;
 : lr 4 0 do 0.125 i 0.5 * pi * SinOsc.ar Abs k loop ;
 param 0 lr
-play

@@ -28,6 +28,7 @@ executable hsc3-forth
                    hsc3-lang == 0.19.*,
                    hsc3-rw == 0.19.*,
                    mtl,
+                   process,
                    unix
   hs-source-dirs:  hs
   other-modules:   Forth

@@ -8,4 +8,3 @@ MIDICPS 2 mce Demand.kr ( f )
 dup 0 0.7 2 mce + 0 SinOsc.ar ( o1 )
 swap 0 0.7 2 mce + Saw.ar 0.3 * ( o2 )
 + Distort Log Distort Cubed 0.1 *
-play

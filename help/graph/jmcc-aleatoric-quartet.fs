@@ -8,4 +8,3 @@
 : rapf 0.05 0 0.05 Rand.ir 2 clone 1 AllpassN ;
 : aq mk_s 4 clone mix 5 0 do rapf loop 0.995 LeakDC ;
 aq
-play

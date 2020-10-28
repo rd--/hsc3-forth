@@ -33,4 +33,3 @@
     8 mce Dseq.dr
 ;
 1 8 / 0 do-nothing 1 a_seq Dseq.dr 0 TDuty.ar drum drone +
-play

@@ -5,4 +5,3 @@
 : c 0.6 * 0.06 0 0.3 rand.ir lfnoise1.kr 0.025 * 0.035 + 1 combl ;
 : y z 0.6 * ;
 y c mix y c mix 2 mce z +
-play

@@ -3,4 +3,3 @@
 400 600 2 mce Trunc 1 -1 2 mce * ( lfs_t )
 mix 0.98 OnePole ( f )
 0 SinOsc.ar 0 0.05 Pan2
-play

@@ -4,4 +4,3 @@
 0.046 0.048 DelayN
 0.1 0 0.1 Rand.ir LFNoise1.kr 0.04 * 0.05 + 15 CombL 7 clone mix
 rvb 0.2 * +
-play

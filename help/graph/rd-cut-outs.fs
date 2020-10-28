@@ -11,4 +11,3 @@
 0 1 In.kr s swap Clip2 0.25 *
 0 b Out.kr
 2 mrg
-play

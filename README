@@ -36,7 +36,7 @@ export HSC3_FORTH_DIR=$HOME/sw/hsc3-forth/fs
 To hear the above type `C-cC-r` in emacs, or in a shell type:
 
 ~~~~
-hsc3-forth < ~/sw/hsc3-graphs/gr/jmcc/why-supercollider.fs
+hsc3-forth < ~/sw/hsc3-forth/help/graph/jmcc-why-supercollider.fs
 ~~~~
 
 To quieten there is the word `stop`.

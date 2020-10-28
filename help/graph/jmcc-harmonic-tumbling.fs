@@ -7,4 +7,3 @@
     f h 1 + * 0 FSinOsc.ar * ;
 : ht 0 p 0 do i o + loop ;
 ht
-play

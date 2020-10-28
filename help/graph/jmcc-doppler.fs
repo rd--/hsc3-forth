@@ -3,4 +3,3 @@
 200 0 FSinOsc.ar 31.3 0 0.4 LFPulse.ar * 400 0.3 RLPF
 0.31977 10 l Cos * 75 l Sin * Hypot 344 / DelayL
 40 10 l Cos * 75 l Sin * Hypot Squared / *
-play

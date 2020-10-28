@@ -20,9 +20,9 @@
 \   > -- Start hsc3-forth if not running, show interpreter frame
 \   c -- Send current line
 \   d -- Send current region
-\   g -- Send <point> DRAW
-\   e -- Send <point> PP
-\   a -- Send <point> PLAY
+\   g -- Send DRAW
+\   e -- Send PP
+\   a -- Send PLAY
 \   u -- Send <point> ?
 \   j -- Send <point> MANUAL
 \   k -- Send STOP
@@ -48,7 +48,9 @@ S" EnvGen" ?
 \ EnvGen [KR,AR] gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
 \     MCE, REORDERS INPUTS: [5,0,1,2,3,4,5], ENUMERATION INPUTS: 4=DoneAction, 5=Envelope UGen
 
-\ Manual opens the SuperCollider manual at the required page, in emacs type C-cC-j.
+\ MANUAL opens the SuperCollider manual at the required page, in emacs type C-cC-j.
+
+\ DPANS opens the DPANS glossary at the indicated entry, in emacs type C-cC-f
 
 ( Discarding Forth )
 
@@ -91,7 +93,7 @@ S" EnvGen" ?
 \ SC3 treats signals less than or equal to zero as False and greater than zero as True.
 \ hsc3-forth adopts 1 as True.
 
-0 1 = . \ FALSE \ = = 6.1.0530, FALSE = 6.2.1485 \
+0 1 = . \ FALSE \ = = 6.1.0530 FALSE = 6.2.1485 \
 1 1 = . \ TRUE \ TRUE = 6.2.2298 \
 
 ( Ord Forth )
@@ -109,7 +111,7 @@ S" EnvGen" ?
 ( Stack Forth )
 
 1 2 DROP . \ 1 \ DROP = 6.1.1260 \
-1 2 .S OVER .S DROP DROP DROP .S \ <2> 1 2 <3> 1 2 1 <0> \ OVER = 6.1.1990, .S = 6.1.0220 \
+1 2 .S OVER .S DROP DROP DROP .S \ <2> 1 2 <3> 1 2 1 <0> \ OVER = 6.1.1990 .S = 15.6.1.0220 \
 1 2 .S SWAP .S DROP DROP .S \ <2> 1 2 <2> 2 1 <0> \ SWAP = 6.1.2260 \
 1 2 3 .S ROT .S DROP DROP DROP .S \ <3> 1 2 3 <3> 2 3 1 <0> \ ROT = 6.1.2160 \
 1 2 .S NIP .S DROP .S \ <2> 1 2 <1> 2 <0> \ NIP = 6.2.1930 \

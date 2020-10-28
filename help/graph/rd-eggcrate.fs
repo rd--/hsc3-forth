@@ -8,4 +8,3 @@
 : amp x -1 1 0 0.1 LinLin ;
 : eggcrate freq 0 SinOsc.ar mix y amp Pan2.ar ;
 eggcrate
-play

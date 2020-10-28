@@ -20,15 +20,19 @@
     (hsc3-forth-send
      (if post (format "%s %s" word p-q) (format "%s %s" p-q word)))))
 
-(defun hsc3-forth-bye () "BYE." (interactive) (hsc3-forth-send "bye"))
+(defun hsc3-forth-bye () "BYE" (interactive) (hsc3-forth-send "bye"))
 (defun hsc3-forth-stop () "STOP" (interactive) (hsc3-forth-send "stop"))
 (defun hsc3-forth-sc3-status () "SC3-STATUS" (interactive) (hsc3-forth-send "sc3-status"))
 (defun hsc3-forth-killall () "KILLALL" (interactive) (hsc3-forth-send "killall"))
 (defun hsc3-forth-help () "<word> ?" (interactive) (hsc3-forth-point "?" nil t))
 (defun hsc3-forth-manual () "<word> MANUAL" (interactive) (hsc3-forth-point "manual" nil t))
-(defun hsc3-forth-play () "<word> PLAY" (interactive) (hsc3-forth-point "play" nil nil))
-(defun hsc3-forth-draw () "<word> DRAW" (interactive) (hsc3-forth-point "draw" nil nil))
-(defun hsc3-forth-pp () "<word> PP" (interactive) (hsc3-forth-point "pp" nil nil))
+(defun hsc3-forth-dpans () "<word> DPANS" (interactive) (hsc3-forth-point "dpans" nil t))
+(defun hsc3-forth-play-word () "<word> PLAY" (interactive) (hsc3-forth-point "play" nil nil))
+(defun hsc3-forth-draw-word () "<word> DRAW" (interactive) (hsc3-forth-point "draw" nil nil))
+(defun hsc3-forth-pp-word () "<word> PP" (interactive) (hsc3-forth-point "pp" nil nil))
+(defun hsc3-forth-play () "PLAY" (interactive) (hsc3-forth-send "play"))
+(defun hsc3-forth-draw () "DRAW" (interactive) (hsc3-forth-send "draw"))
+(defun hsc3-forth-pp () "PP" (interactive) (hsc3-forth-send "pp"))
 
 (defun hsc3-forth-included ()
   "INCLUDED"
@@ -78,6 +82,7 @@
   (define-key map [?\C-c ?\C-i] 'hsc3-forth-interrupt)
   (define-key map [?\C-c ?\C-q] 'hsc3-forth-bye)
   (define-key map [?\C-c ?\C-j] 'hsc3-forth-manual)
+  (define-key map [?\C-c ?\C-f] 'hsc3-forth-dpans)
   (define-key map [?\C-c ?\C-u] 'hsc3-forth-help))
 
 (defun hsc3-forth-mode-menu (map)

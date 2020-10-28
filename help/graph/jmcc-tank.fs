@@ -10,4 +10,3 @@
     0.995 LeakDC + dup LocalOut 2 mrg ;
 : tank bang pling 8 clone Mix + 4 0 do rallpass loop tank-f ;
 tank
-play

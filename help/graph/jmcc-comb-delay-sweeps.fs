@@ -6,4 +6,3 @@
 : w WhiteNoise.ar 0.005 * 0.01 ;
 : cds w 1 d d 4 0 Line.kr MIDICPS / 1 d MIDICPS / 1000 * CombC -1 1 t TRand.ir e Pan2 ;
 cds mix
-play

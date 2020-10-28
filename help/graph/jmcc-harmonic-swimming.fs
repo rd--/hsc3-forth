@@ -9,4 +9,3 @@
     f h 1 + * 0 FSinOsc.ar e * ;
 : hs 0 p 0 do i o + loop ;
 hs
-play

@@ -6,4 +6,3 @@
 ;
 nd 4 clone mix 0.4 LFNoise2.kr 90 * 620 + LFNoise2.ar
 0.3 LFNoise2.kr 0.15 * 0.18 + * + 0.3 0.3 3 CombL
-play

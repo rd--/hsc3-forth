@@ -11,4 +11,3 @@
 : b 1 0 0.2 0 0.2 0 0.2 0 8 mce isequ
     0.001 0.5 Decay2 100 0 FSinOsc.ar * 0.2 * ;
 c d + n + b +
-play

@@ -7,6 +7,8 @@ import Data.Hashable {- hash -}
 import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
 import System.IO {- base -}
+import System.Process {- process -}
+import Text.Printf {- base -}
 
 import Sound.OSC {- hosc -}
 import Sound.SC3 {- hsc3 -}
@@ -16,7 +18,7 @@ import Sound.SC3.UGen.PP {- hsc3 -}
 
 import Sound.SC3.UGen.Protect {- hsc3-rw -}
 
-import Sound.SC3.Lang.Help {- hsc3-lang -}
+import qualified Sound.SC3.Lang.Help as Help {- hsc3-lang -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
@@ -129,7 +131,17 @@ fw_manual = do
   (nm,_) <- ugen_sep =<< pop_string "MANUAL: NAME"
   case DB.u_lookup CI nm of
     Nothing -> throw_error ("MANUAL: NO ENTRY: " ++ nm)
-    Just u -> liftIO (viewSC3Help (DB.ugen_name u))
+    Just u -> liftIO (Help.viewSC3Help (DB.ugen_name u))
+
+dpans_id_to_url :: String -> String
+dpans_id_to_url dpans_id =
+  let dpans_sec = read (takeWhile isDigit dpans_id) :: Int
+  in printf "http://forth.sourceforge.net/std/dpans/dpans%d.htm#%s" dpans_sec dpans_id
+
+fw_dpans :: Forth w a ()
+fw_dpans = do
+  dpans_id <- pop_string "DPANS: ID"
+  liftIO (void (rawSystem "x-www-browser" [dpans_id_to_url dpans_id]))
 
 fw_play_at :: U_Forth ()
 fw_play_at = do
@@ -139,6 +151,14 @@ fw_play_at = do
   u <- pop
   fw_assert_empty
   liftIO (audition_at (nid,toEnum act,grp,[]) u)
+
+fw_write_synthdef :: U_Forth ()
+fw_write_synthdef = do
+  fn <- pop_string "WRITE-SYNTHDEF: FILE-NAME"
+  nm <- pop_string "WRITE-SYNTHDEF: SYNTHDEF-NAME"
+  u <- pop
+  fw_assert_empty
+  liftIO (synthdefWrite fn (synthdef nm (out (control KR "out" 0) u)))
 
 fw_pretty_print :: U_Forth ()
 fw_pretty_print = do
@@ -171,6 +191,7 @@ ugen_dict =
     ,("mix",pop >>= push . mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...
     ,("mrg",pop_int "MRG" >>= \n -> pop_n n >>= push . mrg . reverse)
     ,("play-at",fw_play_at)
+    ,("write-synthdef",fw_write_synthdef)
     ,("sched",pop_double "SCHED" >>= \t -> pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (withSC3 reset))
     ,("unmce",pop >>= push_l . mceChannels)
@@ -185,7 +206,8 @@ ugen_dict =
     ,("sc3-status",liftIO (withSC3 serverStatus >>= mapM_ putStrLn))
     ,("pretty-print",fw_pretty_print)
     ,("?",fw_help)
-    ,("manual",fw_manual)]
+    ,("manual",fw_manual)
+    ,("dpans",fw_dpans)]
 
 instance Forth_Type UGen where
     ty_show = ugen_concise_pp

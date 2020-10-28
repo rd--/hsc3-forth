@@ -10,4 +10,3 @@
 : strs scale 0 6 0 do swap i str + loop ;
 : gtr strs 12000 LPF.ar 0.995 LeakDC.ar ;
 gtr
-play

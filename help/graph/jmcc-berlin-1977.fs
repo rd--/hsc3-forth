@@ -16,4 +16,3 @@
 : sig freq pw pulse.ar amp * ;
 : berlin-1977 sig filt 0.15 rlpf 0.2 0.2 0.17 2 mce 1.5 combn ;
 berlin-1977
-play

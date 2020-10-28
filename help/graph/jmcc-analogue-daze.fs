@@ -15,4 +15,3 @@
 : echoed plain 0.375 0.375 5 CombN plain rev + 0.4 * ;
 : env 1 1 0 1 remove-synth 2 56 2 1 env-linen EnvGen.kr ;
 echoed env *
-play
