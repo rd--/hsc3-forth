@@ -1,4 +1,4 @@
-\ choip (jmcc) #10
+\ choip (jmcc) #10 overlap-texture=10,1,8
 : dup' 2 clone unmce ;
 : t 12 ;
 : xl ExpRand.ir dup' t do-nothing XLine.kr ;
@@ -9,5 +9,4 @@
     -1 1 Rand.ir dup' t do-nothing Line.kr { l }
     tr 0.01 0.5 xl * 0.01 0.2 Decay2 a * l 1 Pan2.ar ;
 : apf 4 0 do 0.1 0 0.05 Rand.ir 2 clone 4 AllpassN loop ;
-' apf texture-post-proc
-choip 10 1 8 inf overlap-texture
+choip apf
