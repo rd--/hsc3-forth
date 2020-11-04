@@ -1,4 +1,4 @@
-\ reverberated sine percussion (jmcc) #3 overlap-texture=10,10,2
+\ reverberated sine percussion (jmcc) #3 texture=overlap,10,10,2,inf
 : rsp { d c a }
   d 0 do 2 d / Dust.ar 50 * 200 0 3000 Rand.ir + 0.003 Resonz loop d mce mix { s }
   s 0.048 0.48 DelayN 0.1 c 0 do 0 0.1 Rand.ir loop c mce LFNoise1.kr

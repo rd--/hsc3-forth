@@ -1,4 +1,4 @@
-\ rails (jmcc) #2 overlap-texture=3,2,4
+\ rails (jmcc) #2 texture=overlap,3,2,4,inf
 : rails
     100 Dust.ar 0.04 * 3000 300 8 0 XLine.kr 0.2 Resonz
     1 0 1

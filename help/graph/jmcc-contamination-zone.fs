@@ -1,4 +1,4 @@
-\ contamination zone (jmcc) #9 overlap-texture=3,8,4
+\ contamination zone (jmcc) #9 texture=overlap,3,8,4,inf
 : param 4 0 do 50 2000 Rand.ir 1 0.2 4 Rand.ir loop 12 mce ;
 : cz
     800 8000 ExpRand.ir { f }

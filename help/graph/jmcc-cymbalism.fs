@@ -1,4 +1,4 @@
-\ cymbalism (jmcc) #2 overlap-texture=3,6,6
+\ cymbalism (jmcc) #2 texture=overlap,3,6,6,inf
 : n 15 ;
 : f1 500 2500 Rand.ir ;
 : f2 0 8000 Rand.ir ;

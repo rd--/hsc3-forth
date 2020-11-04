@@ -1,4 +1,4 @@
-\ clustered sines (jmcc) #2 xfade-texture=4,4
+\ clustered sines (jmcc) #2 texture=xfade,4,4,inf
 : cs
     80 { n }
     100 1100 Rand.ir { f1 }

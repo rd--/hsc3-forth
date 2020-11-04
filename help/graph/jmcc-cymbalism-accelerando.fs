@@ -1,4 +1,4 @@
-\ cymbalism accelerando (jmcc) #2 xfade-texture=4,4
+\ cymbalism accelerando (jmcc) #2 texture=xfade,4,4,inf
 : n 15 ;
 : f1 500 2500 Rand.ir ;
 : f2 0 8000 Rand.ir ;

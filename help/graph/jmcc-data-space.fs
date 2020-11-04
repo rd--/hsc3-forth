@@ -1,4 +1,4 @@
-\ data space (jmcc) #2 overlap-texture=1,6,4
+\ data space (jmcc) #2 texture=overlap,1,6,4,inf
 0 200 Rand.ir 0 0 1 Rand.ir LFPulse.kr
 0 40 Rand.ir 0 0 1 Rand.ir LFPulse.kr
 0 8000 Rand.ir * 0 2000 Rand.ir + * 0 20 Rand.ir 0 0 1 Rand.ir LFPulse.kr

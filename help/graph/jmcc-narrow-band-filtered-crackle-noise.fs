@@ -1,4 +1,4 @@
-\ narrow band filtered crackle noise (jmcc) #2 spawn-texture=2
+\ narrow band filtered crackle noise (jmcc) #2 texture=spawn,2,inf
 : nbfcn
     1.97 crackle.ar 0 0.03 rand.ir 0.15 * + 0 2000 rand.ir 80 + { rf1 }
     rf1 rf1 -0.2 0.2 rand.ir rf1 *

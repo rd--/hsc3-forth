@@ -1,4 +1,4 @@
-\ phase modulation with slow beats (jmcc) #6 overlap-texture=4,4,4
+\ phase modulation with slow beats (jmcc) #6 texture=overlap,4,4,4,inf
 : x 100 6000 1 0.2 MouseX.kr ;
 : y 0 2 0 0.2 MouseY.kr ;
 : f 0 x Rand.ir dup -1 1 Rand.ir + 2 mce ;

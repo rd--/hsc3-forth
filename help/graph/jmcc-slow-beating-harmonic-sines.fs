@@ -1,4 +1,4 @@
-\ slow beating harmonic sines (jmcc) #7 overlap-texture=3,6,3
+\ slow beating harmonic sines (jmcc) #7 texture=overlap,3,6,3,inf
 : n 8 ; ( notes )
 : m 5 ; ( harmonics )
 : d 0.4 ; ( frequency deviation )

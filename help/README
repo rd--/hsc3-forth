@@ -1,2 +1,3 @@
 The files at the "graph" sub-directory each define a UGen graph, which is left on the stack.
-The graph can be played using "play-at", drawn using "draw" or written to file using "write-synthdef".
+
+The graph can be played using "play-at", drawn using "draw", printed using "pp" or written to file using "write-synthdef".

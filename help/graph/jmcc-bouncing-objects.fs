@@ -1,4 +1,4 @@
-\ bouncing objects (jmcc) #2 spawn-texture=0.6
+\ bouncing objects (jmcc) #2 texture=spawn,0.6,inf
 : param 4 0 do 400 8400 Rand.ir 0 1 Rand.ir 0.01 0.11 Rand.ir loop 12 mce ;
 5 -2 2 Rand.ir + 600 4 do-nothing XLine.kr 0 Impulse.ar
 0.09 epsilon 4 do-nothing XLine.kr * 0.001 Decay

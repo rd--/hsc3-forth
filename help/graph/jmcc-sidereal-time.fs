@@ -1,4 +1,4 @@
-\ sidereal time (jmcc) #9 overlap-texture=4,4,6
+\ sidereal time (jmcc) #9 texture=overlap,4,4,6,inf
 : p 15 ;
 : z p 0 do 100 6000 ExpRand.ir 1 2 6 Rand.ir loop p 3 * mce ;
 : f 40 300 ExpRand.ir 40 300 ExpRand.ir 12 0 XLine.kr ;

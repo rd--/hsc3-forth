@@ -1,4 +1,4 @@
-\ choip (jmcc) #10 overlap-texture=10,1,8
+\ choip (jmcc) #10 texture=overlap,10,1,8,inf
 : dup' 2 clone unmce ;
 : t 12 ;
 : xl ExpRand.ir dup' t do-nothing XLine.kr ;

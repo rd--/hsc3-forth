@@ -1,4 +1,4 @@
-\ slow beating sines (jmcc) #7 overlap-texture=4,4,3
+\ slow beating sines (jmcc) #7 texture=overlap,4,4,3,inf
 : n 10 ;
 : two-pi 2 pi * ;
 : ph 0 two-pi Rand.ir ;

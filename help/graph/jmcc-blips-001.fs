@@ -1,4 +1,4 @@
-\ blips 001 (jmcc) #SC3d1.5 overlap-texture=2,1,12
+\ blips 001 (jmcc) #SC3d1.5 texture=overlap,2,1,12,inf
 : dup' 2 clone unmce ;
 : blips
     0 1 Rand.ir 0.8 <

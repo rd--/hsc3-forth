@@ -1,4 +1,4 @@
-\ saucer base (jmcc) #6 overlap-texture=2,6,4
+\ saucer base (jmcc) #6 texture=overlap,2,6,4,inf
 : r1 0 swap Rand.ir ;
 : rloc -1 1 Rand.ir 1 Pan2 ;
 : osc SinOsc.ar ;

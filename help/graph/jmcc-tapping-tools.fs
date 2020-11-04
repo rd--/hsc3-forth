@@ -1,4 +1,4 @@
-\ tapping tools (jmcc) #7 overlap-texture=2,1,3
+\ tapping tools (jmcc) #7 texture=overlap,2,1,3,inf
 : param 4 0 do 400 8400 Rand.ir 1 0.01 0.11 Rand.ir loop 12 mce ;
 : tt
     1 21 0 LinRand.ir 64 0.125 60 0 XLine.kr * 0 Impulse.ar

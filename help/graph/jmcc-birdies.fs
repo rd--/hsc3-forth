@@ -1,4 +1,4 @@
-\ birdies (jmcc) #6 overlap-texture=7,4,4
+\ birdies (jmcc) #6 texture=overlap,7,4,4,inf
 0.4 0 1 Rand.ir + 0 0 0.8 Rand.ir 0.1 + LFPulse.kr
 0 3 Rand.ir 4 + * 2 + 0.4 0 1 Rand.ir + 0 0 0.8 Rand.ir 0.1 + LFPulse.kr
 0 3 Rand.ir 4 + * + 0 LFSaw.kr
