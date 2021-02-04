@@ -1,3 +1,7 @@
 The files at the "graph" sub-directory each define a UGen graph, which is left on the stack.
 
 The graph can be played using "play-at", drawn using "draw", printed using "pp" or written to file using "write-synthdef".
+
+Where appropriate, graph comments indicate:
+
+- texture parameters as texture=type,d1,d2{,d3,d4}
