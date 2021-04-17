@@ -20,9 +20,9 @@
 \   > -- Start hsc3-forth if not running, show interpreter frame
 \   c -- Send current line
 \   d -- Send current region
-\   g -- Send DRAW
+\   g -- Send <region> DRAW
 \   e -- Send PP
-\   a -- Send PLAY
+\   a -- Send <region> PLAY
 \   u -- Send <point> ?
 \   j -- Send <point> MANUAL
 \   k -- Send STOP

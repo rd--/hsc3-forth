@@ -13,12 +13,12 @@ import Text.Printf {- base -}
 import Sound.OSC {- hosc -}
 import Sound.SC3 {- hsc3 -}
 import Sound.SC3.Common.Base {- hsc3 -}
+import qualified Sound.SC3.Common.Help as Help {- hsc3 -}
 import Sound.SC3.UGen.Plain {- hsc3 -}
 import Sound.SC3.UGen.PP {- hsc3 -}
 
 import Sound.SC3.UGen.Protect {- hsc3-rw -}
 
-import qualified Sound.SC3.Lang.Help as Help {- hsc3-lang -}
 
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
@@ -131,7 +131,7 @@ fw_manual = do
   (nm,_) <- ugen_sep =<< pop_string "MANUAL: NAME"
   case DB.u_lookup CI nm of
     Nothing -> throw_error ("MANUAL: NO ENTRY: " ++ nm)
-    Just u -> liftIO (Help.viewSC3Help (DB.ugen_name u))
+    Just u -> liftIO (Help.sc3_scdoc_help_open False (DB.ugen_name u))
 
 dpans_id_to_url :: String -> String
 dpans_id_to_url dpans_id =
@@ -150,7 +150,7 @@ fw_play_at = do
   nid <- pop_int "PLAY-AT: NID"
   u <- pop
   fw_assert_empty
-  liftIO (audition_at (nid,toEnum act,grp,[]) u)
+  liftIO (audition_at sc3_default_udp (nid,toEnum act,grp,[]) u)
 
 fw_write_synthdef :: U_Forth ()
 fw_write_synthdef = do
@@ -164,7 +164,7 @@ fw_pretty_print :: U_Forth ()
 fw_pretty_print = do
   k <- pop_int "PRETTY-PRINT"
   u <- pop
-  liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k) u))
+  liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k,False) u))
 
 fw_load_datum :: Char -> U_Forth Datum
 fw_load_datum c =
