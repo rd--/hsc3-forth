@@ -1,3 +1,4 @@
+-- | Forth with unary data type, see also hsc3-forth and rat-forth.
 module Forth where
 
 import Control.Concurrent {- base -}
@@ -5,21 +6,22 @@ import Control.Monad {- base -}
 import Control.Monad.State {- mtl -}
 import Control.Monad.Except {- mtl -}
 import Data.Char {- base -}
-import Data.Hashable {- hashable -}
 import Data.List {- base -}
-import qualified Data.Map as M {- containers -}
 import Data.Maybe {- base -}
 import System.Directory {- directory -}
 import System.Environment {- base -}
 import System.Exit {- base -}
 import System.FilePath {- filepath -}
 import System.IO {- base -}
-import qualified System.Posix.Signals as P {- unix -}
+
+import qualified Data.Hashable as Hashable {- hashable -}
+import qualified Data.Map as Map {- containers -}
+import qualified System.Posix.Signals as Signals {- unix -}
 
 -- * Virtual Machine
 
 -- | A dictionary is a map of named instructions ('Forth's).
-type Dict w a = M.Map String (Forth w a ())
+type Dict w a = Map.Map String (Forth w a ())
 
 -- | Class of values that can constitute a 'Forth'.
 class Forth_Type a where
@@ -72,7 +74,7 @@ data VM w a =
     VM {stack :: [DC a] -- ^ The data stack, /the/ stack.
        ,rstack :: [DC a] -- ^ The return stack.
        ,cstack :: [CC w a] -- ^ The compilation stack.
-       ,threads :: M.Map Int ThreadId
+       ,threads :: Map.Map Int ThreadId
        ,dict :: Dict w a -- ^ The dictionary.
        ,locals :: [Dict w a] -- ^ The stack of locals dictionaries.
        ,buffer :: String -- ^ The current line of input text.
@@ -90,9 +92,9 @@ instance Forth_Type a => Show (VM w a) where
               ["\n DATA STACK: ",unwords (map show (stack vm))
               ,"\n RETURN STACK: ",unwords (map show (rstack vm))
               ,"\n COMPILE STACK DEPTH: ",show (length (cstack vm))
-              ,"\n THREADS: ",intercalate "," (map show (M.keys (threads vm)))
-              ,"\n DICT: ",unwords (M.keys (dict vm))
-              ,"\n LOCALS: ",intercalate "," (map (unwords . M.keys) (locals vm))
+              ,"\n THREADS: ",intercalate "," (map show (Map.keys (threads vm)))
+              ,"\n DICT: ",unwords (Map.keys (dict vm))
+              ,"\n LOCALS: ",intercalate "," (map (unwords . Map.keys) (locals vm))
               ,"\n BUFFER: ",buffer vm
               ,"\n MODE: ",show (mode vm)
               ,"\n DYMAMIC: ",maybe "NO" (const "YES") (dynamic vm)
@@ -112,10 +114,10 @@ empty_vm w lit sig =
     VM {stack = []
        ,rstack = []
        ,cstack = []
-       ,threads = M.empty
+       ,threads = Map.empty
        ,buffer = ""
        ,mode = Interpret
-       ,dict = M.empty
+       ,dict = Map.empty
        ,locals = []
        ,world = w
        ,literal = lit
@@ -204,6 +206,7 @@ pop' = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
 pop :: Forth w a a
 pop = pop' >>= dc_plain
 
+-- | 'pop' and error if not 'Int'
 pop_int :: Forth_Type a => String -> Forth w a Int
 pop_int msg = pop >>= return . ty_to_int' msg
 
@@ -242,9 +245,9 @@ expr_pp e =
 lookup_word :: String -> VM w a -> Maybe (Forth w a ())
 lookup_word k vm =
     case locals vm of
-      [] -> M.lookup k (dict vm)
-      l:_ -> case M.lookup k l of
-               Nothing -> M.lookup k (dict vm)
+      [] -> Map.lookup k (dict vm)
+      l:_ -> case Map.lookup k l of
+               Nothing -> Map.lookup k (dict vm)
                r -> r
 
 -- | Parse a token string to an expression.
@@ -325,7 +328,7 @@ interpret_word w = do
     Just r -> r
     Nothing ->
         case dynamic vm of
-          Just f -> let d_r = f w in put vm {dict = M.insert w d_r (dict vm)} >> d_r
+          Just f -> let d_r = f w in put vm {dict = Map.insert w d_r (dict vm)} >> d_r
           Nothing -> throw_error ("UNKNOWN WORD: " ++ tick_quotes w)
 
 -- | Either 'interpret_word' or 'push' literal.
@@ -373,7 +376,7 @@ forth_block = foldl1 (>>)
 
 -- | Add a 'locals' frame.
 begin_locals :: Forth w a ()
-begin_locals = with_vm (\vm -> (vm {locals = M.empty : locals vm},()))
+begin_locals = with_vm (\vm -> (vm {locals = Map.empty : locals vm},()))
 
 -- | Remove a 'locals' frame.
 end_locals :: Forth w a ()
@@ -463,7 +466,7 @@ fw_local' nm = do
     e : s' -> put vm {stack = s'
                      ,locals = case locals vm of
                                  [] -> error "NO LOCALS FRAME"
-                                 l : l' -> M.insert nm (push' e) l : l'}
+                                 l : l' -> Map.insert nm (push' e) l : l'}
     _ -> throw_error ("(LOCAL): STACK UNDERFLOW: " ++ nm)
 
 -- | Function over current locals 'Dict'.
@@ -486,8 +489,8 @@ fw_open_brace = do
   nm <- get_names []
   when (any is_reserved_word nm) (throw_error ("FW_OPEN_BRACE: RESERVED WORD: " ++ unwords nm))
   trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
-  let locals' = M.fromList (zip nm (repeat undefined))
-  with_vm (\vm -> (at_current_locals (M.union locals') vm,()))
+  let locals' = Map.fromList (zip nm (repeat undefined))
+  with_vm (\vm -> (at_current_locals (Map.union locals') vm,()))
   pushc (CC_Forth (forth_block (map fw_local' nm)))
 
 -- * Compiler
@@ -503,7 +506,7 @@ fw_colon = do
         when (not (null (cstack vm))) (throw_error ("':' CSTACK NOT EMPTY: " ++ nm))
         return (vm {mode = Compile
                    ,cstack = [CC_Word nm]
-                   ,locals = M.empty : locals vm})
+                   ,locals = Map.empty : locals vm})
   do_with_vm edit
 
 -- | ";".  End compile phase.  There is always a compile 'locals'
@@ -514,15 +517,15 @@ fw_semi_colon = do
   case reverse (cstack vm) of
     CC_Word nm : cw ->
         let instr = (map cw_instr cw)
-            instr' = if M.null (head (locals vm))
+            instr' = if Map.null (head (locals vm))
                      then instr
                      else bracketed (begin_locals,end_locals) instr
             w = forth_block instr'
         in do trace 2 ("END DEFINITION: " ++ nm)
-              when (M.member nm (dict vm)) (write_sp ("REDEFINED " ++ nm))
+              when (Map.member nm (dict vm)) (write_sp ("REDEFINED " ++ nm))
               put (vm {cstack = []
                       ,locals = tail (locals vm)
-                      ,dict = M.insert nm w (dict vm)
+                      ,dict = Map.insert nm w (dict vm)
                       ,mode = Interpret})
     _ -> throw_error "CSTACK"
   return ()
@@ -626,9 +629,9 @@ fw_fork = do
   vm <- get_vm
   case lookup_word nm vm of
     Just fw -> do th <- liftIO (forkIO (exec_err vm fw >> return ()))
-                  let k = hash th :: Int
+                  let k = Hashable.hash th :: Int
                   put vm {stack = DC (ty_from_int k) : stack vm
-                         ,threads = M.insert k th (threads vm)}
+                         ,threads = Map.insert k th (threads vm)}
     Nothing -> throw_error ("FORK: UNKNOWN WORD: " ++ nm)
 
 fw_kill :: Forth_Type a => Forth w a ()
@@ -636,16 +639,16 @@ fw_kill = do
   k <- pop_int "KILL: PID?"
   vm <- get_vm
   let threads' = threads vm
-  case M.lookup k threads' of
+  case Map.lookup k threads' of
     Nothing -> throw_error ("KILL: UNKNOWN THREAD: " ++ show k)
-    Just th -> liftIO (killThread th) >> put vm {threads = M.delete k threads'}
+    Just th -> liftIO (killThread th) >> put vm {threads = Map.delete k threads'}
 
 fw_kill_all :: Forth w a ()
 fw_kill_all = do
   vm <- get_vm
-  let th = M.elems (threads vm)
+  let th = Map.elems (threads vm)
   liftIO (mapM_ killThread th)
-  put vm {threads = M.empty}
+  put vm {threads = Map.empty}
 
 fw_quote :: Forth w a ()
 fw_quote = do
@@ -664,7 +667,7 @@ fw_execute = do
 core_dict :: (Eq a,Forth_Type a) => Dict w a
 core_dict =
     let err nm = throw_error (concat [tick_quotes nm,": compiler word in interpeter context"])
-    in M.fromList
+    in Map.fromList
     [(":",fw_colon)
     ,(";",err ";")
     ,("s\"",fw_s_quote_interpet)
@@ -705,7 +708,7 @@ core_dict =
     ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int' "TRACE" k},())))]
 
 core_words :: [String]
-core_words = M.keys (core_dict :: Dict w Integer)
+core_words = Map.keys (core_dict :: Dict w Integer)
 
 is_reserved_word :: String -> Bool
 is_reserved_word nm = nm `elem` core_words
@@ -734,8 +737,8 @@ repl' vm = do
 catch_sigint :: VM w a -> IO ()
 catch_sigint vm = do
   let h = modifyMVar_ (sigint vm) (return . const True)
-  _ <- P.installHandler P.sigINT (P.Catch h) Nothing
-  _ <- P.installHandler P.sigTERM (P.Catch h) Nothing
+  _ <- Signals.installHandler Signals.sigINT (Signals.Catch h) Nothing
+  _ <- Signals.installHandler Signals.sigTERM (Signals.Catch h) Nothing
   return ()
 
 -- | 'repl'' but with 'catch_sigint'.

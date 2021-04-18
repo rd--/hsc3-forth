@@ -73,7 +73,7 @@ ugen_sep = maybe (throw_error "UGEN NAME RATE SEPARATOR FAILED") return . sc3_ug
 
 -- * UForth
 
--- DEMAND makes this two stage, since inputs are known until we know if to pop NC.
+-- DEMAND makes this two stage, since inputs are unknown until we know if to pop NC.
 get_nc :: DB.U -> Maybe Int -> U_Forth (Maybe Int)
 get_nc u nc =
     case nc of
