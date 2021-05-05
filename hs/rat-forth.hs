@@ -1,15 +1,16 @@
 import Control.Concurrent {- base -}
-import qualified Data.Map as M {- containers -}
 import Data.Ratio {- base -}
 import System.IO {- base -}
 
-import Forth
-import Rational
+import qualified Data.Map as Map {- containers -}
+
+import qualified Forth {- hsc3-forth -}
+import qualified Rational {- hsc3-forth -}
 
 -- * Primitives
 
-instance (Show i,Integral i) => Forth_Type (Ratio i) where
-    ty_show = rat_pp
+instance (Show i,Integral i) => Forth.Forth_Type (Ratio i) where
+    ty_show = Rational.rat_pp
     ty_to_int = Just . floor
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
@@ -17,32 +18,32 @@ instance (Show i,Integral i) => Forth_Type (Ratio i) where
 {-
 -- | Unary stack operation.
 unary_op :: (a -> a) -> Forth w a ()
-unary_op f = pop >>= push . f
+unary_op f = Forth.pop >>= Forth.push . f
 -}
 
-binary_op'' :: (i -> a) -> (a -> i) -> (a -> a -> a) -> Forth w i ()
-binary_op'' f g h = pop >>= \y -> pop >>= \x -> push (g (h (f x) (f y)))
+binary_op'' :: (i -> a) -> (a -> i) -> (a -> a -> a) -> Forth.Forth w i ()
+binary_op'' f g h = Forth.pop >>= \y -> Forth.pop >>= \x -> Forth.push (g (h (f x) (f y)))
 
-binary_op' :: (Integer -> Integer -> Integer) -> Forth w Rational ()
+binary_op' :: (Integer -> Integer -> Integer) -> Forth.Forth w Rational ()
 binary_op' = binary_op'' floor fromInteger
 
 -- | Binary stack operation.  The first value on the stack is the RHS.
-binary_op :: (a -> a -> a) -> Forth w a ()
-binary_op f = pop >>= \y -> pop >>= \x -> push (f x y)
+binary_op :: (a -> a -> a) -> Forth.Forth w a ()
+binary_op f = Forth.pop >>= \y -> Forth.pop >>= \x -> Forth.push (f x y)
 
 -- | 'binary_op', /rep/ translates the result so it can be placed onto the stack.
-comparison_op :: Forth_Type a => (a -> a -> Bool) -> Forth w a ()
-comparison_op f = binary_op (\x y -> ty_from_bool (f x y))
+comparison_op :: Forth.Forth_Type a => (a -> a -> Bool) -> Forth.Forth w a ()
+comparison_op f = binary_op (\x y -> Forth.ty_from_bool (f x y))
 
 -- | Forth word @/mod@.
-fw_div_mod :: Forth w Rational ()
+fw_div_mod :: Forth.Forth w Rational ()
 fw_div_mod =
-    pop >>= \p -> pop >>= \q ->
+    Forth.pop >>= \p -> Forth.pop >>= \q ->
     let (r,s) = floor q `divMod` floor p
-    in push (fromInteger s) >> push (fromInteger r)
+    in Forth.push (fromInteger s) >> Forth.push (fromInteger r)
 
-rat_dict :: Dict w Rational
-rat_dict = M.fromList
+rat_dict :: Forth.Dict w Rational
+rat_dict = Map.fromList
     [("+",binary_op (+))
     ,("*",binary_op (*))
     ,("-",binary_op (-))
@@ -63,9 +64,9 @@ rat_dict = M.fromList
 main :: IO ()
 main = do
   sig <- newMVar False
-  let d :: Dict () Rational
-      d = M.unions [core_dict,rat_dict]
-      vm = (empty_vm () parse_rat sig) {dict = d, input_port = Just stdin}
-      init_f = load_files ["stdlib.fs","ratlib.fs"]
+  let d :: Forth.Dict () Rational
+      d = Map.unions [Forth.core_dict,rat_dict]
+      vm = (Forth.empty_vm () Rational.parse_rat sig) {Forth.dict = d, Forth.input_port = Just stdin}
+      init_f = Forth.load_files ["stdlib.fs","ratlib.fs"]
   putStrLn "RAT-FORTH"
-  repl vm init_f
+  Forth.repl vm init_f
