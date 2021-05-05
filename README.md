@@ -5,7 +5,7 @@ Forth SuperCollider
 
 The only data type is the [SuperCollider](http://audiosynth.com/) `Unit Generator`.
 
-[Why Forth SuperCollider?](?t=hsc3-graphs&e=lib/sc/graph/jmcc-why-supercollider.scd)
+[Why Forth SuperCollider?](http://rohandrape.net/?t=hsc3-graphs&e=lib/sc/graph/jmcc-why-supercollider.scd)
 
 ~~~~
 : rvb 5 0 do 0.05 0 0.05 rand.ir 2 clone 1 allpassn loop ; 0.2 dust.ar
@@ -42,8 +42,8 @@ hsc3-forth < ~/sw/hsc3-forth/help/graph/jmcc-why-supercollider.fs
 To quieten there is the word `stop`.
 
 There is a
-[tutorial](?t=hsc3-forth&e=help/tutorial.fs), and
-[translations](?t=hsc3-forth&e=help/jmcc.fs) of graphs by
+[tutorial](http://rohandrape.net/?t=hsc3-forth&e=help/tutorial.fs), and
+[translations](http://rohandrape.net/?t=hsc3-forth&e=help/jmcc.fs) of graphs by
 James McCartney <!-- (http://audiosynth.com/autobio/emu.jpg) -->
 from the `SC2` manual.
 
@@ -55,7 +55,7 @@ hsc3-forth requires `scsynth` to be listening at the standard UDP port (57110).
 
 <!--
 HSC3-FORTH is partial, it is known to work as far as the translated
-graphs at [HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
+graphs at [HSC3-GRAPHS](http://rohandrape.net/?t=hsc3-graphs), search for `FS` in the
 [INDEX](?t=hsc3-graphs&e=md/ix.md).
 -->
 
@@ -66,7 +66,7 @@ graphs at [HSC3-GRAPHS](?t=hsc3-graphs), search for `FS` in the
 -->
 
 initial announcement:
-[[local](?t=hsc3-forth&e=help/announce.text)]
+[[local](http://rohandrape.net/?t=hsc3-forth&e=help/announce.text)]
 2014-10-15 04:52:53 GMT
 
 <!--
