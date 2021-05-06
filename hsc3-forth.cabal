@@ -36,5 +36,5 @@ executable hsc3-forth
   ghc-options:     -Wall -fno-warn-orphans -fwarn-tabs
 
 Source-Repository  head
-  Type:            darcs
-  Location:        http://rohandrape.net/sw/hsc3-forth/
+  Type:            git
+  Location:        https://gitlab.com/rd--/hsc3-forth/
