@@ -34,14 +34,15 @@ import qualified Forth {- hsc3-forth -}
 -- | hsc3-forth word.
 type U_Forth r = Forth.Forth Int SC3.UGen r
 
--- | 'replicateM' of 'pop'.
+-- | 'replicateM' of 'Forth.pop'.
 pop_n :: Int -> Forth.Forth w a [a]
 pop_n n = replicateM n Forth.pop
 
--- | 'mapM_' of 'push'.
+-- | 'mapM_' of 'Forth.push'.
 push_l :: [a] -> Forth.Forth w a ()
 push_l = mapM_ Forth.push
 
+-- | Type checking 'Forth.pop'
 pop_double :: String -> Forth.Forth w SC3.UGen Double
 pop_double msg =
     let f u = case SC3.constant_opt u of
