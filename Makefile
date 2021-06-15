@@ -19,11 +19,11 @@ get-forth-mode:
 push-gl:
 	git push $(GL_GIT)
 
-push-gl-tags:
-	git push $(GH_GIT) --tag
-
 pull-gl:
 	git pull $(GL_HTTP)
+
+push-tags:
+	git push $(GL_GIT) --tag
 
 update-rd:
 	ssh rd@rohandrape.net "(cd sw/hsc3-forth ; git pull $(GL_HTTP))"
