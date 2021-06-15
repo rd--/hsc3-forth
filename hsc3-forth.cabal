@@ -1,7 +1,7 @@
 Name:              hsc3-forth
-Version:           0.19
-Synopsis:          FORTH SUPERCOLLIDER
-Description:       FORTH SUPERCOLLIDER
+Version:           0.20
+Synopsis:          Forth SuperCollider
+Description:       Forth SuperCollider
 License:           GPL
 Category:          Sound
 Copyright:         (c) Rohan Drape, 2014-2021
@@ -21,12 +21,12 @@ executable hsc3-forth
                    directory,
                    filepath,
                    hashable,
-                   hosc == 0.19.*,
-                   hsc3 == 0.19.*,
-                   hsc3-db == 0.19.*,
-                   hsc3-dot == 0.19.*,
-                   hsc3-lang == 0.19.*,
-                   hsc3-rw == 0.19.*,
+                   hosc == 0.20.*,
+                   hsc3 == 0.20.*,
+                   hsc3-db == 0.20.*,
+                   hsc3-dot == 0.20.*,
+                   hsc3-lang == 0.20.*,
+                   hsc3-rw == 0.20.*,
                    mtl,
                    process,
                    unix
