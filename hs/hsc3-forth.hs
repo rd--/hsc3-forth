@@ -24,6 +24,7 @@ import qualified Sound.SC3.UGen.Protect as Protect {- hsc3-rw -}
 import qualified Sound.SC3.UGen.DB as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.Record as DB {- hsc3-db -}
 import qualified Sound.SC3.UGen.DB.PP as DB {- hsc3-db -}
+import qualified Sound.SC3.UGen.DB.PP.Graph as DB {- hsc3-db -}
 
 import qualified Sound.SC3.UGen.Dot as Dot {- hsc3-dot -}
 
