@@ -6,6 +6,7 @@ stages:
 build:
   stage: build
   script:
+    - apt install blas lapack
     - cabal update
     - cabal install --installdir public --install-method copy
   rules:
