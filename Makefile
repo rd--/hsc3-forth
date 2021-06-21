@@ -10,7 +10,7 @@ install:
 
 clean:
 	cabal clean
-	rm -Rf dist
+	rm -Rf dist dist-newstyle *~
 	(cd hs; make clean)
 
 get-forth-mode:
