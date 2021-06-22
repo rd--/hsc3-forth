@@ -15,26 +15,37 @@ Build-Type:        Simple
 
 Data-files:        README.md
 
+library
+  build-depends:    base == 4.* && < 5,
+                    containers,
+                    directory,
+                    filepath,
+                    hashable,
+                    mtl,
+                    unix,
+  default-language: Haskell2010
+  ghc-options:      -Wall -fwarn-tabs
+  exposed-modules:  Language.Forth.Interpreter.Simple
+
 executable hsc3-forth
-  build-depends:   base >= 4.8 && < 5,
-                   containers,
-                   directory,
-                   filepath,
-                   hashable,
-                   hosc == 0.20.*,
-                   hsc3 == 0.20.*,
-                   hsc3-db == 0.20.*,
-                   hsc3-dot == 0.20.*,
-                   hsc3-lang == 0.20.*,
-                   hsc3-rw == 0.20.*,
-                   mtl,
-                   process,
-                   unix
-  hs-source-dirs:  hs
-  other-modules:   Forth
-  main-is:         hsc3-forth.hs
-  ghc-options:     -Wall -fno-warn-orphans -fwarn-tabs
-  default-language:Haskell2010
+  build-depends:    base >= 4.8 && < 5,
+                    containers,
+                    directory,
+                    filepath,
+                    hashable,
+                    hosc == 0.20.*,
+                    hsc3 == 0.20.*,
+                    hsc3-db == 0.20.*,
+                    hsc3-dot == 0.20.*,
+                    hsc3-forth == 0.20.*,
+                    hsc3-lang == 0.20.*,
+                    hsc3-rw == 0.20.*,
+                    mtl,
+                    process
+  hs-source-dirs:   cmd
+  main-is:          hsc3-forth.hs
+  ghc-options:      -Wall -fno-warn-orphans -fwarn-tabs
+  default-language: Haskell2010
 
 Source-Repository  head
   Type:            git

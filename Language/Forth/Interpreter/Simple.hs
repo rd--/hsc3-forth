@@ -1,5 +1,5 @@
--- | Forth with unary data type, see also hsc3-forth and rat-forth.
-module Forth where
+-- | Forth with unary data type.
+module Language.Forth.Interpreter.Simple where
 
 import Control.Concurrent {- base -}
 import Control.Monad {- base -}

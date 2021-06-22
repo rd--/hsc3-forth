@@ -1,16 +1,44 @@
 import Control.Concurrent {- base -}
 import Data.Ratio {- base -}
 import System.IO {- base -}
+import qualified Text.Read as Read {- base -}
+
+import Safe {- safe -}
 
 import qualified Data.Map as Map {- containers -}
 
-import qualified Forth {- hsc3-forth -}
-import qualified Rational {- hsc3-forth -}
+import qualified Language.Forth.Interpreter.Simple as Forth {- hsc3-forth -}
+
+-- * Rational
+
+sep :: Eq a => a -> [a] -> ([a],[a])
+sep c s = let (lhs,rhs) = break (== c) s in (lhs,tailDef [] rhs)
+
+bimap1 :: (t -> t1) -> (t, t) -> (t1, t1)
+bimap1 f (p,q) = (f p,f q)
+
+parse_int :: String -> Maybe Integer
+parse_int = Read.readMaybe
+
+parse_rat :: String -> Maybe Rational
+parse_rat s =
+    case bimap1 parse_int (sep '/' s) of
+      (Just n,Just d) -> Just (n % d)
+      _ ->
+          case parse_int s of
+            Just i -> Just (fromInteger i)
+            Nothing -> fmap realToFrac (Read.readMaybe s :: Maybe Double)
+
+rat_pp :: (Show i,Integral i) => Ratio i -> String
+rat_pp r =
+    let n = numerator r
+        d = denominator r
+    in if d == 1 then show n else concat [show n,"/",show d]
 
 -- * Primitives
 
 instance (Show i,Integral i) => Forth.Forth_Type (Ratio i) where
-    ty_show = Rational.rat_pp
+    ty_show = rat_pp
     ty_to_int = Just . floor
     ty_from_int = fromIntegral
     ty_from_bool t = if t then -1 else 0
@@ -66,7 +94,7 @@ main = do
   sig <- newMVar False
   let d :: Forth.Dict () Rational
       d = Map.unions [Forth.core_dict,rat_dict]
-      vm = (Forth.empty_vm () Rational.parse_rat sig) {Forth.dict = d, Forth.input_port = Just stdin}
+      vm = (Forth.empty_vm () parse_rat sig) {Forth.dict = d, Forth.input_port = Just stdin}
       init_f = Forth.load_files ["stdlib.fs","ratlib.fs"]
   putStrLn "RAT-FORTH"
   Forth.repl vm init_f

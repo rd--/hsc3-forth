@@ -2,8 +2,8 @@ import Control.Concurrent {- base -}
 import Control.Monad {- base -}
 import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
-import Data.Char {- hash -}
-import Data.Hashable {- hash -}
+import Data.Char {- base -}
+import Data.Hashable {- hashable -}
 import Data.Maybe {- base -}
 import System.IO {- base -}
 import System.Process {- process -}
@@ -28,7 +28,7 @@ import qualified Sound.SC3.UGen.DB.PP.Graph as DB {- hsc3-db -}
 
 import qualified Sound.SC3.UGen.Dot as Dot {- hsc3-dot -}
 
-import qualified Forth {- hsc3-forth -}
+import qualified Language.Forth.Interpreter.Simple as Forth {- hsc3-forth -}
 
 -- * Forth
 
