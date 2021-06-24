@@ -32,10 +32,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          name: hsc3-forth-${{ github.run_id }}
           tag_name: ${{ github.run_id }}
-          draft: false
-          prerelease: false
           files: public/hsc3-forth-${{runner.os}}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
