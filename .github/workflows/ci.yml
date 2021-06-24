@@ -28,9 +28,14 @@ jobs:
         run: |
           cabal update
           cabal install --installdir public --install-method copy
+          zip -r public/hsc3-forth.zip public/hsc3-forth
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: public/hsc3-forth
+          name: hsc3-forth-${{ github.run_id }}
+          tag_name: ${{ github.run_id }}
+          draft: false
+          prerelease: false
+          files: public/hsc3-forth.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
