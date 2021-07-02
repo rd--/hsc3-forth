@@ -153,7 +153,7 @@ fw_play_at = do
   nid <- Forth.pop_int "PLAY-AT: NID"
   u <- Forth.pop
   fw_assert_empty
-  liftIO (SC3.audition_at SC3.sc3_default_udp (nid,toEnum act,grp,[]) u)
+  liftIO (SC3.auditionAt SC3.sc3_default_udp (nid,toEnum act,grp,[]) u)
 
 fw_write_synthdef :: U_Forth ()
 fw_write_synthdef = do
@@ -161,7 +161,7 @@ fw_write_synthdef = do
   nm <- Forth.pop_string "WRITE-SYNTHDEF: SYNTHDEF-NAME"
   u <- Forth.pop
   fw_assert_empty
-  liftIO (SC3.synthdefWrite fn (SC3.synthdef nm (SC3.out (SC3.control SC3.KR "out" 0) u)))
+  liftIO (SC3.synthdefWrite fn (SC3.synthdef nm (SC3.out (SC3.control SC3.ControlRate "out" 0) u)))
 
 fw_pretty_print :: U_Forth ()
 fw_pretty_print = do
