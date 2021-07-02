@@ -1,16 +1,16 @@
-: texture-env { sus trans }
-  0 3 no-reset-node no-loop-node 1 trans env-sin 0 1 sus env-sin 0 0 trans env-sin 0 16 mce ;
+: textureEnv { sus trans }
+  0 3 noResetNode noLoopNode 1 trans envSin 0 1 sus envSin 0 0 trans envSin 0 16 mce ;
 
-: with-texture-env { sus trans } 1 1 0 1 remove-synth sus trans texture-env EnvGen.kr * ;
+: withTextureEnv { sus trans } 1 1 0 1 removeSynth sus trans textureEnv EnvGen.kr * ;
 
-: spawn-texture { ugen iot rep } rep 0 do ugen play iot pause loop ;
+: spawnTexture { ugen iot rep } rep 0 do ugen play iot pause loop ;
 
-: xfade-texture { ugen sus trans rep }
-  rep 0 do ugen sus trans with-texture-env play sus trans + pause loop ;
+: xfadeTexture { ugen sus trans rep }
+  rep 0 do ugen sus trans withTextureEnv play sus trans + pause loop ;
 
-: overlaps-iot { sus trans overs } trans 2 * sus + overs / ;
+: overlapsIot { sus trans overs } trans 2 * sus + overs / ;
 
-: overlap-texture { ugen sus trans overs rep }
-  rep 0 do ugen sus trans with-texture-env play sus trans overs overlaps-iot pause loop ;
+: overlapTexture { ugen sus trans overs rep }
+  rep 0 do ugen sus trans withTextureEnv play sus trans overs overlapsIot pause loop ;
 
-: texture-post-proc { f } 0 2 In.ar f execute 0 swap Out -1 add-to-tail 1 play-at ;
+: texturePostProc { f } 0 2 In.ar f execute 0 swap Out -1 addToTail 1 playAt ;

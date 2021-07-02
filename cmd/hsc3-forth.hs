@@ -87,6 +87,7 @@ get_nc u nc =
 
 -- > fmap ugen_io (DB.u_lookup Base.CI "DSEQ")
 -- > fmap ugen_io (DB.u_lookup Base.CI "DEMAND")
+-- > fmap ugen_io (DB.u_lookup Base.CI "irand")
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
 
@@ -193,8 +194,8 @@ ugen_dict =
     ,("mce",Forth.pop_int "MCE" >>= \n -> pop_n n >>= Forth.push . SC3.mce . reverse)
     ,("mix",Forth.pop >>= Forth.push . SC3.mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...
     ,("mrg",Forth.pop_int "MRG" >>= \n -> pop_n n >>= Forth.push . SC3.mrg . reverse)
-    ,("play-at",fw_play_at)
-    ,("write-synthdef",fw_write_synthdef)
+    ,("playAt",fw_play_at)
+    ,("writeSynthdef",fw_write_synthdef)
     ,("sched",pop_double "SCHED" >>= \t -> Forth.pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
     ,("stop",liftIO (SC3.withSC3 SC3.reset))
     ,("unmce",Forth.pop >>= push_l . SC3.mceChannels)
@@ -206,8 +207,8 @@ ugen_dict =
     ,("set-uid",Forth.pop_int "SET-UID" >>= set_uid)
     ,("unrand",Forth.pop >>= Forth.push . SC3.ugen_optimise_ir_rand)
     ,("chan",Forth.pop >>= Forth.push . SC3.constant . length . SC3.mceChannels)
-    ,("sc3-status",liftIO (SC3.withSC3 SC3.serverStatus >>= mapM_ putStrLn))
-    ,("pretty-print",fw_pretty_print)
+    ,("sc3Status",liftIO (SC3.withSC3 SC3.serverStatus >>= mapM_ putStrLn))
+    ,("prettyPrint",fw_pretty_print)
     ,("?",fw_help)
     ,("manual",fw_manual)
     ,("dpans",fw_dpans)]

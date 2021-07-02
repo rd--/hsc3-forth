@@ -4,7 +4,7 @@
     0 1 linear 0.2 MouseX.kr { x }
     x 0.25 ix 0.1 * + > HPZ1.kr abs { t }
     t 0.05 Decay.kr PinkNoise.ar * { n }
-    sc MIDICPS Recip { dt }
+    sc MidiCps Recip { dt }
     n dt dt 4 CombL.ar { s }
     s ix 0.2 * 0.5 - 1 Pan2.ar ;
 : strs scale 0 6 0 do swap i str + loop ;
