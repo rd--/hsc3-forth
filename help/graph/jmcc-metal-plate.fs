@@ -3,7 +3,7 @@
 : sr 48000 ;
 : n 4 ;
 : maxdt sr 0.03 * ;
-: buf maxdt 0 do 0 loop maxdt mce as-local-buf ;
+: buf maxdt 0 do 0 loop maxdt mce asLocalBuf ;
 : tap-tm 0.015 0.03 Rand.ir ;
 : exc-freq 10 8000 0 0.2 MouseY.kr ;
 : exc-trig 0.5 0 Impulse.ar 0.2 * ;

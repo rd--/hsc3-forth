@@ -9,4 +9,4 @@
 0.04 * 0 3 Rand.ir LFNoise0.kr
 0.8 * 1 Pan2.ar
 0.15 0.35 Rand.ir 0.15 0.35 Rand.ir 3 CombL
-1 6 4 inf overlap-texture
+1 6 4 inf overlapTexture

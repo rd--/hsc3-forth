@@ -8,5 +8,5 @@
     0 1 Rand.ir LFNoise1.kr 0 150 0 LinRand.ir 0 0.2 0.4 Rand.ir LFPulse.kr Pan2
 ;
 : cz-pp 6 0 do 0.04 0 0.04 Rand.ir 2 clone 16 AllpassN loop ;
-' cz-pp texture-post-proc
-cz 3 8 4 inf overlap-texture
+' cz-pp texturePostProc
+cz 3 8 4 inf overlapTexture

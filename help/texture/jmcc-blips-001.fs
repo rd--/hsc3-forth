@@ -6,5 +6,5 @@
     2 100 ExpRand.ir 2 100 ExpRand.ir 4 0 XLine.kr Blip.ar dup' *
     -1 1 Rand.ir -1 1 Rand.ir 4 0 Line.kr 0.3 Pan2.ar * ;
 : apf Distort 6 0 do 0.05 0 0.05 Rand.ir 4 AllpassN loop ;
-' apf texture-post-proc
-blips 2 1 12 inf overlap-texture
+' apf texturePostProc
+blips 2 1 12 inf overlapTexture

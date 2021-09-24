@@ -6,4 +6,4 @@
   0.04 * 0.05 + 15 CombL mix
   a 0 do 0.05 0 0.05 Rand.ir 2 clone 1 AllpassN loop 0.2 * s + ;
 6 5 4 rsp
-10 10 2 inf overlap-texture
+10 10 2 inf overlapTexture

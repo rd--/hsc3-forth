@@ -6,5 +6,5 @@
     -1 1 Rand.ir 1 1 0 1 2 1 4 1 1 env-linen EnvGen.kr Pan2
 ;
 : rapf 3 0 do 0.05 0 0.05 Rand.ir 2 clone 2 AllpassN loop ;
-' rapf texture-post-proc
-tt 2 1 3 inf overlap-texture
+' rapf texturePostProc
+tt 2 1 3 inf overlapTexture

@@ -7,4 +7,4 @@
 : rosc { f } f d rand2.ir + 0 pi rand.ir sinosc.ar 2 clone ;
 : rharm { f } 0 m 0 do f i * rosc + loop ;
 : sbhs 0 n 0 do rfreq rharm + loop 0.1 n / * ;
-sbhs 3 6 3 inf overlap-texture
+sbhs 3 6 3 inf overlapTexture

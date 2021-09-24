@@ -4,4 +4,4 @@
 : osc SinOsc.ar ;
 : drms dup rot * swap 1.1 * + ;
 : sb 20 r1 0 osc 1000 r1 drms 0 osc 5000 r1 drms 0 osc 0.1 * rloc ;
-sb 2 6 4 inf overlap-texture
+sb 2 6 4 inf overlapTexture

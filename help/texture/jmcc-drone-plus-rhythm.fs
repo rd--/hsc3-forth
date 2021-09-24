@@ -17,10 +17,10 @@
     sq 0.004 0.2 0.7 rand.ir decay2 sg * 800 2000 exprand.ir 0.1 rlpf
 ;
 : rev-cmb { z } z 0.5 0.5 6 combn z unmce swap 2 mce + ;
-: drone-1-txt drone-1 4 4 8 inf overlap-texture ;
-: drone-2-txt drone-2 4 6 3 inf overlap-texture ;
-: rhy-txt rhy 6 6 6 inf overlap-texture ;
-' rev-cmb texture-post-proc
+: drone-1-txt drone-1 4 4 8 inf overlapTexture ;
+: drone-2-txt drone-2 4 6 3 inf overlapTexture ;
+: rhy-txt rhy 6 6 6 inf overlapTexture ;
+' rev-cmb texturePostProc
 fork drone-1-txt .
 fork drone-2-txt .
 fork rhy-txt .
