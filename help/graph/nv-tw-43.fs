@@ -5,4 +5,4 @@
 : d { m } 1.015 0 DC.ar 1 Sweep ** 64 * 1 % 1 + 200 * m x Latch ;
 : f { m } o m x 1 1 m d / 4 0.2 Pluck ;
 : p k 0 do i f loop ;
-p k mce mix k / 0.25 *
+p k mce mix k / 0 0.25 1 0 Line.kr *
