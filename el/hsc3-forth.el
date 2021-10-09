@@ -1,43 +1,48 @@
-;; This mode is implemented as a derivation of `forth-mode' mode,
-;; indentation and font locking is courtesy that mode.  The
-;; inter-process communication is courtesy `comint'.  The symbol at
-;; point acquisition is courtesy `thingatpt'.
+;;; hsc3-forth.el --- Forth SuperCollider
+
+;;; Commentary:
+; This mode is implemented as a derivation of `forth-mode'.
+; Indentation and font locking is courtesy `forth-mode'.
+; Inter-process communication is courtesy `comint'.
+; Symbol at point acquisition is courtesy `thingatpt'.
 
 (require 'forth-mode)
 (require 'comint)
 (require 'thingatpt)
 
-(defun hsc3-forth-send (s)
-  "Send string argument to HSC3-FORTH"
+;;; Code:
+
+(defun hsc3-forth-send (str)
+  "Send STR argument to hsc3-forth."
   (if (comint-check-proc forth-process-buffer)
-      (comint-send-string (forth-proc) (concat s "\n"))
+      (comint-send-string (forth-proc) (concat str "\n"))
     (error "HSC3-FORTH not running?")))
 
 (defun hsc3-forth-point (word post q-str)
-  "If POST then WORD <POINT>, else <POINT> WORD.  If Q-STR quote <POINT> as string."
+  "If POST then WORD <point>, else <point> WORD.  If Q-STR quote <point> as string."
   (let* ((p (thing-at-point 'symbol))
          (p-q (if q-str (format "s\" %s\"" p) p)))
     (hsc3-forth-send
      (if post (format "%s %s" word p-q) (format "%s %s" p-q word)))))
 
-(defun hsc3-forth-bye () "BYE" (interactive) (hsc3-forth-send "bye"))
-(defun hsc3-forth-stop () "STOP" (interactive) (hsc3-forth-send "stop"))
-(defun hsc3-forth-sc3-status () "SC3-STATUS" (interactive) (hsc3-forth-send "sc3-status"))
-(defun hsc3-forth-killall () "KILLALL" (interactive) (hsc3-forth-send "killall"))
-(defun hsc3-forth-help () "<word> ?" (interactive) (hsc3-forth-point "?" nil t))
-(defun hsc3-forth-manual () "<word> MANUAL" (interactive) (hsc3-forth-point "manual" nil t))
-(defun hsc3-forth-dpans () "<word> DPANS" (interactive) (hsc3-forth-point "dpans" nil t))
-(defun hsc3-forth-play-word () "<word> PLAY" (interactive) (hsc3-forth-point "play" nil nil))
-(defun hsc3-forth-draw-word () "<word> DRAW" (interactive) (hsc3-forth-point "draw" nil nil))
-(defun hsc3-forth-pp-word () "<word> PP" (interactive) (hsc3-forth-point "pp" nil nil))
-(defun hsc3-forth-play () "PLAY" (interactive) (hsc3-forth-send "play"))
-(defun hsc3-forth-play-region () "<region> PLAY" (interactive) (hsc3-forth-send-region) (hsc3-forth-send "play"))
-(defun hsc3-forth-draw () "DRAW" (interactive) (hsc3-forth-send "draw"))
-(defun hsc3-forth-draw-region () "<region> DRAW" (interactive) (hsc3-forth-send-region) (hsc3-forth-send "draw"))
-(defun hsc3-forth-pp () "PP" (interactive) (hsc3-forth-send "pp"))
+(defun hsc3-forth-bye () "Bye." (interactive) (hsc3-forth-send "bye"))
+(defun hsc3-forth-stop () "Stop." (interactive) (hsc3-forth-send "stop"))
+(defun hsc3-forth-sc3-status () "Sc3-Status." (interactive) (hsc3-forth-send "sc3-status"))
+(defun hsc3-forth-killall () "Killall." (interactive) (hsc3-forth-send "killall"))
+(defun hsc3-forth-help () "<word> ?." (interactive) (hsc3-forth-point "?" nil t))
+(defun hsc3-forth-manual () "<word> Manual." (interactive) (hsc3-forth-point "manual" nil t))
+(defun hsc3-forth-dpans () "<word> Dpans." (interactive) (hsc3-forth-point "dpans" nil t))
+(defun hsc3-forth-play-word () "<word> Play." (interactive) (hsc3-forth-point "play" nil nil))
+(defun hsc3-forth-draw-word () "<word> Draw." (interactive) (hsc3-forth-point "draw" nil nil))
+(defun hsc3-forth-pp-word () "<word> Pp." (interactive) (hsc3-forth-point "pp" nil nil))
+(defun hsc3-forth-play () "Play." (interactive) (hsc3-forth-send "play"))
+(defun hsc3-forth-play-region () "<region> Play." (interactive) (hsc3-forth-send-region) (hsc3-forth-send "play"))
+(defun hsc3-forth-draw () "Draw." (interactive) (hsc3-forth-send "draw"))
+(defun hsc3-forth-draw-region () "<region> Draw." (interactive) (hsc3-forth-send-region) (hsc3-forth-send "draw"))
+(defun hsc3-forth-pp () "Pp." (interactive) (hsc3-forth-send "pp"))
 
 (defun hsc3-forth-included ()
-  "INCLUDED"
+  "Included."
   (interactive)
   (save-buffer)
   (hsc3-forth-send (format "s\" %s\" included" buffer-file-name)))
@@ -55,13 +60,13 @@
    (buffer-substring-no-properties (region-beginning) (region-end))))
 
 (defun hsc3-forth-see-forth ()
- "Start and see HSC3-FORTH."
+ "Start and see hsc3-forth."
  (interactive)
  (save-selected-window (run-forth forth-program-name))
  (forth-split))
 
 (defun hsc3-forth-interrupt ()
-  "Interrupt HSC3-FORTH"
+  "Interrupt hsc3-forth."
   (interactive)
   (with-current-buffer forth-process-buffer
     (interrupt-process (get-buffer-process (current-buffer)))))
@@ -70,7 +75,7 @@
   "Forth SuperCollider keymap.")
 
 (defun hsc3-forth-mode-keybindings (map)
-  "Forth SuperCollider keybindings."
+  "Add Forth SuperCollider keybindings to MAP."
   (define-key map (kbd "C-c <") 'hsc3-forth-included)
   (define-key map (kbd "C-c >") 'hsc3-forth-see-forth)
   (define-key map (kbd "C-c C-a") 'hsc3-forth-play-region)
@@ -88,18 +93,18 @@
   (define-key map (kbd "C-c C-u") 'hsc3-forth-help))
 
 (defun hsc3-forth-mode-menu (map)
-  "FORTH SUPERCOLLIDER MENU."
-  (define-key map [menu-bar hsc3-forth] (cons "FORTH-SUPERCOLLIDER" map))
-  (define-key map [menu-bar hsc3-forth help] '("HELP" . hsc3-forth-help))
-  (define-key map [menu-bar hsc3-forth manual] '("MANUAL" . hsc3-forth-manual))
-  (define-key map [menu-bar hsc3-forth included] '("INCLUDED" . hsc3-forth-included))
-  (define-key map [menu-bar hsc3-forth send-line] '("SEND LINE" . hsc3-forth-send-line))
-  (define-key map [menu-bar hsc3-forth stop] '("STOP" . hsc3-forth-stop))
-  (define-key map [menu-bar hsc3-forth pp] '("PP" . hsc3-forth-pp))
-  (define-key map [menu-bar hsc3-forth draw] '("DRAW" . hsc3-forth-draw))
-  (define-key map [menu-bar hsc3-forth play] '("PLAY" . hsc3-forth-play))
-  (define-key map [menu-bar hsc3-forth bye] '("BYE" . hsc3-forth-bye))
-  (define-key map [menu-bar hsc3-forth see-forth] '("SEE FORTH" . hsc3-forth-see-forth)))
+  "Add Forth SuperCollider menu entries to MAP."
+  (define-key map [menu-bar hsc3-forth] (cons "Forth-SuperCollider" map))
+  (define-key map [menu-bar hsc3-forth help] '("Help" . hsc3-forth-help))
+  (define-key map [menu-bar hsc3-forth manual] '("Manual" . hsc3-forth-manual))
+  (define-key map [menu-bar hsc3-forth included] '("Included" . hsc3-forth-included))
+  (define-key map [menu-bar hsc3-forth send-line] '("Send line" . hsc3-forth-send-line))
+  (define-key map [menu-bar hsc3-forth stop] '("Stop" . hsc3-forth-stop))
+  (define-key map [menu-bar hsc3-forth pp] '("Pp" . hsc3-forth-pp))
+  (define-key map [menu-bar hsc3-forth draw] '("Draw" . hsc3-forth-draw))
+  (define-key map [menu-bar hsc3-forth play] '("Play" . hsc3-forth-play))
+  (define-key map [menu-bar hsc3-forth bye] '("Bye" . hsc3-forth-bye))
+  (define-key map [menu-bar hsc3-forth see-forth] '("See Forth" . hsc3-forth-see-forth)))
 
 (if hsc3-forth-mode-map
     ()
@@ -119,3 +124,5 @@
 (add-to-list 'auto-mode-alist '("\\.fs$" . hsc3-forth-mode))
 
 (provide 'hsc3-forth)
+
+;;; hsc3-forth.el ends here
