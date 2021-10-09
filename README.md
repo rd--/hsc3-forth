@@ -19,6 +19,9 @@ The only data type is the [SuperCollider](http://audiosynth.com/) `Unit Generato
 There is an hsc3-forth [emacs](http://www.gnu.org/software/emacs/) mode,
 a derivative of [forth-mode](http://www.gnu.org/software/gforth/).
 
+There are binaries at <https://github.com/rd--/hsc3-forth/releases>.
+
+<!--
 There is an OSX (10.9.3) binary
 ([hsc3-forth](sw/hsc3-forth/osx/hsc3-forth.xz).[xz](http://tukaani.org/xz/)),
 or to build type:
@@ -26,6 +29,7 @@ or to build type:
 ~~~~
 $ cabal install
 ~~~~
+-->
 
 An environment variable locates the hsc3-forth library files:
 
