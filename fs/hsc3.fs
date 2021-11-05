@@ -16,8 +16,9 @@
 
 : exp2 2 swap ** ;
 
-\ ABBREVIATIONS
+\ ABBREVIATIONS & ALIASES
 
+: array mce ;
 : mce2 2 mce ;
 : mrg2 2 mrg ;
 : clone2 2 clone ;

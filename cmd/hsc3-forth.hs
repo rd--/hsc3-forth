@@ -71,6 +71,7 @@ fw_assert_empty = do
     [] -> return ()
     l -> Forth.throw_error ("STACK NOT EMPTY: " ++ unwords (map show l))
 
+-- | Allow UGens to have a rate specified as a suffix to the name.
 ugen_sep :: String -> Forth.Forth w a (String,Maybe SC3.Rate)
 ugen_sep = maybe (Forth.throw_error "UGEN NAME RATE SEPARATOR FAILED") return . SC3.sc3_ugen_name_sep
 
@@ -85,20 +86,32 @@ get_nc u nc =
                    Just _ -> return Nothing
                    Nothing -> fmap Just (Forth.pop_int "GET_NC")
 
--- > fmap ugen_io (DB.u_lookup Base.CI "DSEQ")
--- > fmap ugen_io (DB.u_lookup Base.CI "DEMAND")
--- > fmap ugen_io (DB.u_lookup Base.CI "irand")
+-- > fmap ugen_io (DB.u_lookup_ci "DSEQ")
+-- > fmap ugen_io (DB.u_lookup_ci "DEMAND")
+-- > fmap ugen_io (DB.u_lookup_ci "irand")
 ugen_io :: DB.U -> (Int,Maybe Int)
 ugen_io u = (length (DB.ugen_inputs u),DB.u_fixed_outputs u)
 
+{- | If an oscillator is given without a rate suffix, provide the default rate.
+
+> get_osc_def_rate "sinosc" == Just AudioRate
+-}
+get_osc_def_rate :: (String, Maybe SC3.Rate) -> (String, Maybe SC3.Rate)
+get_osc_def_rate (nm, dotRt) =
+  case dotRt of
+    Nothing -> case DB.u_lookup_ci nm of
+                 Nothing -> (nm, Nothing)
+                 Just u -> if DB.u_is_filter u then (nm, Nothing) else (nm, Just (DB.ugen_default_rate u))
+    _ -> (nm, dotRt)
+
 gen_plain :: String -> U_Forth ()
 gen_plain w = do
-  (nm,rt) <- ugen_sep w
+  (nm,rt) <- fmap get_osc_def_rate (ugen_sep w)
   let (nm',sp) = case rt of
                    Nothing -> SC3.resolve_operator Base.CI nm
                    _ -> (nm,Nothing)
       sp' = SC3.Special (fromMaybe 0 sp)
-  u <- case DB.u_lookup Base.CI nm' of
+  u <- case DB.u_lookup_ci nm' of
          Nothing -> Forth.throw_error ("DYNAMIC FAILED: UNKNOWN UGEN: " ++ Forth.tick_quotes nm')
          Just r -> return r
   when (isNothing rt && isNothing (DB.ugen_filter u))
@@ -133,7 +146,7 @@ fw_help = do
 fw_manual :: Forth.Forth w a ()
 fw_manual = do
   (nm,_) <- ugen_sep =<< Forth.pop_string "MANUAL: NAME"
-  case DB.u_lookup Base.CI nm of
+  case DB.u_lookup_ci nm of
     Nothing -> Forth.throw_error ("MANUAL: NO ENTRY: " ++ nm)
     Just u -> liftIO (Help.sc3_scdoc_help_open False (DB.ugen_name u))
 
