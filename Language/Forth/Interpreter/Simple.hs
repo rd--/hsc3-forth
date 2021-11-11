@@ -31,7 +31,7 @@ class Forth_Type a where
     ty_from_bool :: Bool -> a -- ^ Boolean value represented in /a/, by convention @-1@ and @0@.
 
 ty_to_int' :: Forth_Type a => String -> a -> Int
-ty_to_int' msg = fromMaybe (error ("NOT-INTEGER: " ++ msg)) . ty_to_int
+ty_to_int' msg = fromMaybe (error ("Not-integer: " ++ msg)) . ty_to_int
 
 instance Forth_Type Integer where
     ty_show = show
@@ -46,7 +46,7 @@ instance Forth_Type a => Show (DC a) where
     show dc =
         case dc of
           DC a -> ty_show a
-          DC_String str -> "STRING:" ++ tick_quotes str
+          DC_String str -> "String:" ++ tick_quotes str
           DC_XT str -> "XT:" ++ str
 
 -- | Extract plain value from 'DC', else error.
@@ -54,7 +54,7 @@ dc_plain :: DC a -> Forth w a a
 dc_plain dc =
     case dc of
       DC a -> return a
-      _ -> throw_error "DC-NOT-VALUE-CELL"
+      _ -> throw_error "DC-not-value-cell"
 
 -- | A compilation cell, for the compilation stack.
 data CC w a = CC_Word String | CC_Forth (Forth w a ())
@@ -89,17 +89,17 @@ data VM w a =
 
 instance Forth_Type a => Show (VM w a) where
     show vm = concat
-              ["\n DATA STACK: ",unwords (map show (stack vm))
-              ,"\n RETURN STACK: ",unwords (map show (rstack vm))
-              ,"\n COMPILE STACK DEPTH: ",show (length (cstack vm))
-              ,"\n THREADS: ",intercalate "," (map show (Map.keys (threads vm)))
-              ,"\n DICT: ",unwords (Map.keys (dict vm))
-              ,"\n LOCALS: ",intercalate "," (map (unwords . Map.keys) (locals vm))
-              ,"\n BUFFER: ",buffer vm
-              ,"\n MODE: ",show (mode vm)
-              ,"\n DYMAMIC: ",maybe "NO" (const "YES") (dynamic vm)
-              ,"\n INPUT PORT: ",maybe "NO" (const "YES") (input_port vm)
-              ,"\n TRACING: ",show (tracing vm)
+              ["\n Data stack: ",unwords (map show (stack vm))
+              ,"\n Return stack: ",unwords (map show (rstack vm))
+              ,"\n Compile stack depth: ",show (length (cstack vm))
+              ,"\n Threads: ",intercalate "," (map show (Map.keys (threads vm)))
+              ,"\n Dict: ",unwords (Map.keys (dict vm))
+              ,"\n Locals: ",intercalate "," (map (unwords . Map.keys) (locals vm))
+              ,"\n Buffer: ",buffer vm
+              ,"\n Mode: ",show (mode vm)
+              ,"\n Dymamic: ",maybe "No" (const "Yes") (dynamic vm)
+              ,"\n Input port: ",maybe "No" (const "Yes") (input_port vm)
+              ,"\n Tracing: ",show (tracing vm)
               ]
 
 -- | Signals (exceptions) from 'VM'.
@@ -141,7 +141,7 @@ get_vm :: Forth w a (VM w a)
 get_vm = do
   vm <- get
   sig <- liftIO (modifyMVar (sigint vm) (\s -> return (False,s)))
-  when sig (throw_error "VM: SIGINT")
+  when sig (throw_error "VM: SigInt")
   return vm
 
 -- | Function with 'VM'.
@@ -169,7 +169,7 @@ throw_error = throwError . VM_Error
 
 -- | Reader that raises an /unknown word/ error.
 unknown_error :: String -> Forth w a r
-unknown_error s = throw_error ("UNKNOWN WORD: " ++ tick_quotes s)
+unknown_error s = throw_error ("Unknown word: " ++ tick_quotes s)
 
 -- * Stack
 
@@ -196,11 +196,11 @@ pop_vm_stack :: String -> (VM w a -> [r]) -> (VM w a -> [r] -> VM w a) -> Forth 
 pop_vm_stack nm f g = do
   vm <- get_vm
   case f vm of
-    [] -> throw_error (nm ++ ": STACK UNDERFLOW")
+    [] -> throw_error (nm ++ ": stack underflow")
     x:xs -> put (g vm xs) >> return x
 
 pop' :: Forth w a (DC a)
-pop' = pop_vm_stack "DATA" stack (\vm s -> vm {stack = s})
+pop' = pop_vm_stack "data" stack (\vm s -> vm {stack = s})
 
 -- | Remove value from 'stack'.
 pop :: Forth w a a
@@ -211,7 +211,7 @@ pop_int :: Forth_Type a => String -> Forth w a Int
 pop_int msg = pop >>= return . ty_to_int' msg
 
 popr' :: Forth w a (DC a)
-popr' = pop_vm_stack "RETURN" rstack (\vm s -> vm {rstack = s})
+popr' = pop_vm_stack "return" rstack (\vm s -> vm {rstack = s})
 
 -- | Remove value from 'rstack'.
 popr :: Forth w a a
@@ -219,7 +219,7 @@ popr = popr' >>= dc_plain
 
 -- | Remove value from 'cstack'.
 popc :: Forth w a (CC w a)
-popc = pop_vm_stack "COMPILE" cstack (\vm s -> vm {cstack = s})
+popc = pop_vm_stack "compile" cstack (\vm s -> vm {cstack = s})
 
 -- | ( id len -- )
 pop_string :: String -> Forth w a String
@@ -227,7 +227,7 @@ pop_string msg = do
   vm <- get_vm
   case stack vm of
     DC _ : DC_String str : s' -> put vm {stack = s'} >> return str
-    _ -> throw_error ("NOT-STRING?" ++ msg)
+    _ -> throw_error ("not-string?" ++ msg)
 
 -- * Token / Expr
 
@@ -270,7 +270,7 @@ read_until pre cf = do
   vm <- get_vm
   let f = if pre then dropWhile isSpace else id
       r = break_on cf (f (buffer vm))
-  trace 2 (show ("READ_UNTIL",mode vm,fst r,length (snd r)))
+  trace 2 (show ("read_until",mode vm,fst r,length (snd r)))
   put vm {buffer = snd r}
   return r
 
@@ -284,8 +284,8 @@ scan_token :: Forth w a (Maybe String)
 scan_token = do
   r <- read_until True isSpace
   case r of
-    ([],[]) -> write_ln " OK" >> return Nothing
-    ([],rhs) -> throw_error ("SCAN_TOKEN: NULL: " ++ rhs)
+    ([],[]) -> write_ln " Ok" >> return Nothing
+    ([],rhs) -> throw_error ("scan_token: Null: " ++ rhs)
     ("\\",_) -> scan_until (== '\n') >> scan_token
     ("(",_) -> scan_until (== ')') >> scan_token
     (e,_) -> return (Just e)
@@ -301,7 +301,7 @@ fw_refill = do
     Just h -> do
       eof <- liftIO (hIsEOF h)
       when eof (throwError VM_EOF)
-      trace 2 "REFILL"
+      trace 2 "refill"
       x <- liftIO (hGetLine h)
       put (vm {buffer = x})
 
@@ -329,7 +329,7 @@ interpret_word w = do
     Nothing ->
         case dynamic vm of
           Just f -> let d_r = f w in put vm {dict = Map.insert w d_r (dict vm)} >> d_r
-          Nothing -> throw_error ("UNKNOWN WORD: " ++ tick_quotes w)
+          Nothing -> throw_error ("Unknown word: " ++ tick_quotes w)
 
 -- | Either 'interpret_word' or 'push' literal.
 interpret_expr :: Expr a -> Forth w a ()
@@ -348,10 +348,10 @@ vm_interpret = read_expr >>= interpret_expr
 vm_compile :: (Eq a,Forth_Type a) => Forth w a ()
 vm_compile = do
   expr <- read_expr
-  trace 2 ("COMPILE: " ++ expr_pp expr)
+  trace 2 ("Compile: " ++ expr_pp expr)
   case expr of
     Word ";" -> fw_semi_colon
-    Word ":" -> throw_error ": IN COMPILE CONTEXT"
+    Word ":" -> throw_error ": in compile context?"
     Word "do" -> pushc (CC_Word "do")
     Word "i" -> pushc (CC_Forth fw_i)
     Word "j" -> pushc (CC_Forth fw_j)
@@ -367,7 +367,7 @@ vm_compile = do
 cw_instr :: CC w a -> Forth w a ()
 cw_instr cw =
     case cw of
-      CC_Word w -> throw_error ("cw_instr: WORD: " ++ w)
+      CC_Word w -> throw_error ("cw_instr: Word: " ++ w)
       CC_Forth f -> f
 
 -- | Type specialised 'foldl1' of '>>'.
@@ -404,7 +404,7 @@ vm_execute_buffer vm = do
   case r of
     Left err -> case err of
                   VM_No_Input -> return vm'
-                  _ -> error ("VM_EXECUTE_BUFFER: " ++ show err)
+                  _ -> error ("vm_execute_buffer: " ++ show err)
     Right () -> vm_execute_buffer vm'
 
 -- * DO LOOP
@@ -415,7 +415,7 @@ loop_end = do
   vm <- get_vm
   case rstack vm of
     DC p : DC q : _ -> return (p == q)
-    _ -> throw_error "LOOP-END: ILLEGAL RSTACK"
+    _ -> throw_error "loop-end: Illegal rstack (DC)"
 
 -- | /code/ is the expressions between @do@ and @loop@.
 interpret_do_loop :: (Forth_Type a,Eq a) => Forth w a () -> Forth w a ()
@@ -427,7 +427,7 @@ interpret_do_loop code = do
   let step = do
         code
         i <- popr
-        let i' = ty_from_int (ty_to_int' "DO-LOOP: I" i + 1)
+        let i' = ty_from_int (ty_to_int' "do-loop: I" i + 1)
         pushr i'
   let loop = do
         r <- loop_end
@@ -465,16 +465,16 @@ fw_local' nm = do
   case stack vm of
     e : s' -> put vm {stack = s'
                      ,locals = case locals vm of
-                                 [] -> error "NO LOCALS FRAME"
+                                 [] -> error "no locals frame"
                                  l : l' -> Map.insert nm (push' e) l : l'}
-    _ -> throw_error ("(LOCAL): STACK UNDERFLOW: " ++ nm)
+    _ -> throw_error ("(Local): stack underflow: " ++ nm)
 
 -- | Function over current locals 'Dict'.
 at_current_locals :: (Dict w a -> Dict w a) -> VM w a -> VM w a
 at_current_locals f vm =
     case locals vm of
       l : l' -> vm {locals = f l : l'}
-      _ -> error "AT_CURRENT_LOCALS"
+      _ -> error "at_current_locals"
 
 -- | 'locals' is used both during compilation and interpretation.  In
 -- compilation the RHS is undefined, it is used for name lookup and to
@@ -487,8 +487,8 @@ fw_open_brace = do
                w <- read_token
                if w == "}" then return r else get_names (w : r)
   nm <- get_names []
-  when (any is_reserved_word nm) (throw_error ("FW_OPEN_BRACE: RESERVED WORD: " ++ unwords nm))
-  trace 0 ("DEFINE-LOCALS: " ++ intercalate " " nm)
+  when (any is_reserved_word nm) (throw_error ("fw_open_brace: reserved word: " ++ unwords nm))
+  trace 0 ("Define-locals: " ++ intercalate " " nm)
   let locals' = Map.fromList (zip nm (repeat undefined))
   with_vm (\vm -> (at_current_locals (Map.union locals') vm,()))
   pushc (CC_Forth (forth_block (map fw_local' nm)))
@@ -500,10 +500,10 @@ fw_open_brace = do
 fw_colon :: Forth w a ()
 fw_colon = do
   nm <- read_token
-  trace 0 ("DEFINE: " ++ nm)
+  trace 0 ("define: " ++ nm)
   let edit vm = do
-        when (is_reserved_word nm) (throw_error ("':' RESERVED NAME: " ++ nm))
-        when (not (null (cstack vm))) (throw_error ("':' CSTACK NOT EMPTY: " ++ nm))
+        when (is_reserved_word nm) (throw_error ("':' reserved name: " ++ nm))
+        when (not (null (cstack vm))) (throw_error ("':' cstack not empty: " ++ nm))
         return (vm {mode = Compile
                    ,cstack = [CC_Word nm]
                    ,locals = Map.empty : locals vm})
@@ -521,13 +521,13 @@ fw_semi_colon = do
                      then instr
                      else bracketed (begin_locals,end_locals) instr
             w = forth_block instr'
-        in do trace 2 ("END DEFINITION: " ++ nm)
-              when (Map.member nm (dict vm)) (write_sp ("REDEFINED " ++ nm))
+        in do trace 2 ("End definition: " ++ nm)
+              when (Map.member nm (dict vm)) (write_sp ("Redefined " ++ nm))
               put (vm {cstack = []
                       ,locals = tail (locals vm)
                       ,dict = Map.insert nm w (dict vm)
                       ,mode = Interpret})
-    _ -> throw_error "CSTACK"
+    _ -> throw_error "cstack"
   return ()
 
 -- * STRINGS
@@ -535,14 +535,14 @@ fw_semi_colon = do
 fw_s_quote_compiler :: Forth_Type a => Forth w a ()
 fw_s_quote_compiler = do
   str <- scan_until (== '"')
-  trace 2 ("COMPILE: S\": \"" ++ str ++ "\"")
+  trace 2 ("compile: s\": \"" ++ str ++ "\"")
   pushc (CC_Forth (push_str str))
 
 fw_s_quote_interpet :: Forth_Type a => Forth w a ()
 fw_s_quote_interpet = scan_until (== '"') >>=  push_str
 
 fw_type :: Forth w a ()
-fw_type = pop_string "TYPE" >>= write
+fw_type = pop_string "Type" >>= write
 
 -- * Forth words
 
@@ -559,13 +559,13 @@ fw_evaluate' str = do
 -- | Variant on @included@, argument not on stack.
 fw_included' :: (Eq a,Forth_Type a) => FilePath -> Forth w a ()
 fw_included' nm = do
-  trace 0 ("INCLUDED: " ++ nm)
+  trace 0 ("included': " ++ nm)
   x <- liftIO (doesFileExist nm)
-  when (not x) (throw_error ("INCLUDED': FILE MISSING: " ++ tick_quotes nm))
+  when (not x) (throw_error ("included': file missing: " ++ tick_quotes nm))
   liftIO (readFile nm) >>= fw_evaluate'
 
 fw_included :: (Eq a,Forth_Type a) => Forth w a ()
-fw_included = pop_string "INCLUDED" >>= fw_included'
+fw_included = pop_string "included" >>= fw_included'
 
 fw_i :: Forth w a ()
 fw_i = popr >>= \x -> pushr x >> push x
@@ -591,10 +591,10 @@ fw_pick :: Forth_Type a => Forth w a ()
 fw_pick = do
   vm <- get_vm
   case stack vm of
-    DC n : s' -> let n' = ty_to_int' "PICK" n
+    DC n : s' -> let n' = ty_to_int' "pick" n
                      e = s' !! n'
                  in put vm {stack = e : s'}
-    _ -> throw_error "PICK"
+    _ -> throw_error "pick"
 
 write,write_ln,write_sp :: String -> Forth w a ()
 write = liftIO . putStr
@@ -602,7 +602,7 @@ write_ln = write . (++ "\n")
 write_sp = write . (++ " ")
 
 fw_emit,fw_dot :: Forth_Type a => Forth w a ()
-fw_emit = write . return . toEnum =<< pop_int "EMIT"
+fw_emit = write . return . toEnum =<< pop_int "emit"
 fw_dot = write_sp . show =<< pop'
 
 fw_dot_s :: Forth_Type a => Forth w a ()
@@ -632,15 +632,15 @@ fw_fork = do
                   let k = Hashable.hash th :: Int
                   put vm {stack = DC (ty_from_int k) : stack vm
                          ,threads = Map.insert k th (threads vm)}
-    Nothing -> throw_error ("FORK: UNKNOWN WORD: " ++ nm)
+    Nothing -> throw_error ("Fork: unknown word: " ++ nm)
 
 fw_kill :: Forth_Type a => Forth w a ()
 fw_kill = do
-  k <- pop_int "KILL: PID?"
+  k <- pop_int "Kill: pid?"
   vm <- get_vm
   let threads' = threads vm
   case Map.lookup k threads' of
-    Nothing -> throw_error ("KILL: UNKNOWN THREAD: " ++ show k)
+    Nothing -> throw_error ("Kill: unknown thread: " ++ show k)
     Just th -> liftIO (killThread th) >> put vm {threads = Map.delete k threads'}
 
 fw_kill_all :: Forth w a ()
@@ -660,7 +660,7 @@ fw_execute = do
   c <- pop'
   case c of
     DC_XT xt -> interpret_word xt
-    _ -> throw_error "EXECUTE: NOT EXECUTION TOKEN"
+    _ -> throw_error "Execute: not execution token"
 
 -- * Dictionaries
 
@@ -705,7 +705,7 @@ core_dict =
     ,("key",liftIO getChar >>= \c -> push (ty_from_int (fromEnum c)))
     -- DEBUG
     ,("vmstat",fw_vmstat)
-    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int' "TRACE" k},())))]
+    ,("trace",pop >>= \k -> with_vm (\vm -> (vm {tracing = ty_to_int' "trace" k},())))]
 
 core_words :: [String]
 core_words = Map.keys (core_dict :: Dict w Integer)
@@ -719,7 +719,7 @@ exec_err :: VM w a -> Forth w a () -> IO (VM w a)
 exec_err vm fw = do
   (r,vm') <- runStateT (runExceptT fw) vm
   case r of
-    Left err -> error ("EXEC_ERR: " ++ show err)
+    Left err -> error ("exec_err: " ++ show err)
     Right () -> return vm'
 
 -- | Read, evaluate, print, loop.  Prints @OK@ at end of line.  Prints
@@ -729,9 +729,9 @@ repl' vm = do
   (r,vm') <- runStateT (runExceptT vm_execute) vm
   case r of
     Left err -> case err of
-                  VM_EOF -> putStrLn "BYE" >> liftIO exitSuccess
+                  VM_EOF -> putStrLn "bye" >> liftIO exitSuccess
                   VM_No_Input -> liftIO exitSuccess
-                  VM_Error msg -> putStrLn (" ERROR: " ++ msg) >> repl' (vm_reset vm)
+                  VM_Error msg -> putStrLn (" error: " ++ msg) >> repl' (vm_reset vm)
     Right () -> repl' vm'
 
 catch_sigint :: VM w a -> IO ()
@@ -750,10 +750,10 @@ repl vm init_f = do
 
 load_files :: (Eq a,Forth_Type a) => [String] -> Forth w a ()
 load_files nm = do
-  trace 0 ("LOAD-FILES: " ++ intercalate "," nm)
+  trace 0 ("load-files: " ++ intercalate "," nm)
   r <- liftIO (lookupEnv "HSC3_FORTH_DIR")
   case r of
-    Nothing -> throw_error "HSC3_FORTH_DIR NOT SET"
+    Nothing -> throw_error "HSC3_FORTH_DIR not set"
     Just dir -> mapM_ fw_included' (map (dir </>) nm)
 
 -- * List functions

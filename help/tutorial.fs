@@ -2,14 +2,14 @@
 
 \ hsc3-forth is a simple forth interpreter.
 
-\ There is one data type, the SUPERCOLLIDER UNIT GENERATOR, a data stack, and a return stack.
+\ There is one data type, the Supercollider Unit Generator, a data stack, and a return stack.
 
 \ The primitive words are:
 \   : ;
-\   IF ELSE THEN
-\   DO I J LOOP
-\   { } (LOCAL)
-\   ' EXECUTE
+\   If Else Then
+\   Do I J Loop
+\   { } (Local)
+\   ' Execute
 
 ( Emacs Forth )
 
@@ -20,16 +20,16 @@
 \   > -- Start hsc3-forth if not running, show interpreter frame
 \   c -- Send current line
 \   d -- Send current region
-\   g -- Send <region> DRAW
-\   e -- Send PP
-\   a -- Send <region> PLAY
+\   g -- Send <region> Draw
+\   e -- Send Pp
+\   a -- Send <region> Play
 \   u -- Send <point> ?
-\   j -- Send <point> MANUAL
-\   k -- Send STOP
-\   s -- Send KILLALL
-\   q -- Send BYE
-\   i -- Send !SIGINT!
-\   p -- Send SC3-STATUS
+\   j -- Send <point> Manual
+\   k -- Send Stop
+\   s -- Send KillAll
+\   q -- Send Bye
+\   i -- Send !SigInt!
+\   p -- Send Sc3-Status
 
 ( Help Forth )
 
@@ -37,20 +37,20 @@
 \ In these cases DPANS'94 numbers are given for reference.
 \ These can be resolved as http://forth.sf.net/std/dpans/dpans6.htm#6.1.2165
 
-\ ? prints information about a UGEN, in EMACS type C-cC-u.
+\ ? prints information about a Ugen, in Emacs type C-cC-u.
 
 S" sinosc" ? \ S" = 6.1.2165 \
 
-\ SinOsc [KR,AR] freq=440.0 phase=0.0
+\ SinOsc kr|ar freq=440 phase=0
 
 S" EnvGen" ?
 
-\ EnvGen [KR,AR] gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
-\     MCE, REORDERS INPUTS: [5,0,1,2,3,4,5], ENUMERATION INPUTS: 4=DoneAction, 5=Envelope UGen
+\ EnvGen kr|ar gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
+\     Mce, Reorders Inputs: [5,0,1,2,3,4,5], Enumeration Inputs: 4=DoneAction, 5=Envelope UGen
 
-\ MANUAL opens the SuperCollider manual at the required page, in emacs type C-cC-j.
+\ Manual opens the SuperCollider manual at the required page, in emacs type C-cC-j.
 
-\ DPANS opens the DPANS glossary at the indicated entry, in emacs type C-cC-f
+\ Dpans opens the DPANS glossary at the indicated entry, in emacs type C-cC-f
 
 ( Discarding Forth )
 
@@ -68,12 +68,12 @@ S" EnvGen" ?
 2 1 - . \ 1 \ - = 6.1.0160 \
 3 4 + 5 * . \ 35 \ * = 6.1.0090 \
 3 4 5 * + . \ 23 \
-2 negate . \ -2 \ NEGATE = 6.1.1910 \
--1 abs . \ 1 \ ABS = 6.1.0690 \
+2 negate . \ -2 \ Negate = 6.1.1910 \
+-1 abs . \ 1 \ Abs = 6.1.0690 \
 
 ( Fractional Forth )
 
-\ UGENS are real valued, / is real valued division, and % real valued modulo.
+\ Ugens are real valued, / is real valued division, and % real valued modulo.
 
 1.1 2.2 3.3 . . . \ 3.3 2.2 1.1 \ . = 6.1.0180 \
 5 2 / . \ 2.5 \ F/ = 12.6.1.1430 \
@@ -93,35 +93,35 @@ S" EnvGen" ?
 \ SC3 treats signals less than or equal to zero as False and greater than zero as True.
 \ hsc3-forth adopts 1 as True.
 
-0 1 = . \ FALSE \ = = 6.1.0530 FALSE = 6.2.1485 \
-1 1 = . \ TRUE \ TRUE = 6.2.2298 \
+0 1 = . \ False \ = = 6.1.0530 False = 6.2.1485 \
+1 1 = . \ True \ True = 6.2.2298 \
 
 ( Ord Forth )
 
 \ The comparison operators.
 
-1 2 < . \ TRUE \ < = 6.1.0480 \
-2 1 < . \ FALSE \
-1 1 < . \ FALSE \
-1 1 <= . \ TRUE \
-2 3 min . \ 2 \ MIN = 6.1.1880 \
+1 2 < . \ True \ < = 6.1.0480 \
+2 1 < . \ False \
+1 1 < . \ False \
+1 1 <= . \ True \
+2 3 min . \ 2 \ Min = 6.1.1880 \
 3 2 min . \ 2 \
-1 3 max . \ 3 \ MAX = 6.1.1870 \
+1 3 max . \ 3 \ Max = 6.1.1870 \ non-optimising?
 
 ( Stack Forth )
 
-1 2 DROP . \ 1 \ DROP = 6.1.1260 \
-1 2 .S OVER .S DROP DROP DROP .S \ <2> 1 2 <3> 1 2 1 <0> \ OVER = 6.1.1990 .S = 15.6.1.0220 \
-1 2 .S SWAP .S DROP DROP .S \ <2> 1 2 <2> 2 1 <0> \ SWAP = 6.1.2260 \
-1 2 3 .S ROT .S DROP DROP DROP .S \ <3> 1 2 3 <3> 2 3 1 <0> \ ROT = 6.1.2160 \
-1 2 .S NIP .S DROP .S \ <2> 1 2 <1> 2 <0> \ NIP = 6.2.1930 \
-1 2 .S TUCK .S DROP DROP DROP .S \ <2> 1 2 <3> 2 1 2 <0> \ TUCK = 6.2.2300 \
-1 2 2DUP .S . . . . .S \ <4> 1 2 1 2 2 1 2 1 <0> \ 2DUP = 6.1.0380 \
-1 2 3 4 5 2 PICK .S . . . . . . .S \ <6> 1 2 3 4 5 3 3 5 4 3 2 1 <0> \ PICK = 6.2.2030 \
+1 2 drop . \ 1 \ Drop = 6.1.1260 \
+1 2 .s over .s drop drop drop .s \ <2> 1 2 <3> 1 2 1 <0> \ Over = 6.1.1990 .s = 15.6.1.0220 \
+1 2 .s swap .s drop drop .s \ <2> 1 2 <2> 2 1 <0> \ Swap = 6.1.2260 \
+1 2 3 .s rot .s drop drop drop .s \ <3> 1 2 3 <3> 2 3 1 <0> \ Rot = 6.1.2160 \
+1 2 .s nip .s drop .s \ <2> 1 2 <1> 2 <0> \ Nip = 6.2.1930 \
+1 2 .s tuck .s drop drop drop .s \ <2> 1 2 <3> 2 1 2 <0> \ Tuck = 6.2.2300 \
+1 2 2dup .s . . . . .s \ <4> 1 2 1 2 2 1 2 1 <0> \ 2dup = 6.1.0380 \
+1 2 3 4 5 2 pick .s . . . . . . .s \ <6> 1 2 3 4 5 3 3 5 4 3 2 1 <0> \ Pick = 6.2.2030 \
 
 ( Block Forth )
 
-\ COLON and SEMICOLON introduce new words.
+\ Colon and Semicolon introduce new words.
 
 : squared dup * ; \ : = 6.1.0450, ; = 6.1.0460 \
 5 squared . \ 25 \
@@ -135,248 +135,248 @@ S" EnvGen" ?
 
 ( Conditional Forth )
 
-: _ 0 if S" #T" type else S" #F" type then ; \ IF = 6.1.1700, ELSE = 6.1.1310, THEN = 6.1.2270 \
-_ \ #F \
+: _ 0 if s" #t" type else s" #f" type then ; \ If = 6.1.1700, Else = 6.1.1310, Then = 6.1.2270 \
+_ \ #f \
 
  ( Do Forth )
 
-: FIVE 5 0 DO 5 LOOP ; \ DO = 6.1.1240, LOOP = 6.1.1800 \
-FIVE .S . . . . . \ <5> 5 5 5 5 5 5 5 5 5 5 \
+: five 5 0 do 5 loop ; \ Do = 6.1.1240, Loop = 6.1.1800 \
+five .S . . . . . \ <5> 5 5 5 5 5 5 5 5 5 5 \
 
-: N-DUP 0 DO DUP LOOP ;
-: N-DROP 0 DO DROP LOOP ;
-5 4 N-DUP .S \ <5> 5 5 5 5 5 \
-5 N-DROP .S \ <0> \
+: n-dup 0 do dup loop ;
+: n-drop 0 do drop loop ;
+5 4 n-dup .s \ <5> 5 5 5 5 5 \
+5 n-drop .s \ <0> \
 
 \ I fetches the loop counter
 
-: SEVEN-ELEVEN 11 7 DO I . LOOP ; \ I = 6.1.1680 \
-SEVEN-ELEVEN \ 7 8 9 10 \
+: seven-eleven 11 7 do i . loop ; \ I = 6.1.1680 \
+seven-eleven \ 7 8 9 10 \
 
-: MTABLE 11 1 DO DUP I * . LOOP DROP ;
-5 MTABLE \ 5 10 15 20 25 30 35 40 45 50 \
+: mtable 11 1 do dup i * . loop drop ;
+5 mtable \ 5 10 15 20 25 30 35 40 45 50 \
 
 \ J fetches the outer loop counter
 
-: TBL 3 1 DO 12 10 DO I J / . LOOP LOOP ; \ J = 6.1.1730 \
-TBL \ 10 11 5 5.5 \
+: tbl 3 1 do 12 10 do i j / . loop loop ; \ J = 6.1.1730 \
+tbl \ 10 11 5 5.5 \ 10/1 11/1 10/2 11/2
 
 ( Printing Forth )
 
-\ EMIT prints a character.
+\ emit prints a character.
 
-: STAR 42 EMIT ; STAR STAR STAR \ *** \ EMIT = 6.1.1320 \
-: STARS 0 DO STAR LOOP ; 10 STARS \ ********** \
-: F 5 0 DO CR LOOP ; F \ \N\N\N\N\N \
-: BOX 0 DO CR DUP STARS LOOP DROP ; 3 3 BOX \ \N***\N***\N*** \
-: \STARS 0 DO CR I SPACES 10 STARS LOOP ; 3 \STARS
+: star 42 emit ; star star star \ *** \ Emit = 6.1.1320 \
+: stars 0 do star loop ; 10 stars \ ********** \
+: f 5 0 do cr loop ; f \ \n\n\n\n\n \
+: box 0 do cr dup stars loop drop ; 3 3 box \ \n***\n***\n*** \
+: \stars 0 do cr i spaces 10 stars loop ; 3 \stars
 
-\ TYPE prints a string
+\ Type prints a string
 
-S" STRING" TYPE \ STRING \ TYPE = 6.1.2310 \
-: _ S" STRING" TYPE ; _ \ STRING
+s" string" type \ string \ Type = 6.1.2310 \
+: _ s" string" type ; _ \ string
 
 ( Local Forth )
 
-\ hsc3-forth allows LOCAL words using the { NAME ... } syntax.
+\ hsc3-forth allows Local words using the { Name ... } syntax.
 
-: SWAP' { A B } B A ; \ (LOCAL) = 13.6.1.0086 \
-1 2 SWAP' . . \ 1 2 \
+: swap' { a b } b a ; \ (Local) = 13.6.1.0086 \
+1 2 swap' . . \ 1 2 \
 
-: PATTERN { A B C } A B C B C B A ;
-1 2 3 PATTERN . . . . . . . \ 1 2 3 2 3 2 1 \
+: pattern { a b c } a b c b c b a ;
+1 2 3 pattern . . . . . . . \ 1 2 3 2 3 2 1 \
 
 \ Multiple sets of LOCAL words are allowed.
 
-: F { A } 2 { B } A B A ;
-1 F . . . \ 1 2 1 \
+: f { a } 2 { b } a b a ;
+1 f . . . \ 1 2 1 \
 
 ( Ugen Forth )
 
-440 0 SINOSC.AR 0.1 * 0 SWAP OUT  -1 ADD-TO-HEAD 1 PLAY-AT
-440 441 2 MCE 0 SINOSC.AR 0.1 * PLAY
-440 441 2 MCE 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * ABS * PLAY
-WHITENOISE.AR 0.05 * PLAY
+440 0 sinosc.ar 0.1 * 0 swap out  -1 addToHead 1 playAt
+440 441 2 mce 0 sinosc.ar 0.1 * play
+440 441 2 mce 0 sinosc.ar 1 0 sinosc.kr 0.1 * abs * play
+pinknoise.ar 0.05 * play
 
-\ STOP frees all nodes at SCSYNTH (C-cC-k)
+\ Stop frees all nodes at SCSYNTH (C-cC-k)
 
-STOP
+stop
 
 \ Filters may elide the operating rate.
 
-WHITENOISE.AR HPZ1.AR 0.1 * .
-WHITENOISE.AR HPZ1 0.1 * .
+whitenoise.ar hpz1.ar 0.1 * play
+whitenoise.ar hpz1 0.1 * play
 
-\ Oscillators may not.
+\ Oscillators may also elide the operating rate (defaults to highest allowed rate)
 
-440 0 SINOSC 0.1 * . \ ERROR
+440 0 sinosc 0.1 * play
 
 \ Operators have both text and symbolic names.
 
-440 0 SINOSC.AR WHITENOISE.AR ADD -45 DBAMP MUL PLAY \ QUIETLY NOW
+440 0 sinosc.ar whitenoise.ar add -45 dbamp mul play \ quietly now
 
 ( Insensitive Forth )
 
-440 0 SINOSC.AR 0.1 MUL PLAY \ CASE INSENSITIVE
 441 0 sinosc.ar 0.1 mul play \ case insensitive
 442 0 SinOsc.ar 0.1 Mul Play \ Case Insensitive
 
 ( Pretty Forth )
 
 \ pretty-print prints an hsc3-forth representation of the graph.
-\ A flag tells whether to print the UId of each NON-DET UGen.
-\ PP is an abreviation of FALSE PRETTY-PRINT (C-cC-e).
+\ A flag tells whether to print the UId of each non-det Ugen.
+\ Pp is an abreviation of false pretty-print (C-cC-e).
 
-: G 440 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * * WHITENOISE.AR 0.1 * + ;
-G TRUE PRETTY-PRINT
-G PP
+: g 440 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
+g true prettyPrint
+g pp
 
 \ PP is only moderately perspicuous, it does not see through MCE.
 
-: G 440 441 2 MCE 0 SINOSC.AR 1 0 SINOSC.KR 0.1 * * WHITENOISE.AR 0.1 * + ;
-G PP
+: g 440 441 2 mce 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
+g pp
 
 ( Drawing Forth )
 
-\ DRAW draws a UGEN graph via the graphviz DOT language interpreter (C-cC-g)
+\ Draw draws a UGEN graph via the graphviz DOT language interpreter (C-cC-g)
 
-WHITENOISE.AR 0.1 * DUP - DRAW \ SILENCE \
-WHITENOISE.AR 0.1 * 2 CLONE UNMCE - DRAW \ NOISE \
+whitenoise.ar 0.1 * dup - draw \ Silence \
+whitenoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
 ( Naming Forth )
 
-440 RAND_ 440 + 0 SINOSC.AR 0.1 * DRAW \ RAND_ IS A UNARY OPERATOR
-440 880 RAND.IR 0 SINOSC.AR 0.1 * DRAW \ RAND.IR IS A UGEN
+440 rand_ 440 + 0 sinosc.ar 0.1 * draw \ rand_ is a unary operator
+440 880 rand.ir 0 sinosc.ar 0.1 * draw \ rand.ir is a ugen
 
 ( Random Forth )
 
-: RANDOM-SINE 1900 2300 RAND.IR 0 SINOSC.AR -1 1 RAND.IR 0.05 0.1 RAND.IR PAN2.AR ;
-: _ 4 0 DO RANDOM-SINE PLAY LOOP ; _
+: random-sine 1900 2300 rand.ir 0 sinosc.ar -1 1 rand.ir 0.05 0.1 rand.ir pan2.ar ;
+: _ 4 0 do random-sine play loop ; _
 
-STOP
+stop
 
 \ NON-DET operators are not marked, the below has one Rand_ operator.
 
-500 RAND_ 500 RAND_ - 0 SINOSC.AR 0.1 * DRAW
+500 rand_ 500 rand_ - 0 sinosc.ar 0.1 * draw
 
 ( Un-Random Forth )
 
-\ The non-deterministic UGENS get identifiers from a counter, which can be set.
+\ The non-deterministic ugens get identifiers from a counter, which can be set.
 
-1376523 SET-UID
+1376523 set-uid
 
-\ The UNRAND transformation lifts scalar random UGENS to constants.
+\ The Unrand transformation lifts scalar random Ugens to constants.
 
-0 1 RAND.IR 2 CLONE .S \ <1> [UGEN:RAND UGEN:RAND]
-UNRAND . \ [0.6768026553207348 0.21705544209066452]
+0 1 rand.ir 2 clone .s \ <1> [Rand Rand]
+unrand . \ [0.6768026553207348 0.21705544209066452]
 
 \ How un-random is it?  Not very.....  This requires attention.
 
-: RND RAND.IR UNRAND ;
-: _ 100 0 DO 0 1 RND . LOOP ; _
+: rnd rand.ir unrand ;
+: _ 100 0 do 0 1 rnd . loop ; _
 
-\ UNRAND is applied internally when a constant value is required, ie. for PAUSE.
+\ Unrand is applied internally when a constant value is required, ie. for Pause.
 
-: _ 20 0 DO 0 1 RAND.IR I . DUP DUP . UNRAND . CR PAUSE LOOP ; _
+: _ 20 0 do 0 1 rand.ir i . dup dup . unrand . cr pause loop ; _
 
-\ CHOOSE is a composite i-rate UGEN.
+\ Choose is a composite i-rate Ugen.
 
-: RHARM 13 1 DO I 100 * LOOP 12 MCE CHOOSE 0 SINOSC.AR -1 1 RAND.IR 0.05 PAN2 ;
-RHARM 1 3 9 INF OVERLAP-TEXTURE \ C-cC-i to interrupt
+: rharm 13 1 do i 100 * loop 12 mce choose 0 sinosc.ar -1 1 rand.ir 0.05 pan2 ;
+rharm 1 3 9 inf overlapTexture \ C-cC-i to interrupt
 
 ( Enveloped Forth )
 
-: WITH-TRIANGLE-ENV { DUR LVL } 1 1 0 1 REMOVE-SYNTH DUR LVL ENV-TRI ENVGEN.KR * ;
-WHITENOISE.AR 10 0.1 WITH-TRIANGLE-ENV PLAY
-RANDOM-SINE 5 0.1 WITH-TRIANGLE-ENV PLAY
-STOP
+: with-triangle-env { dur lvl } 1 1 0 1 removeSynth dur lvl envTri envgen.kr * ;
+whitenoise.ar 10 0.1 with-triangle-env play
+random-sine 5 0.1 with-triangle-env play
+stop
 
 ( Interrupting Forth )
 
-\ SIGINT is caught and the next VM operation will raise an error.
+\ Sigint is caught and the next Vm operation will raise an error.
 
-: ENDLESS INF 0 DO S" MSG: " TYPE I . CR 0.1 PAUSE LOOP ;
-ENDLESS
+: endless inf 0 do s" msg: " type i . cr 0.1 pause loop ;
+endless
 
-\ To send SIGINT from EMACS type C-cC-i
+\ To send Sigint from Emacs type C-cC-i
 
 ( Pausing Forth )
 
-\ PAUSE suspends the thread of the current VM.
+\ Pause suspends the thread of the current Vm.
 
-: ANON 11 1 DO I 4 / DUP . CR PAUSE RANDOM-SINE 5 0.1 WITH-TRIANGLE-ENV PLAY LOOP ;
-ANON 5 PAUSE STOP
+: anon 11 1 do i 4 / dup . cr pause random-sine 5 0.1 with-triangle-env play loop ;
+anon 5 pause stop
 
-\ PAUSE doesn't re-instate interrupts
+\ Pause doesn't re-instate interrupts
 
-10 PAUSE \ NON-INTERRUPTIBLE
-.S
+10 pause \ non-interruptible
+.s
 
 ( Schedule Forth )
 
-\ Since RANDOM-SINE takes time, there is audible scattering.
+\ Since random-sine takes time, there is audible scattering.
 
-: _ 25 0 DO RANDOM-SINE PLAY LOOP ; _
-STOP
+: _ 25 0 do random-sine play loop ; _
+stop
 
-\ SCHED is a variant of PLAY that forward schedules, allowing for precise alignment.
+\ Sched is a variant of Play that forward schedules, allowing for precise alignment.
 
-: _ TIME 0.1 + { T } 25 0 DO RANDOM-SINE T SCHED LOOP ; _
-STOP
+: _ time 0.1 + { t } 25 0 do random-sine t sched loop ; _
+stop
 
 ( Textural Forth )
 
-\ The SC2 TEXTURE functions are implemented, see OVERLAP-TEXTURE.FS.
+\ The SC2 Texture functions are implemented, see overlap-texture.fs.
 
-RANDOM-SINE 2 3 5 XFADE-TEXTURE
-RANDOM-SINE 2 3 6 12 OVERLAP-TEXTURE
+random-sine 2 3 5 xfadeTexture
+random-sine 2 3 6 12 overlapTexture
 
 ( Fork Forth )
 
-\ The VM can be FORKed, and the fork can be KILLed
+\ The Vm can be Forked, and the fork can be Killed
 
-: ENDLESS INF 0 DO S" MSG" TYPE CR 1 PAUSE LOOP ;
-FORK ENDLESS .S
-KILL .S
+: endless inf 0 do s" msg" type cr 1 pause loop ;
+fork endless .s
+kill .s
 
 \ The forked word can read from the stack, but it does so in the new thread.
 
-: N-MESSAGES 0 DO I . CR DUP PAUSE LOOP ;
-0.5 10 FORK N-MESSAGES .S \ <3> 0.5 10 THREAD-ID
+: n-messages 0 do i . cr dup pause loop ;
+0.5 10 fork n-messages .s \ <3> 0.5 10 thread-id
 
 \ Here the interval and the count remain on the stack, along with the THREAD-ID.
 
-KILL . . .S \ 10 0.5 <0>
+kill . . .s \ 10 0.5 <0>
 
 \ The VM keeps a list of all running threads, and they can call be killed together (C-cC-s)
 
-KILLALL
+killall
 
 ( Inclusive Forth )
 
-s" /home/rohan/sw/hsc3-graphs/gr/jmcc/jmcc-why-supercollider.fs" INCLUDED
+s" /home/rohan/sw/hsc3-forth/help/graph/jmcc-why-supercollider.fs" included play
+stop
 
-\ If the file is a process we can FORK INCLUDED, with the normal FORK stack rules.
+\ If the file is a process we can Fork Included, with the normal Fork stack rules.
 
-s" /home/rohan/sw/hsc3-graphs/gr/jmcc/jmcc-alien-meadow.fs" FORK INCLUDED .S
-KILL . . \ 45 STRING:"/home/rohan/sw/hsc3-graphs/gr/jmcc-alien-meadow.fs"
+s" /home/rohan/sw/hsc3-forth/help/texture/jmcc-alien-meadow.fs" fork included .s
+kill . . \ 45 String:"/home/rohan/sw/hsc3-forth/help/texture/jmcc-alien-meadow.fs"
 
 ( Quoting Forth )
 
-\ ' puts the EXECUTION TOKEN (XT) of the subsequent word onto the stack.
-\ EXECUTE takes the token and applies it.
+\ ' puts the Execution Token (XT) of the subsequent word onto the stack.
+\ Execute takes the token and applies it.
 
 ' + . \ XT:+ \ ' = 6.1.0070 \
-' + 1 2 ROT EXECUTE . \ 3 \
+' + 1 2 rot execute . \ 3 \
 
 \ Words can be somewhat higher order.
 
-: SIG 1 50 20 REMOVE-SYNTH XLINE.KR 0 IMPULSE.AR 0.01 0.2 DECAY2 600 0 FSINOSC.AR 0.25 * * ;
-: CMB 0.1 0.1 1 COMBN ;
-: POST-PROC { F } 0 2 IN.AR F EXECUTE 0 SWAP OUT -1 ADD-TO-TAIL 1 PLAY-AT ;
+: sig 1 50 20 removeSynth xline.kr 0 impulse.ar 0.01 0.2 decay2 600 0 fsinosc.ar 0.25 * * ;
+: cmb 0.1 0.1 1 combn ;
+: post-proc { f } 0 2 in.ar f execute 0 swap out -1 addToTail 1 playAt ;
 
-SIG PLAY ' CMB POST-PROC
-STOP
+sig play ' cmb post-proc
+stop
 
 ( Return Forth )
 
@@ -385,40 +385,40 @@ STOP
 
 ( Labeled Forth )
 
-s" LABEL" LABEL . \ "LABEL"
+s" label" label . \ "label"
 
 ( Fibonacci Forth )
 
-: FIB 0 1 ROT 0 DO OVER + SWAP LOOP DROP ;
-: FIBS 0 DO I FIB . LOOP ;
-50 FIBS \ 0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 ...
-.S
+: fib 0 1 rot 0 do over + swap loop drop ;
+: fibs 0 do i fib . loop ;
+50 fibs \ 0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 ...
+.s
 
 ( Dynamic Forth )
 
 \ The UGen words are not all pre-defined but are created dynamically.
 \ The dictionary initially contains no UGen words.
 \ The dynamic lookup happens if the word is not in the dictionary.
-\ This is why eventual lookup failure is reported as DYNAMIC FAILED.
+\ This is why eventual lookup failure is reported as Dynamic Failed.
 
-NOT_A_UGEN.AR \ ERROR
-MISTYPED-WORD \ ERROR
+not_a_ugen.ar \ Error
+mistyped-word \ Error
 
 ( Trouble Forth )
 
-0 1 RAND.IR DUP . PAUSE \ RAND
-440 0 SINOSC.AR PAUSE \ ERROR (NON-CONSTANT)
+0 1 rand.ir dup . pause \ rand
+440 0 sinosc.ar pause \ Error (non-constant)
 
-: _ WHITENOISE.AR 0 DO I . LOOP ; _ \ THIS _SHOULD_ BE A NON-CONSTANT ERROR
+: _ whitenoise.ar 0 do i . loop ; _ \ this _should_ be a non-constant error
 
-0 1 2 3 4 4 MCE OUT.KR PP \ THIS _SHOULD_ ADD THE MCE CONSTRUCTOR TO THE MCE INPUT
+0 1 2 3 4 4 mce out.kr pp \ This _should_ add the mce constructor to the mce input
 
-VMSTAT \ PRINT VM STATUS
-2 TRACE \ SET TRACE LEVEL PRIORITY, 0=HIGH, 1=MEDIUM, 2=LOW (DEFAULT=-1, NO TRACING)
+vmstat \ Print Vm status
+2 trace \ Set trace level priority, 0=high, 1=medium, 2=low (default=-1, no tracing)
 
 ( Finishing Forth )
 
-BYE \ C-cC-q
+bye \ C-cC-q
 
 ( Collecting Forth )
 
@@ -427,8 +427,8 @@ BYE \ C-cC-q
 
 ( Rat Forth )
 
-\ RAT-FORTH uses the same Forth interpreter as HSC3-FORTH.
-\ RAT-FORTH knows only rational numbers.
+\ rat-forth uses the same Forth interpreter as hsc3-forth.
+\ rat-forth knows only rational numbers.
 
 5 2 / . \ 5/2 \
 5 2 DIV . \ 2 \
