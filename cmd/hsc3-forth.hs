@@ -11,7 +11,7 @@ import Text.Printf {- base -}
 
 import qualified Data.Map as Map {- containers -}
 
-import qualified Sound.OSC as OSC {- hosc -}
+import qualified Sound.Osc as Osc {- hosc -}
 
 import qualified Sound.SC3 as SC3 {- hsc3 -}
 import qualified Sound.SC3.Common.Base as Base {- hsc3 -}
@@ -128,13 +128,13 @@ gen_plain w = do
 gen_nm :: SC3.UGen -> String
 gen_nm = show . hash . show
 
-sched :: OSC.Time -> SC3.UGen -> IO ()
+sched :: Osc.Time -> SC3.UGen -> IO ()
 sched t u =
     let nm = gen_nm u
         sy = SC3.synthdef nm (SC3.out 0 u)
-        b0 = OSC.bundle OSC.immediately [SC3.d_recv sy]
-        b1 = OSC.bundle t [SC3.s_new nm (-1) SC3.AddToHead 1 []]
-    in SC3.withSC3 (OSC.sendBundle b0 >> OSC.sendBundle b1)
+        b0 = Osc.bundle Osc.immediately [SC3.d_recv sy]
+        b1 = Osc.bundle t [SC3.s_new nm (-1) SC3.AddToHead 1 []]
+    in SC3.withSC3 (Osc.sendBundle b0 >> Osc.sendBundle b1)
 
 fw_help :: Forth.Forth w a ()
 fw_help = do
@@ -183,12 +183,12 @@ fw_pretty_print = do
   u <- Forth.pop
   liftIO (putStrLn (DB.ugen_graph_forth_pp (toEnum k,False) u))
 
-fw_load_datum :: Char -> U_Forth OSC.Datum
+fw_load_datum :: Char -> U_Forth Osc.Datum
 fw_load_datum c =
     case c of
-      'i' -> Forth.pop_int "Load-datum: i" >>= return . OSC.int32
-      'f' -> pop_double "Load-datum: f" >>= return . OSC.float
-      's' -> Forth.pop_string "Load-datum: s" >>= return . OSC.string
+      'i' -> Forth.pop_int "Load-datum: i" >>= return . Osc.int32
+      'f' -> pop_double "Load-datum: f" >>= return . Osc.float
+      's' -> Forth.pop_string "Load-datum: s" >>= return . Osc.string
       _ -> Forth.throw_error ("Load-datum: unknown type: " ++ Forth.tick_quotes [c])
 
 fw_async :: U_Forth ()
@@ -196,7 +196,7 @@ fw_async = do
   nm <- Forth.pop_string "Async: message-name"
   ty <- Forth.pop_string "Async: osc-type-sig"
   param <- mapM fw_load_datum (reverse (tail ty))
-  _ <- liftIO (SC3.withSC3 (SC3.async (OSC.message nm (reverse param))))
+  _ <- liftIO (SC3.withSC3 (SC3.async (Osc.message nm (reverse param))))
   return ()
 
 ugen_dict :: Forth.Dict Int SC3.UGen
@@ -213,8 +213,8 @@ ugen_dict =
     ,("stop",liftIO (SC3.withSC3 SC3.reset))
     ,("unmce",Forth.pop >>= push_l . SC3.mceChannels)
     ,("async",fw_async)
-    ,("pause",pop_double "Pause" >>= OSC.pauseThread)
-    ,("time",liftIO OSC.time >>= Forth.push . SC3.constant)
+    ,("pause",pop_double "Pause" >>= Osc.pauseThread)
+    ,("time",liftIO Osc.time >>= Forth.push . SC3.constant)
     ,("label",Forth.pop_string "Label" >>= Forth.push . SC3.label)
     ,("get-uid",get_uid >>= Forth.push . SC3.constant)
     ,("set-uid",Forth.pop_int "Set-Uid" >>= set_uid)
