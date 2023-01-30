@@ -108,7 +108,7 @@ gen_plain :: String -> U_Forth ()
 gen_plain w = do
   (nm,rt) <- fmap get_osc_def_rate (ugen_sep w)
   let (nm',sp) = case rt of
-                   Nothing -> Sc3.resolve_operator Base.CI nm
+                   Nothing -> Sc3.resolve_operator Base.Ci nm
                    _ -> (nm,Nothing)
       sp' = Sc3.Special (fromMaybe 0 sp)
   u <- case Db.u_lookup_ci nm' of
@@ -139,7 +139,7 @@ sched t u =
 fw_help :: Forth.Forth w a ()
 fw_help = do
   (nm,_) <- ugen_sep =<< Forth.pop_string "Help: name"
-  case Db.ugen_summary_maybe Base.CI nm of
+  case Db.ugen_summary_maybe Base.Ci nm of
     Nothing -> Forth.throw_error ("?: no help: " ++ nm)
     Just (_,h) -> liftIO (putStrLn h)
 
