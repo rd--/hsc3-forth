@@ -1,6 +1,5 @@
 import Control.Concurrent {- base -}
 import Control.Monad {- base -}
-import Control.Monad.Except {- mtl -}
 import Control.Monad.State {- mtl -}
 import Data.Char {- base -}
 import Data.Hashable {- hashable -}
