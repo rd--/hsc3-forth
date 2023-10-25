@@ -166,7 +166,7 @@ fw_play_at = do
   nid <- Forth.pop_int "Play-at: nid"
   u <- Forth.pop
   fw_assert_empty
-  liftIO (Sc3.auditionAt Sc3.sc3_default_address (nid,toEnum act,grp,[]) u)
+  liftIO (Sc3.auditionOpt (nid,toEnum act,grp,[]) u)
 
 fw_write_synthdef :: U_Forth ()
 fw_write_synthdef = do
