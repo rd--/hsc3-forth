@@ -12,3 +12,9 @@ get-forth-mode:
 push-all:
 	r.gitlab-push.sh hsc3-forth
 	r.github-push.sh hsc3-forth
+
+indent:
+	fourmolu -i Language cmd
+
+doctest:
+	doctest -Wno-x-partial -Wno-incomplete-uni-patterns Language

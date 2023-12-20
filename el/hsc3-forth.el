@@ -37,8 +37,10 @@
 (defun hsc3-forth-pp-word () "<word> Pp." (interactive) (hsc3-forth-point "pp" nil nil))
 (defun hsc3-forth-play () "Play." (interactive) (hsc3-forth-send "play"))
 (defun hsc3-forth-play-region () "<region> Play." (interactive) (hsc3-forth-send-region) (hsc3-forth-send "play"))
+(defun hsc3-forth-play-paragraph () "<paragraph> Play." (interactive) (hsc3-forth-send-paragraph) (hsc3-forth-send "play"))
 (defun hsc3-forth-draw () "Draw." (interactive) (hsc3-forth-send "draw"))
 (defun hsc3-forth-draw-region () "<region> Draw." (interactive) (hsc3-forth-send-region) (hsc3-forth-send "draw"))
+(defun hsc3-forth-draw-paragraph () "<paragraph> Draw." (interactive) (hsc3-forth-send-paragraph) (hsc3-forth-send "draw"))
 (defun hsc3-forth-pp () "Pp." (interactive) (hsc3-forth-send "pp"))
 
 (defun hsc3-forth-included ()
@@ -59,6 +61,19 @@
   (hsc3-forth-send
    (buffer-substring-no-properties (region-beginning) (region-end))))
 
+(defun hsc3-forth-set-region-to-paragraph ()
+  "Set the mark at the start and point at the end of the current paragraph."
+  (interactive)
+  (backward-paragraph)
+  (push-mark nil t t)
+  (forward-paragraph))
+
+(defun hsc3-forth-send-paragraph ()
+  "Send the current paragraph to the interpreter."
+  (interactive)
+  (hsc3-forth-set-region-to-paragraph)
+  (hsc3-forth-send-region))
+
 (defun hsc3-forth-see-forth ()
  "Start and see hsc3-forth."
  (interactive)
@@ -78,8 +93,8 @@
   "Add Forth SuperCollider keybindings to MAP."
   (define-key map (kbd "C-c <") 'hsc3-forth-included)
   (define-key map (kbd "C-c >") 'hsc3-forth-see-forth)
-  (define-key map (kbd "C-c C-a") 'hsc3-forth-play-region)
-  (define-key map (kbd "C-c C-g") 'hsc3-forth-draw-region)
+  (define-key map (kbd "C-c C-a") 'hsc3-forth-play-paragraph)
+  (define-key map (kbd "C-c C-g") 'hsc3-forth-draw-paragraph)
   (define-key map (kbd "C-c C-e") 'hsc3-forth-pp)
   (define-key map (kbd "C-c C-s") 'hsc3-forth-killall)
   (define-key map (kbd "C-c C-c") 'hsc3-forth-send-line)
