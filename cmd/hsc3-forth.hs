@@ -94,37 +94,44 @@ ugen_io u = (length (Db.ugen_inputs u), Db.u_fixed_outputs u)
 {- | If an oscillator is given without a rate suffix, provide the default rate.
 
 >>> get_osc_def_rate ("sinosc", Nothing)
-("sinosc",Just AudioRate)
+Just AudioRate
+
+>>> get_osc_def_rate ("+", Nothing)
+Nothing
 -}
-get_osc_def_rate :: (String, Maybe Sc3.Rate) -> (String, Maybe Sc3.Rate)
+get_osc_def_rate :: (String, Maybe Sc3.Rate) -> Maybe Sc3.Rate
 get_osc_def_rate (nm, dotRt) =
   case dotRt of
     Nothing -> case Db.u_lookup_ci nm of
-      Nothing -> (nm, Nothing)
-      Just u -> if Db.u_is_filter u then (nm, Nothing) else (nm, Just (Db.ugen_default_rate u))
-    _ -> (nm, dotRt)
+      Nothing -> Nothing
+      Just u -> if Db.u_is_filter u
+                  then Nothing
+                  else Just (Db.ugen_default_rate u)
+    _ -> dotRt
 
+{- | Be careful to prefer operators, in case there is a Ugen that is named equally.
+This is the case with the Max Ugen in sc3-plugins.
+-}
 gen_plain :: String -> U_Forth ()
 gen_plain w = do
-  (nm, rt) <- fmap get_osc_def_rate (ugen_sep w)
-  let (nm', sp) = case rt of
-        Nothing -> Sc3.resolve_operator Base.Ci nm
-        _ -> (nm, Nothing)
+  let (nm, sp) = Sc3.resolve_operator Base.Ci w
       sp' = Sc3.Special (fromMaybe 0 sp)
+      Just (nm', rt) = Sc3.sc3_ugen_name_sep nm
+      rt' = get_osc_def_rate (nm', rt)
   u <- case Db.u_lookup_ci nm' of
     Nothing -> Forth.throw_error ("Dynamic failed: unknown Ugen: " ++ Forth.tick_quotes nm')
     Just r -> return r
   when
-    (isNothing rt && isNothing (Db.ugen_filter u))
+    (isNothing rt' && isNothing (Db.ugen_filter u))
     (Forth.throw_error ("Osc: no rate?: " ++ Forth.tick_quotes nm'))
   let (inp, nc) = ugen_io u
   z <- if Db.ugen_nondet u then fmap Sc3.Uid incr_uid else return Sc3.NoId
   nc' <- get_nc u nc
   i <- fmap reverse (pop_n inp)
   let nc'' = fromMaybe (length (Sc3.mceChannels (last i))) nc'
-  let rt' = fromMaybe (maximum (map Sc3.rateOf i)) rt
+  let rt'' = fromMaybe (maximum (map Sc3.rateOf i)) rt'
       i' = (if Db.ugen_std_mce u > 0 then Sc3.halt_mce_transform else id) i
-  Forth.push (Sc3.ugen_optimise_const_operator (Plain.mk_plain rt' (Db.ugen_name u) i' nc'' sp' z))
+  Forth.push (Sc3.ugen_optimise_const_operator (Plain.mk_plain rt'' (Db.ugen_name u) i' nc'' sp' z))
 
 gen_nm :: Sc3.Ugen -> String
 gen_nm = show . hash . show
