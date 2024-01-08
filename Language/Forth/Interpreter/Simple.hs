@@ -84,6 +84,8 @@ data Vm w a = Vm
   -- ^ The return stack.
   , cstack :: [Cc w a]
   -- ^ The compilation stack.
+  , lstack :: [Int]
+  -- ^ The array (list) stack.
   , threads :: Map.Map Int ThreadId
   , dict :: Dict w a
   -- ^ The dictionary.
@@ -114,6 +116,8 @@ instance Forth_Type a => Show (Vm w a) where
       , unwords (map show (rstack vm))
       , "\n Compile stack depth: "
       , show (length (cstack vm))
+      , "\n List stack: "
+      , unwords (map show (lstack vm))
       , "\n Threads: "
       , intercalate "," (map show (Map.keys (threads vm)))
       , "\n Dict: "
@@ -145,6 +149,7 @@ empty_vm w lit sig =
     { stack = []
     , rstack = []
     , cstack = []
+    , lstack = []
     , threads = Map.empty
     , buffer = ""
     , mode = Interpret
@@ -170,7 +175,7 @@ vm_reset vm =
     , locals = []
     }
 
--- | Type specialised variant of 'get' that checks SIGINT handler.
+-- | Type specialised variant of 'get' that checks SigInt handler.
 get_vm :: Forth w a (Vm w a)
 get_vm = do
   vm <- get
@@ -192,7 +197,7 @@ vm_modify_world f = modify (\vm -> vm {world = f (world vm)})
 
 -- * Error
 
--- | Tracer, levels are 0 = HIGH, 1 = MEDIUM, 2 = LOW
+-- | Tracer, levels are 0 = High, 1 = Medium, 2 = Low
 trace :: Int -> String -> Forth w a ()
 trace k msg = do
   vm <- get_vm
@@ -263,6 +268,19 @@ pop_string msg = do
     Dc _ : Dc_String str : s' -> put vm {stack = s'} >> return str
     _ -> throw_error ("not-string?" ++ msg)
 
+popl :: Forth w a Int
+popl = pop_vm_stack "list" lstack (\vm s -> vm {lstack = s})
+
+fw_open_bracket :: Forth w a ()
+fw_open_bracket = modify (\vm -> vm {lstack = (length (stack vm)) : lstack vm})
+
+fw_close_bracket :: Forth_Type a => Forth w a r -> Forth w a r
+fw_close_bracket w = do
+  x <- popl
+  vm <- get_vm
+  push (ty_from_int (length (stack vm) - x))
+  w
+
 -- * Token / Expr
 
 -- | Expressions are either literals or words.
@@ -311,7 +329,7 @@ read_until pre cf = do
 scan_until :: (Char -> Bool) -> Forth w a String
 scan_until = fmap fst . read_until False
 
-{- | Scan a token from 'buffer', ANS Forth type comments are
+{- | Scan a token from 'buffer', Ans Forth type comments are
 discarded.  Although 'buffer' is filled by 'hGetLine' it may
 contain newline characters because we may include a file.
 -}

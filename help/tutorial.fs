@@ -46,7 +46,7 @@ S" sinosc" ? \ S" = 6.1.2165 \
 S" EnvGen" ?
 
 \ EnvGen kr|ar gate=1 levelScale=1 levelBias=0 timeScale=1 doneAction=0 *envelope=0
-\     Mce, Reorders Inputs: [5,0,1,2,3,4,5], Enumeration Inputs: 4=DoneAction, 5=Envelope UGen
+\     Mce, Reorders Inputs: [5,0,1,2,3,4,5], Enumeration Inputs: 4=DoneAction, 5=Envelope Ugen
 
 \ Manual opens the SuperCollider manual at the required page, in emacs type C-cC-j.
 
@@ -61,8 +61,8 @@ S" EnvGen" ?
 
 ( Number Forth )
 
-\ SC3 UGens are numerical.
-\ UGens may be constant, and math operations at constants render constants.
+\ Sc3 Ugens are numerical.
+\ Ugens may be constant, and math operations at constants render constants.
 
 2 2 + . \ 4 \ + = 6.1.0120 \
 2 1 - . \ 1 \ - = 6.1.0160 \
@@ -82,7 +82,7 @@ S" EnvGen" ?
 ( Integral Forth )
 
 \ The printer prints integer constants without a fractional part.
-\ There is an integer division UGen.
+\ There is an integer division Ugen.
 
 10 2 div . \ 5 \ / = 6.1.0230 \
 5 2 div . \ 2 \
@@ -90,7 +90,7 @@ S" EnvGen" ?
 
 ( Eq Forth )
 
-\ SC3 treats signals less than or equal to zero as False and greater than zero as True.
+\ Sc3 treats signals less than or equal to zero as False and greater than zero as True.
 \ hsc3-forth adopts 1 as True.
 
 0 1 = . \ False \ = = 6.1.0530 False = 6.2.1485 \
@@ -106,7 +106,7 @@ S" EnvGen" ?
 1 1 <= . \ True \
 2 3 min . \ 2 \ Min = 6.1.1880 \
 3 2 min . \ 2 \
-1 3 max . \ 3 \ Max = 6.1.1870 \ non-optimising?
+1 3 max . \ 3 \ Max = 6.1.1870 \ non optimising?
 
 ( Stack Forth )
 
@@ -186,19 +186,24 @@ s" string" type \ string \ Type = 6.1.2310 \
 : pattern { a b c } a b c b c b a ;
 1 2 3 pattern . . . . . . . \ 1 2 3 2 3 2 1 \
 
-\ Multiple sets of LOCAL words are allowed.
+\ Multiple sets of Local words are allowed.
 
 : f { a } 2 { b } a b a ;
 1 f . . . \ 1 2 1 \
 
+( Array Forth )
+
+[ 1 2 ] . \ [1,2]  Ok
+[ 1 2 3 ] . \ [1,2,3]  Ok
+
 ( Ugen Forth )
 
 440 0 sinosc.ar 0.1 * 0 swap out  -1 addToHead 1 playAt
-440 441 2 mce 0 sinosc.ar 0.1 * play
-440 441 2 mce 0 sinosc.ar 1 0 sinosc.kr 0.1 * abs * play
+[ 440 441 ] 0 sinosc.ar 0.1 * play
+[ 440 441 ] 0 sinosc.ar 1 0 sinosc.kr 0.1 * abs * play
 pinknoise.ar 0.05 * play
 
-\ Stop frees all nodes at SCSYNTH (C-cC-k)
+\ Stop frees all nodes at ScSynth (C-cC-k)
 
 stop
 
@@ -224,23 +229,23 @@ whitenoise.ar hpz1 0.1 * play
 
 \ pretty-print prints an hsc3-forth representation of the graph.
 \ A flag tells whether to print the UId of each non-det Ugen.
-\ Pp is an abreviation of false pretty-print (C-cC-e).
+\ Pp is an abreviation of true pretty-print (C-cC-e).
 
 : g 440 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
 g true prettyPrint
 g pp
 
-\ PP is only moderately perspicuous, it does not see through MCE.
+\ Pp is only moderately perspicuous, it does not see through array expansion
 
-: g 440 441 2 mce 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
+: g [ 440 441 ] 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
 g pp
 
 ( Drawing Forth )
 
-\ Draw draws a UGEN graph via the graphviz DOT language interpreter (C-cC-g)
+\ Draw draws a Ugen graph via the graphviz Dot language interpreter (C-cC-g)
 
 whitenoise.ar 0.1 * dup - draw \ Silence \
-whitenoise.ar 0.1 * 2 clone unmce - draw \ noise \
+whitenoise.ar 0.1 * 2 clone items - draw \ noise \
 
 ( Naming Forth )
 
@@ -254,7 +259,7 @@ whitenoise.ar 0.1 * 2 clone unmce - draw \ noise \
 
 stop
 
-\ NON-DET operators are not marked, the below has one Rand_ operator.
+\ Non-det Operators are not marked, the below has one Rand_ operator.
 
 500 rand_ 500 rand_ - 0 sinosc.ar 0.1 * draw
 
@@ -280,7 +285,7 @@ unrand . \ [0.6768026553207348 0.21705544209066452]
 
 \ Choose is a composite i-rate Ugen.
 
-: rharm 13 1 do i 100 * loop 12 mce choose 0 sinosc.ar -1 1 rand.ir 0.05 pan2 ;
+: rharm [ 13 1 do i 100 * loop ] choose 0 sinosc.ar -1 1 rand.ir 0.05 pan2 ;
 rharm 1 3 9 inf overlapTexture \ C-cC-i to interrupt
 
 ( Enveloped Forth )
@@ -325,7 +330,7 @@ stop
 
 ( Textural Forth )
 
-\ The SC2 Texture functions are implemented, see overlap-texture.fs.
+\ The Sc2 Texture functions are implemented, see overlap-texture.fs.
 
 random-sine 2 3 5 xfadeTexture
 random-sine 2 3 6 12 overlapTexture
@@ -363,10 +368,10 @@ kill . . \ 45 String:"/home/rohan/sw/hsc3-forth/help/texture/jmcc-alien-meadow.f
 
 ( Quoting Forth )
 
-\ ' puts the Execution Token (XT) of the subsequent word onto the stack.
+\ ' puts the Execution Token (Xt) of the subsequent word onto the stack.
 \ Execute takes the token and applies it.
 
-' + . \ XT:+ \ ' = 6.1.0070 \
+' + . \ Xt:+ \ ' = 6.1.0070 \
 ' + 1 2 rot execute . \ 3 \
 
 \ Words can be somewhat higher order.
@@ -396,8 +401,8 @@ s" label" label . \ "label"
 
 ( Dynamic Forth )
 
-\ The UGen words are not all pre-defined but are created dynamically.
-\ The dictionary initially contains no UGen words.
+\ The Ugen words are not all pre-defined but are created dynamically.
+\ The dictionary initially contains no Ugen words.
 \ The dynamic lookup happens if the word is not in the dictionary.
 \ This is why eventual lookup failure is reported as Dynamic Failed.
 
@@ -411,7 +416,7 @@ mistyped-word \ Error
 
 : _ whitenoise.ar 0 do i . loop ; _ \ this _should_ be a non-constant error
 
-0 1 2 3 4 4 mce out.kr pp \ This _should_ add the mce constructor to the mce input
+0 [ 1 2 3 4 ] out.kr pp \ This _should_ add the mce constructor to the mce input
 
 vmstat \ Print Vm status
 2 trace \ Set trace level priority, 0=high, 1=medium, 2=low (default=-1, no tracing)
@@ -437,12 +442,12 @@ bye \ C-cC-q
 1/10 .  \ 1/10 \
 0.1 . \ 3602879701896397/36028797018963968 \
 
-( ANS FORTH )
+( Ans Forth )
 
-\ ANS FORTH is something else altogther.
-\ HSC3 FORTH uses ANS FORTH names where it makes sense.
-\ ANS FORTH requires floating point literals be written 1.1e0 etc.
-\ ANS FORTH has a separate floating point stack, printed using f.
+\ Ans Forth is something else altogther.
+\ Hsc3 Forth uses Ans Forth names where it makes sense.
+\ Ans Forth requires floating point literals be written 1.1e0 etc.
+\ Ans Forth has a separate floating point stack, printed using f.
 
 : F. . ;
 1.1E0 2.2E0 3.3E0 F. F. F. \ 3.3 2.2 1.1 \

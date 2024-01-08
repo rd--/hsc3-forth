@@ -1,5 +1,5 @@
-\ blips 001 (jmcc) #SC3d1.5
-: dup' 2 clone unmce ;
+\ Blips 001 (jmcc) #SC3d1.5
+: dup' 2 clone items ;
 : blips
     0 1 Rand.ir 0.8 <
     0.25 400 ExpRand.ir 0.25 400 ExpRand.ir 4 0 XLine.kr

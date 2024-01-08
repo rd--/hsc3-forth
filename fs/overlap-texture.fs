@@ -1,5 +1,5 @@
 : textureEnv { sus trans }
-  0 3 noResetNode noLoopNode 1 trans envSin 0 1 sus envSin 0 0 trans envSin 0 16 mce ;
+  [ 0 3 noResetNode noLoopNode 1 trans envSin 0 1 sus envSin 0 0 trans envSin 0 ] ;
 
 : withTextureEnv { sus trans } 1 1 0 1 removeSynth sus trans textureEnv EnvGen.kr * ;
 

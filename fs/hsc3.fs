@@ -18,8 +18,6 @@
 
 \ ABBREVIATIONS & ALIASES
 
-: array mce ;
-: mce2 2 mce ;
 : mrg2 2 mrg ;
 : clone2 2 clone ;
 : play 0 swap Out -1 addToHead 1 playAt ;
@@ -75,10 +73,10 @@
 
 \ ENVELOPE CONSTRUCTORS
 
-: envPerc { atk rel } 0 2 -99 -99 1 atk 5 -4 0 rel 5 -4 12 mce ;
-: envLinen { atk sus rel lev } 0 3 -99 -99 lev atk 1 0 lev sus 1 0 0 rel 1 0 16 mce ;
-: envTri { dur lvl } dur 2 / { dur' } 0 2 -99 -99 lvl dur' envLin 0 0 dur' envLin 0 12 mce ;
-: envAsr { atk lvl rel c } 0 2 1 -99 lvl atk c 0 0 rel c 0 12 mce ;
+: envPerc { atk rel } [ 0 2 -99 -99 1 atk 5 -4 0 rel 5 -4 ] ;
+: envLinen { atk sus rel lev } [ 0 3 -99 -99 lev atk 1 0 lev sus 1 0 0 rel 1 0 ] ;
+: envTri { dur lvl } dur 2 / { dur' } [ 0 2 -99 -99 lvl dur' envLin 0 0 dur' envLin 0 ] ;
+: envAsr { atk lvl rel c } [ 0 2 1 -99 lvl atk c 0 0 rel c 0 ] ;
 
 \ COMPOSITE UGENS
 
@@ -103,5 +101,5 @@
 
 \ COLLECTION
 
-: series { n z k } n 0 do k i * z + loop n mce ;
-: geom { n z k } n 0 do k i ** z * loop n mce ;
+: series { n z k } [ n 0 do k i * z + loop ] ;
+: geom { n z k } [ do k i ** z * loop ] ;

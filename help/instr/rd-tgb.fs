@@ -1,6 +1,6 @@
 \ tgb (rd)
-: ln { l0 l1 } l0 1 -99 -99 l1 1 1 0 8 mce ;
-: ln' { l0 l1 l2 } l0 2 -99 -99 l1 0.5 1 0 l2 0.5 1 0 12 mce ;
+: ln { l0 l1 } [ l0 1 -99 -99 l1 1 1 0 ] ;
+: ln' { l0 l1 l2 } [ l0 2 -99 -99 l1 0.5 1 0 l2 0.5 1 0 ] ;
 : mkls { env dur } 1 1 0 dur removeSynth env EnvGen.kr ;
 : wrp { in l r } r l - 2 / { m } in m l m + MulAdd ;
 : pm/n { l r d } WhiteNoise.ar l d mkls r d mkls wrp ;

@@ -1,4 +1,4 @@
-\ alien meadow (jmcc) #6 texture=overlap,2,6,6,inf
+\ alien meadow (Jmcc) #6 texture=overlap,2,6,6,inf
 : alien-meadow
   0 20 Rand.ir { a }
   0 5000 Rand.ir { b }

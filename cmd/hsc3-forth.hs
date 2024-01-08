@@ -39,8 +39,8 @@ pop_n :: Int -> Forth.Forth w a [a]
 pop_n n = replicateM n Forth.pop
 
 -- | 'mapM_' of 'Forth.push'.
-push_l :: [a] -> Forth.Forth w a ()
-push_l = mapM_ Forth.push
+push_list :: [a] -> Forth.Forth w a ()
+push_list = mapM_ Forth.push
 
 -- | Type checking 'Forth.pop'
 pop_double :: String -> Forth.Forth w Sc3.Ugen Double
@@ -85,15 +85,23 @@ get_nc u nc =
       Just _ -> return Nothing
       Nothing -> fmap Just (Forth.pop_int "Get_nc")
 
--- > fmap ugen_io (Db.u_lookup_ci "DSEQ")
--- > fmap ugen_io (Db.u_lookup_ci "DEMAND")
--- > fmap ugen_io (Db.u_lookup_ci "irand")
+{- | Ugen Io
+
+>>> fmap ugen_io (Db.u_lookup_ci "Dseq")
+Just (2,Just 1)
+
+>>> fmap ugen_io (Db.u_lookup_ci "Demand")
+Just (3,Nothing)
+
+>>> fmap ugen_io (Db.u_lookup_ci "IRand")
+Just (2,Just 1)
+-}
 ugen_io :: Db.U -> (Int, Maybe Int)
 ugen_io u = (length (Db.ugen_inputs u), Db.u_fixed_outputs u)
 
 {- | If an oscillator is given without a rate suffix, provide the default rate.
 
->>> get_osc_def_rate ("sinosc", Nothing)
+>>> get_osc_def_rate ("SinOsc", Nothing)
 Just AudioRate
 
 >>> get_osc_def_rate ("+", Nothing)
@@ -207,6 +215,9 @@ fw_async = do
   _ <- liftIO (Sc3.withSc3 (Sc3.async (Osc.message nm (reverse param))))
   return ()
 
+fw_array :: U_Forth ()
+fw_array = Forth.pop_int "array" >>= \n -> pop_n n >>= Forth.push . Sc3.mce . reverse
+
 ugen_dict :: Forth.Dict Int Sc3.Ugen
 ugen_dict =
   Map.fromList $
@@ -214,14 +225,16 @@ ugen_dict =
       (\(nm, en) -> (map toLower nm, en))
       [ ("clone", Forth.pop_int "Clone" >>= \n -> Forth.pop >>= \u -> incr_uid >>= \z -> Forth.push (Protect.uclone_all z n u))
       , ("draw", Forth.pop >>= \u -> fw_assert_empty >> liftIO (Dot.draw (Sc3.out 0 u)))
-      , ("mce", Forth.pop_int "Mce" >>= \n -> pop_n n >>= Forth.push . Sc3.mce . reverse)
+      , ("array", fw_array)
+      , ("items", Forth.pop >>= push_list . Sc3.mceChannels)
+      , ("[", Forth.fw_open_bracket)
+      , ("]", Forth.fw_close_bracket fw_array)
       , ("mix", Forth.pop >>= Forth.push . Sc3.mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...
       , ("mrg", Forth.pop_int "Mrg" >>= \n -> pop_n n >>= Forth.push . Sc3.mrg . reverse)
       , ("playAt", fw_play_at)
       , ("writeSynthdef", fw_write_synthdef)
       , ("sched", pop_double "Sched" >>= \t -> Forth.pop >>= \u -> fw_assert_empty >> liftIO (sched t u))
       , ("stop", liftIO (Sc3.withSc3 Sc3.reset))
-      , ("unmce", Forth.pop >>= push_l . Sc3.mceChannels)
       , ("async", fw_async)
       , ("pause", pop_double "Pause" >>= Osc.pauseThread)
       , ("time", liftIO Osc.time >>= Forth.push . Sc3.constant)

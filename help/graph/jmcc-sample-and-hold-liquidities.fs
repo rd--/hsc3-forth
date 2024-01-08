@@ -1,4 +1,4 @@
-\ sample and hold liquidities (jmcc) #4
+\ sample and hold liquidities (Jmcc) #4
 : clockRate 1 200 xmousex ;
 : clockPeriod clockRate 1/ ;
 : clock clockRate 0 impulse 0.4 * ;
@@ -9,7 +9,7 @@
 : in freq 0 sinosc amp * panPos 1 pan2 ;
 in 0.3 0.3 2 combn
 
-\ sample and hold liquidities (jmcc) #4
+\ sample and hold liquidities (Jmcc) #4
 : r 1 200 xmousex ;
 : t r 1/ ;
 : c r 0 Impulse.kr 0.4 * ;

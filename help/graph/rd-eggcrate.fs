@@ -1,6 +1,6 @@
-\ eggcrate (rd)
+\ Eggcrate (Rd)
 : eggcrate-f { u v } u pi * Cos v pi * Sin * ;
-: p 64 72 96 128 256 6400 7200 8400 9600 9 mce ;
+: p [ 64 72 96 128 256 6400 7200 8400 9600 ] ;
 : x BrownNoise.kr ;
 : y BrownNoise.kr ;
 : tr 2.4 Dust.kr ;
