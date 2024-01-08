@@ -1,4 +1,4 @@
-\ Cymbalism (jmcc) #2
+\ Cymbalism (Jmcc) #2
 : n 15 ;
 : f1 500 2500 Rand.ir ;
 : f2 0 8000 Rand.ir ;

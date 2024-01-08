@@ -1,5 +1,5 @@
-\ Choip (jmcc) #10
-: dup' 2 clone items ;
+\ Choip (Jmcc) #10
+: dup' 2 clone items drop ;
 : t 12 ;
 : xl ExpRand.ir dup' t doNothing XLine.kr ;
 : choip

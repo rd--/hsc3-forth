@@ -1,4 +1,4 @@
-\ alien meadow (jmcc) #6
+\ alien meadow (Jmcc) #6
 : alien-meadow
   0 20 Rand.ir { a }
   0 5000 Rand.ir { b }

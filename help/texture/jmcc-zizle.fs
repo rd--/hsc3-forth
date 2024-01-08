@@ -1,4 +1,4 @@
-\ Zizle (jmcc) #SC3d1.5
+\ Zizle (Jmcc) #SC3d1.5
 : two-pi pi 2 * ;
 : a [ 0.7 1.3 Rand.ir 1 ] * 0 two-pi Rand.ir 2 clone SinOsc.ar 0.1 * mix ;
 0.3 8 ExpRand.ir a 0 Max

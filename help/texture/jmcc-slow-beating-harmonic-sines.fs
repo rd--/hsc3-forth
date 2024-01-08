@@ -1,4 +1,4 @@
-\ Slow beating harmonic sines (jmcc) #7
+\ Slow beating harmonic sines (Jmcc) #7
 : n 8 ; ( notes )
 : m 5 ; ( harmonics )
 : d 0.4 ; ( frequency deviation )

@@ -1,4 +1,4 @@
-\ Drone plus rhythm (jmcc) #12
+\ Drone plus rhythm (Jmcc) #12
 : scale [ 0 2 3 5 7 9 10 ] ;
 : iseqr { s tr } tr tr 0 inf s dxrand.dr demand.ar * ;
 : drone-1
@@ -16,7 +16,7 @@
     m midicps 0 0.4 lfpulse.ar 0.03 0.08 rand.ir * { sg }
     sq 0.004 0.2 0.7 rand.ir decay2 sg * 800 2000 exprand.ir 0.1 rlpf
 ;
-: rev-cmb { z } z 0.5 0.5 6 combn z items swap 2 array + ;
+: rev-cmb { z } z 0.5 0.5 6 combn z + ;
 : drone-1-txt drone-1 4 4 8 inf overlapTexture ;
 : drone-2-txt drone-2 4 6 3 inf overlapTexture ;
 : rhy-txt rhy 6 6 6 inf overlapTexture ;

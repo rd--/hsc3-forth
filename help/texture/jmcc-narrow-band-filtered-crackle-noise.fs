@@ -1,4 +1,4 @@
-\ narrow band filtered crackle noise (jmcc) #2
+\ narrow band filtered crackle noise (Jmcc) #2
 
 : nbfcn
     1.97 crackle.ar 0 0.03 rand.ir 0.15 * + 0 2000 rand.ir 80 + { rf1 }

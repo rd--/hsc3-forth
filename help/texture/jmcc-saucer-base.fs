@@ -1,4 +1,4 @@
-\ saucer base (jmcc) #6
+\ saucer base (Jmcc) #6
 : r1 0 swap Rand.ir ;
 : rloc -1 1 Rand.ir 1 Pan2 ;
 : osc SinOsc.ar ;

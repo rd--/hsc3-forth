@@ -9,5 +9,4 @@
 : s [ n n n ] mix ;
 : b 0 1 8 Dust.kr TRand.kr ;
 0 1 In.kr s swap Clip2 0.25 *
-0 b Out.kr
-2 mrg
+0 b Out.kr <!

@@ -1,5 +1,5 @@
 \ Choip (Jmcc) #10 texture=overlap,10,1,8,inf
-: dup' 2 clone items ;
+: dup' 2 clone items drop ;
 : t 12 ;
 : xl ExpRand.ir dup' t doNothing XLine.kr ;
 : choip

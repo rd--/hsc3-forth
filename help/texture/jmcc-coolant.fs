@@ -1,4 +1,4 @@
-\ Coolant (jmcc) #2
+\ Coolant (Jmcc) #2
 : n 20 ;
 : param [ n 0 do 0 2000 Rand.ir 40 + 1 0.1 loop ];
 : src BrownNoise.ar 2 clone 0.0015 * 0.95 OnePole ;

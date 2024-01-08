@@ -11,7 +11,7 @@
 : flt-freq 10 5000 0 0.2 MouseX.kr ;
 : nd
     buf { b } b tap-tm 1 tap flt-freq lpf 0.98 * { flt }
-    flt b 0 1 0 1 1 1 0 flt exc + RecordBuf.ar 2 mrg
+    flt b 0 1 0 1 1 1 0 flt exc + RecordBuf.ar <!
 ;
 : mp 0 n 0 do nd + loop ;
 mp

@@ -1,4 +1,4 @@
-\ pulsing bottles (jmcc) #2
+\ pulsing bottles (Jmcc) #2
 
 : r whitenoise.ar 4 14 rand.ir 0 0.25 lfpulse.kr *
     0 0.7 rand.ir * 400 7400 rand.ir 0.01 resonz ;

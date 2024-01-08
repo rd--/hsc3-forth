@@ -1,4 +1,4 @@
-\ Clustered sines (jmcc) #2
+\ Clustered sines (Jmcc) #2
 : cs
     80 { n }
     100 1100 Rand.ir { f1 }

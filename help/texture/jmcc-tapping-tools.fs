@@ -1,4 +1,4 @@
-\ Tapping tools (jmcc) #7
+\ Tapping tools (Jmcc) #7
 : param [ 4 0 do 400 8400 Rand.ir 1 0.01 0.11 Rand.ir loop ] ;
 : tt
     1 21 0 LinRand.ir 64 0.125 60 0 XLine.kr * 0 Impulse.ar

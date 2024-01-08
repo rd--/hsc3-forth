@@ -1,4 +1,4 @@
-\ Slow beating sines (jmcc) #7
+\ Slow beating sines (Jmcc) #7
 : n 10 ;
 : two-pi 2 pi * ;
 : ph 0 two-pi Rand.ir ;

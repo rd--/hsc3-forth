@@ -193,15 +193,27 @@ s" string" type \ string \ Type = 6.1.2310 \
 
 ( Array Forth )
 
-[ 1 2 ] . \ [1,2]  Ok
-[ 1 2 3 ] . \ [1,2,3]  Ok
+\ array pops the size of the array from the stack, then the items, then pushes an array
+\ items pops the array from the stack, pushes the items and then the size
+
+-3 7 23 3 array . \ [-3,7,23]  Ok
+-3 7 23 3 array items array . \ [-3,7,23]  Ok
+-3 7 23 3 array items + + + . \ 30 Ok
+-3 7 23 3 + + + . \ 30 Ok
+
+\ [ stores the current stack size on the list stack
+\ ] pops the list stack, calculates the array size, pushes it to the stack and calls array
+
+[ -3 7 23 ] . \ [-3,7,23]  Ok
+[ -3 7 23 ] items array . \ [-3,7,23]  Ok
+[ -3 7 23 ] reverse . \ [23,7,-3]  Ok
 
 ( Ugen Forth )
 
-440 0 sinosc.ar 0.1 * 0 swap out  -1 addToHead 1 playAt
-[ 440 441 ] 0 sinosc.ar 0.1 * play
-[ 440 441 ] 0 sinosc.ar 1 0 sinosc.kr 0.1 * abs * play
-pinknoise.ar 0.05 * play
+440 0 SinOsc.ar 0.1 * 0 swap Out  -1 addToHead 1 playAt
+[ 440 441 ] 0 SinOsc.ar 0.1 * play
+[ 440 441 ] 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * Abs * play
+PinkNoise.ar 0.05 * play
 
 \ Stop frees all nodes at ScSynth (C-cC-k)
 
@@ -209,16 +221,16 @@ stop
 
 \ Filters may elide the operating rate.
 
-whitenoise.ar hpz1.ar 0.1 * play
-whitenoise.ar hpz1 0.1 * play
+WhiteNoise.ar Hpz1.ar 0.1 * play
+WhiteNoise.ar Hpz1 0.1 * play
 
 \ Oscillators may also elide the operating rate (defaults to highest allowed rate)
 
-440 0 sinosc 0.1 * play
+440 0 SinOsc 0.1 * play
 
 \ Operators have both text and symbolic names.
 
-440 0 sinosc.ar whitenoise.ar add -45 dbamp mul play \ quietly now
+440 0 SinOsc.ar WhiteNoise.ar Add -45 DbAmp Mul play \ quietly now
 
 ( Insensitive Forth )
 
@@ -229,39 +241,39 @@ whitenoise.ar hpz1 0.1 * play
 
 \ pretty-print prints an hsc3-forth representation of the graph.
 \ A flag tells whether to print the UId of each non-det Ugen.
-\ Pp is an abreviation of true pretty-print (C-cC-e).
+\ Pp is an abreviation of false pretty-print (C-cC-e).
 
-: g 440 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
+: g 440 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * * WhiteNoise.ar 0.1 * + ;
 g true prettyPrint
 g pp
 
 \ Pp is only moderately perspicuous, it does not see through array expansion
 
-: g [ 440 441 ] 0 sinosc.ar 1 0 sinosc.kr 0.1 * * whitenoise.ar 0.1 * + ;
+: g [ 440 441 ] 0 SinOsc.ar 1 0 SinOsc.kr 0.1 * * WhiteNoise.ar 0.1 * + ;
 g pp
 
 ( Drawing Forth )
 
 \ Draw draws a Ugen graph via the graphviz Dot language interpreter (C-cC-g)
 
-whitenoise.ar 0.1 * dup - draw \ Silence \
-whitenoise.ar 0.1 * 2 clone items - draw \ noise \
+WhiteNoise.ar 0.1 * dup - draw \ Silence \
+WhiteNoise.ar 0.1 * 2 clone items drop - draw \ noise \
 
 ( Naming Forth )
 
-440 rand_ 440 + 0 sinosc.ar 0.1 * draw \ rand_ is a unary operator
-440 880 rand.ir 0 sinosc.ar 0.1 * draw \ rand.ir is a ugen
+440 Rand_ 440 + 0 SinOsc.ar 0.1 * draw \ rand_ is a unary operator
+440 880 Rand.ir 0 SinOsc.ar 0.1 * draw \ rand.ir is a ugen
 
 ( Random Forth )
 
-: random-sine 1900 2300 rand.ir 0 sinosc.ar -1 1 rand.ir 0.05 0.1 rand.ir pan2.ar ;
+: random-sine 1900 2300 Rand.ir 0 SinOsc.ar -1 1 rand.ir 0.05 0.1 rand.ir pan2.ar ;
 : _ 4 0 do random-sine play loop ; _
 
 stop
 
 \ Non-det Operators are not marked, the below has one Rand_ operator.
 
-500 rand_ 500 rand_ - 0 sinosc.ar 0.1 * draw
+500 rand_ 500 rand_ - 0 SinOsc.ar 0.1 * draw
 
 ( Un-Random Forth )
 
@@ -285,7 +297,7 @@ unrand . \ [0.6768026553207348 0.21705544209066452]
 
 \ Choose is a composite i-rate Ugen.
 
-: rharm [ 13 1 do i 100 * loop ] choose 0 sinosc.ar -1 1 rand.ir 0.05 pan2 ;
+: rharm [ 13 1 do i 100 * loop ] choose 0 SinOsc.ar -1 1 rand.ir 0.05 pan2 ;
 rharm 1 3 9 inf overlapTexture \ C-cC-i to interrupt
 
 ( Enveloped Forth )
@@ -376,9 +388,9 @@ kill . . \ 45 String:"/home/rohan/sw/hsc3-forth/help/texture/jmcc-alien-meadow.f
 
 \ Words can be somewhat higher order.
 
-: sig 1 50 20 removeSynth xline.kr 0 impulse.ar 0.01 0.2 decay2 600 0 fsinosc.ar 0.25 * * ;
-: cmb 0.1 0.1 1 combn ;
-: post-proc { f } 0 2 in.ar f execute 0 swap out -1 addToTail 1 playAt ;
+: sig 1 50 20 removeSynth XLine.kr 0 Impulse.ar 0.01 0.2 Decay2 600 0 SinOsc.ar 0.25 * * ;
+: cmb 0.1 0.1 1 Combn ;
+: post-proc { f } 0 2 In.ar f execute 0 swap out -1 addToTail 1 playAt ;
 
 sig play ' cmb post-proc
 stop
@@ -411,12 +423,12 @@ mistyped-word \ Error
 
 ( Trouble Forth )
 
-0 1 rand.ir dup . pause \ rand
-440 0 sinosc.ar pause \ Error (non-constant)
+0 1 Rand.ir dup . pause \ rand
+440 0 SinOsc.ar pause \ Error (non-constant)
 
 : _ whitenoise.ar 0 do i . loop ; _ \ this _should_ be a non-constant error
 
-0 [ 1 2 3 4 ] out.kr pp \ This _should_ add the mce constructor to the mce input
+0 [ 1 2 3 4 ] out.kr pp \ This _should_ add the array constructor to the array input
 
 vmstat \ Print Vm status
 2 trace \ Set trace level priority, 0=high, 1=medium, 2=low (default=-1, no tracing)

@@ -1,4 +1,4 @@
-\ Rails (jmcc) #2
+\ Rails (Jmcc) #2
 : rails
     100 Dust.ar 0.04 * 3000 300 8 0 XLine.kr 0.2 Resonz
     1 0 1

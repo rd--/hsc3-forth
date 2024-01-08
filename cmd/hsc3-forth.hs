@@ -39,8 +39,10 @@ pop_n :: Int -> Forth.Forth w a [a]
 pop_n n = replicateM n Forth.pop
 
 -- | 'mapM_' of 'Forth.push'.
-push_list :: [a] -> Forth.Forth w a ()
-push_list = mapM_ Forth.push
+push_list :: Forth.Forth_Type a => [a] -> Forth.Forth w a ()
+push_list xs = do
+  mapM_ Forth.push xs
+  Forth.push (Forth.ty_from_int (length xs))
 
 -- | Type checking 'Forth.pop'
 pop_double :: String -> Forth.Forth w Sc3.Ugen Double
@@ -229,6 +231,7 @@ ugen_dict =
       , ("items", Forth.pop >>= push_list . Sc3.mceChannels)
       , ("[", Forth.fw_open_bracket)
       , ("]", Forth.fw_close_bracket fw_array)
+      , ("reverse", Forth.pop >>= Forth.push . Sc3.mceReverse)
       , ("mix", Forth.pop >>= Forth.push . Sc3.mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...
       , ("mrg", Forth.pop_int "Mrg" >>= \n -> pop_n n >>= Forth.push . Sc3.mrg . reverse)
       , ("playAt", fw_play_at)

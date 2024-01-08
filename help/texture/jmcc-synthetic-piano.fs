@@ -1,6 +1,6 @@
-\ synthetic piano (jmcc) #3
+\ synthetic piano (Jmcc) #3
 : c { o f ph n }
-    3000 LFNoise2.ar f ph Impulse.ar
+    3000 LfNoise2.ar f ph Impulse.ar
     0.1 * 0.008 0.04 Decay2 * 1 n o + MidiCps / dup
     6 CombL
 ;

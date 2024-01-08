@@ -1,4 +1,4 @@
-\ Bouncing objects (jmcc) #2
+\ Bouncing objects (Jmcc) #2
 : param [ 4 0 do 400 8400 Rand.ir 0 1 Rand.ir 0.01 0.11 Rand.ir loop ] ;
 5 -2 2 Rand.ir + 600 4 doNothing XLine.kr 0 Impulse.ar
 0.09 epsilon 4 doNothing XLine.kr * 0.001 Decay

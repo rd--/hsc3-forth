@@ -1,5 +1,5 @@
-\ Blips 001 (jmcc) #SC3d1.5
-: dup' 2 clone items ;
+\ Blips 001 (Jmcc) #SC3d1.5
+: dup' 2 clone items drop ;
 : blips
     0 1 Rand.ir 0.8 <
     0.25 400 ExpRand.ir 0.25 400 ExpRand.ir 4 0 XLine.kr
