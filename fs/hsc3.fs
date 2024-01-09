@@ -81,13 +81,19 @@
 
 \ Composite Ugens
 
+: BHiPass4 { z f rq } z f rq sqrt BHiPass f rq sqrt BHiPass ;
+: BLowPass4 { z f rq } z f rq sqrt BLowPass f rq sqrt BLowPass ;
 : BufAlloc LocalBuf ;
 : BufClear { b } b b ClearBuf <! ;
+: BufRec { b r z } b 0 1 0 1 1 r 0 z RecordBuf ;
 : BufWrite { z b p l } b p l z BufWr ;
 : Choose { u } 0 u chan 1 - IRand.ir u Select ;
+: ExpRange { z l r } z -1 1 l r LinExp ;
 : LinLinMulAdd { sl sr dl dr } dr dl - sr sl - / { m } m dl m sl * - ;
 : LinLin LinLinMulAdd MulAdd ;
 : Rand2.ir { n } n Neg n Rand.ir ;
+: Range { z l r } z -1 1 l r LinLin ;
+: Select2 { P t f } p t f - * f + ;
 : SoundIn { u } NumOutputBuses.ir u + 1 In.ar ;
 : Splay2 { u } u 1 1 0 1 Splay ;
 : Sum Mix ;
@@ -103,7 +109,8 @@
 
 \ Arrays
 
-: to { start end } end 1 + start do i loop end start - 1 + array ;
+: downTo { start end } end start upTo reverse ;
+: upTo { start end } end 1 + start do i loop end start - 1 + array ;
 
 \ Commands
 
