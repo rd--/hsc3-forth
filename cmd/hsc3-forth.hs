@@ -232,6 +232,8 @@ ugen_dict =
       , ("[", Forth.fw_open_bracket)
       , ("]", Forth.fw_close_bracket fw_array)
       , ("reverse", Forth.pop >>= Forth.push . Sc3.mceReverse)
+      , ("transpose", Forth.pop >>= Forth.push . Sc3.mceTranspose)
+      , ("splay", pop_n 5 >>= Forth.push . \x -> Sc3.splay (x !! 4) (x !! 3) (x !! 2) (x !! 1) (x !! 0 /= 0))
       , ("mix", Forth.pop >>= Forth.push . Sc3.mix) -- here rather hsc3.fs to get sum_opt for graph comparisons...
       , ("mrg", Forth.pop_int "Mrg" >>= \n -> pop_n n >>= Forth.push . Sc3.mrg . reverse)
       , ("playAt", fw_play_at)

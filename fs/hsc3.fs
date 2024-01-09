@@ -21,6 +21,8 @@
 : <! 2 mrg ;
 : play 0 swap Out -1 addToHead 1 playAt ;
 : pp false prettyPrint ;
+: ^ ** ;
+: ! { x n } x n 1 - 0 do dup loop n array ;
 
 \ Envelope Curve Enumeration
 
@@ -79,11 +81,16 @@
 
 \ Composite Ugens
 
+: BufAlloc LocalBuf ;
+: BufClear { b } b b ClearBuf <! ;
+: BufWrite { z b p l } b p l z BufWr ;
 : Choose { u } 0 u chan 1 - IRand.ir u Select ;
 : LinLinMulAdd { sl sr dl dr } dr dl - sr sl - / { m } m dl m sl * - ;
 : LinLin LinLinMulAdd MulAdd ;
 : Rand2.ir { n } n Neg n Rand.ir ;
 : SoundIn { u } NumOutputBuses.ir u + 1 In.ar ;
+: Splay2 { u } u 1 1 0 1 Splay ;
+: Sum Mix ;
 : TChoose { t a } 0 a chan t TIRand a Select ;
 
 \ Local Buffers
@@ -93,6 +100,10 @@
     1 len LocalBuf.ir { buf }
     buf 0 len arr SetBuf.ir { set }
     buf set 2 mrg ;
+
+\ Arrays
+
+: to { start end } end 1 + start do i loop end start - 1 + array ;
 
 \ Commands
 

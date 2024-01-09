@@ -208,6 +208,8 @@ s" string" type \ string \ Type = 6.1.2310 \
 [ -3 7 23 ] items array . \ [-3,7,23]  Ok
 [ -3 7 23 ] reverse . \ [23,7,-3]  Ok
 
+: fromTo { start end } end start do i loop end start - array ; 7 11 fromTo . \ [7,8,9,10]  Ok
+
 ( Ugen Forth )
 
 440 0 SinOsc.ar 0.1 * 0 swap Out  -1 addToHead 1 playAt

@@ -1,0 +1,1 @@
+: d 1 0 InFb ; : f 1 [ 9 8.9 ] / ; : c d 1.0e-2 1.0e-2 Amplitude f 0 SinOscFb < f 9 / Lag d + ; 98.5 c + d f + SinOscFb c * 1 f 3 * 20 AllpassN Tanh

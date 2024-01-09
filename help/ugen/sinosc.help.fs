@@ -9,3 +9,7 @@
 
 \ sinosc pair amplitude modulated by sinosc
 [ 440 441 ] 0 sinosc 1 0 sinosc.kr 0.1 * abs *
+
+\ sinosc helper
+: f { x } [ x x 1 + ] 0 SinOsc ;
+333 f 555 f + 0.1 *
