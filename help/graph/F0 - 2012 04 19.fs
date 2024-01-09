@@ -2,4 +2,4 @@
 : sw 10 0 LfSaw 0.011 * ;
 : t0 [ 5 6 ] 0.1 * 0 LfTri ;
 : t1 0.1 0 LfTri 0.05 * 0.05 + ;
-sw t0 1 Brf 1 0.01 Limiter 0.1 t1 1.0e-2 RoundTo 1 CombN 0.1 *
+sw t0 1 Brf 1 0.01 Limiter 0.1 t1 0.01 RoundTo 1 CombN 0.1 *
