@@ -23,6 +23,8 @@
 : pp false prettyPrint ;
 : ^ ** ;
 : ! { x n } x n 1 - 0 do dup loop n array ;
+: << shiftLeft ;
+: >> shiftRight ;
 
 \ Envelope Curve Enumeration
 
@@ -79,7 +81,7 @@
 : envTri { dur lvl } dur 2 / { dur' } [ 0 2 -99 -99 lvl dur' envLin 0 0 dur' envLin 0 ] ;
 : envAsr { atk lvl rel c } [ 0 2 1 -99 lvl atk c 0 0 rel c 0 ] ;
 
-\ Composite Ugens
+\ Pseudo (Composite) Ugens
 
 : BHiPass4 { z f rq } z f rq sqrt BHiPass f rq sqrt BHiPass ;
 : BLowPass4 { z f rq } z f rq sqrt BLowPass f rq sqrt BLowPass ;
