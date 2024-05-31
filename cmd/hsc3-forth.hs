@@ -114,9 +114,10 @@ get_osc_def_rate (nm, dotRt) =
   case dotRt of
     Nothing -> case Db.u_lookup_ci nm of
       Nothing -> Nothing
-      Just u -> if Db.u_is_filter u
-                  then Nothing
-                  else Just (Db.ugen_default_rate u)
+      Just u ->
+        if Db.u_is_filter u
+          then Nothing
+          else Just (Db.ugen_default_rate u)
     _ -> dotRt
 
 {- | Be careful to prefer operators, in case there is a Ugen that is named equally.

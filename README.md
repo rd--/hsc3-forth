@@ -79,4 +79,4 @@ initial announcement:
 [bham](http://www.listarc.bham.ac.uk/lists/sc-users/msg42055.html)
 -->
 
-© [rd](http://rohandrape.net/), 2014-2023, [gpl](http://gnu.org/copyleft/).
+© [rd](http://rohandrape.net/), 2014-2024, [gpl](http://gnu.org/copyleft/).
