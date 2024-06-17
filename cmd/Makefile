@@ -2,7 +2,7 @@ prefix=$(HOME)/opt
 cmd=hsc3-forth rat-forth
 
 % : %.hs
-	ghc -Wall -O2 -fno-warn-orphans --make $<
+	ghc -Wall -Wno-x-partial -Wno-incomplete-uni-patterns -fwarn-tabs -O2 -threaded --make $<
 
 all: $(cmd)
 
