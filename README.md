@@ -57,6 +57,8 @@ hsc3-forth follows the [haskell](http://haskell.org/) SuperCollider ([hsc3](?t=h
 
 hsc3-forth requires `scsynth` to be listening at the standard UDP port (57110).
 
+There is a `scsyndef-to-fs` translator at [hsc3-db](?t=hsc3=db).
+
 <!--
 HSC3-FORTH is partial, it is known to work as far as the translated
 graphs at [HSC3-GRAPHS](http://rohandrape.net/?t=hsc3-graphs), search for `FS` in the

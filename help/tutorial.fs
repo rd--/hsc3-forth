@@ -110,6 +110,7 @@ S" EnvGen" ?
 
 ( Stack Forth )
 
+1 2 3 depth . . . . \ 3 3 2 1 \ Depth = 6.1.1200
 1 2 drop . \ 1 \ Drop = 6.1.1260 \
 1 2 .s over .s drop drop drop .s \ <2> 1 2 <3> 1 2 1 <0> \ Over = 6.1.1990 .s = 15.6.1.0220 \
 1 2 .s swap .s drop drop .s \ <2> 1 2 <2> 2 1 <0> \ Swap = 6.1.2260 \
@@ -401,6 +402,7 @@ stop
 
 1 >r .s r> . \ <0> 1
 >r \ ERROR
+1 >r r@ r@ r> . . . \ 1 1 1
 
 ( Labeled Forth )
 
