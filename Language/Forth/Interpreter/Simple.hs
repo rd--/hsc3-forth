@@ -49,9 +49,13 @@ instance Forth_Type Integer where
   ty_from_bool t = if t then -1 else 0
 
 -- | A data cell, for the data stacks.
-data Dc a = Dc a -- ^ Plain value
-          | Dc_String String -- ^ String
-          | Dc_Xt String -- ^ Execution token
+data Dc a
+  = -- | Plain value
+    Dc a
+  | -- | String
+    Dc_String String
+  | -- | Execution token
+    Dc_Xt String
 
 instance Forth_Type a => Show (Dc a) where
   show dc =
@@ -68,8 +72,9 @@ dc_plain dc =
     _ -> throw_error "Dc-not-value-cell"
 
 -- | A compilation cell, for the compilation stack.
-data Cc w a = Cc_Word String
-            | Cc_Forth (Forth w a ())
+data Cc w a
+  = Cc_Word String
+  | Cc_Forth (Forth w a ())
 
 -- | Predicate to see if 'Cc' is a particular 'Cc_Word'.
 cc_is_word :: String -> Cc w a -> Bool
@@ -594,11 +599,13 @@ fw_colon = do
   when (is_reserved_word nm) (throw_error ("':' reserved name: " ++ nm))
   vm <- get_vm
   when (not (null (cstack vm))) (throw_error ("':' cstack not empty: " ++ nm))
-  put (vm
+  put
+    ( vm
         { mode = Compile
         , cstack = [Cc_Word nm]
         , locals = Map.empty : locals vm
-        })
+        }
+    )
 
 {- | .6.1.0450.  ";".  Semicolon.  Core.
 End compile phase.
@@ -900,7 +907,7 @@ load_files nm = do
 
 {- | Read until /f/ is 'True', discarding /x/, RHS may be @[]@.
 
->>> break_on isSpace ""
+>>> break_on Data.Char.isSpace ""
 ("","")
 
 >>> break_on (== ')') "comment ) WORD"
