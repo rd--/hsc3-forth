@@ -5,7 +5,7 @@ Forth SuperCollider
 
 The only data type is the [SuperCollider](http://audiosynth.com/) `Unit Generator`.
 
-[Why Forth SuperCollider?](http://rohandrape.net/?t=hsc3-graphs&e=lib/sc/graph/jmcc-why-supercollider.scd)
+[Why Forth SuperCollider?](http://rohandrape.net/?t=hsc3-graphs&e=lib/scd/graph/jmcc-why-supercollider.scd)
 
 ~~~~
 : rvb 5 0 do 0.05 0 0.05 rand.ir 2 clone 1 allpassn loop ; 0.2 dust.ar
@@ -82,3 +82,11 @@ initial announcement:
 -->
 
 © [rd](http://rohandrape.net/), 2014-2024, [gpl](http://gnu.org/copyleft/).
+
+* * *
+
+```
+$ doctest Language
+Examples: 3  Tried: 3  Errors: 0  Failures: 0
+$
+```
