@@ -173,6 +173,9 @@ tbl \ 10 11 5 5.5 \ 10/1 11/1 10/2 11/2
 
 ( Printing Forth )
 
+1 . \ 1  Ok
+1 .S . \ 1 1  Ok
+
 \ emit prints a character.
 
 : star 42 emit ; star star star \ *** \ Emit = 6.1.1320 \
@@ -217,8 +220,10 @@ s" string" type \ string \ Type = 6.1.2310 \
 [ -3 7 23 ] . \ [-3,7,23]  Ok
 [ -3 7 23 ] items array . \ [-3,7,23]  Ok
 [ -3 7 23 ] reverse . \ [23,7,-3]  Ok
+[ 1 2 3 4 ] chan . \ 4  Ok
 
 : fromTo { start end } end start do i loop end start - array ; 7 11 fromTo . \ [7,8,9,10]  Ok
+: reduce { w } items 1 do w execute loop ; [ 1 2 3 4 ] ' + reduce . \ 10  Ok
 
 ( Ugen Forth )
 
@@ -476,3 +481,10 @@ bye \ C-cC-q
 
 : F. . ;
 1.1E0 2.2E0 3.3E0 F. F. F. \ 3.3 2.2 1.1 \
+
+( Sapf )
+
+[ 1 2 3 4 ] ' + reduce . \ 10  Ok
+[ 1 2 3 4 ] +/ . \ 10  Ok
+[ 1 2 3 4 ] ' * reduce . \ 24  Ok
+[ 1 2 3 4 ] */ . \ 24  Ok

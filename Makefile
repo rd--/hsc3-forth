@@ -13,6 +13,9 @@ push-all:
 	r.gitlab-push.sh hsc3-forth
 	r.github-push.sh hsc3-forth
 
+push-rd:
+	git push ssh://rd@rohandrape.net/~rd/sw/hsc3-forth master
+
 indent:
 	fourmolu -i Language cmd
 
