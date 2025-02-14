@@ -1,11 +1,47 @@
-: xmousex 1 0.2 MouseX.kr ;
-: xmousey 1 0.2 MouseY.kr ;
-: 1/ Recip ;
-: ohz 12 * 60 + midicps ;
-: nnhz midicps ;
-
+: *+ { a b c } a b * c + ; ( muladd )
+: */ items 1 do * loop ; ( product )
+: +- { a b } a b + a b - ; ( convert a center and deviation to hi and lo )
+: +/ items 1 do + loop ; ( sum )
+: -+ { a b } a b - a b + ; ( convert a center and deviation to lo and hi )
+: 1/ Recip ; ( reciprocal )
+: MS { a b } a b + hrt * a b - hrt * ; ( stereo to mid-side conversion & inverse )
+: apverb1 { z dly dcy } z [ 0.001 dly rand 0.001 dly rand ] dup dcy allpassn ;
+: apverb2 { z dly dcy } z dly dcy apverb1 dly dcy apverb1 ;
+: apverb4 { z dly dcy } z dly dcy apverb2 dly dcy apverb2 ;
+: apverb6 { z dly dcy } z dly dcy apverb4 dly dcy apverb2 ; ( six stage stereo allpass with random delay times )
+: avg2 + 0.5 * ; ( average )
+: biexp { in lo hi } in biuni lo hi uniexp ; ( map [-1,1] input to exponential [lo, hi] )
+: biexpx { in lo hi } in biuni lo hi uniexpx ; ( map [-1,1] input to exponential [lo, hi] clip input to bounds )
+: bilin { in lo hi } in biuni lo hi unilin ; ( map a bipolar input to the linear interval [lo, hi] )
+: bilin { in lo hi } in biuni lo hi unilinc ; ( map a bipolar input to the linear interval [lo, hi] clip input to bounds )
+: biuni 0.5 * 0.5 + ; ( convert bipolar to unipolar )
+: brand -1 1 rand ; ( return a random number from -1 to 1 )
+: cdv { lo hi } hi lo avg2 hi lo neg avg2 ; ( convert lo and hi to center and deviation )
+: divmul { a b } a b / a b * ; ( return both quotient and product )
+: e 1 exp ; ( base of the natural logarithm )
+: expexp { in a b c d } in a / log b a / log / d c - * c + ; ( map exponential [a,b] to a linear [c,d] )
+: expexpc { in a b c d } in a b clip a b c d expexp ; ( map exponential [a,b] to exponential [c,d] clip input to bounds )
+: explinc { in a b c d } in a b clip a b c d explin ; ( map exponential [a,b] to linear [c,d] clip input to bounds )
+: hrt 0.5 sqrt ;
+: lfo { p f l h } p f sinosc.kr -1 1 l h linlin ; ( sine wave lfo with linear range )
+: linexpc { in a b c d } in a b clip a b c d linexp ; ( map linear [a,b] to linear [c,d] clip input to bounds )
+: linlinc { in a b c d } in a b clip a b c d linlin ; ( map linear [a,b] to linear [c,d] clip input to bounds )
+: muldiv { a b } a b * a b / ; ( return both product and quotient )
+: nnhz midicps ; ( convert midi note numbers to hertz, 60 is middle C )
+: nrands { c l r } l r rand c clone ;
+: ohz 12 * 60 + midicps ; ( convert octaves to hertz, octave 0 is middle C )
+: oltx inf overlapTexture ;
+: phi 5 sqrt 1 + 2 / ; ( golden ratio )
 : reduce { w } items 1 do w execute loop ;
-: +/ items 1 do + loop ;
-: */ items 1 do * loop ;
-
-: lfo { p f l u } p f sinosc.kr -1 1 l u linlin ;
+: rline { d a b } d a b rand a b rand line ; ( random line. both ends are uniformly random between lo and hi )
+: rpan2 -1 1 rand 1 pan2 ; ( stereo pan at a fixed random position )
+: rxline { d a b } d a b rand a b rand xline ; ( random exponential line. both ends are uniformly random between lo and hi )
+: uniexp { in lo hi } hi lo / in pow lo * ; ( map a unipolar input to the exponential interval [lo, hi] )
+: unilin { lo hi } in hi lo - * lo + ; ( map a unipolar input to the linear interval [lo, hi] )
+: unilinc { in lo hi } in 0 1 clip lo hi unilin ; ( map a unipolar input to the linear interval [lo, hi] clip input to bounds )
+: urand 0 1 rand ; ( return a random number from 0 to 1 )
+: xlfo { p f l h } p f sinosc.kr -1 1 l h linexp ; ( sine wave lfo with exponential range )
+: xmousex 1 0.2 MouseX.kr ; ( X coordinate of the mouse mapped to exponential range )
+: xmousey 1 0.2 MouseY.kr ; ( Y coordinate of the mouse mapped to exponential range )
+: xrline { d a b } d a b exprand a b exprand line ; ( exponentially random line. both ends are exponentially random between lo and hi )
+: xrxline { d a b } d a b exprand a b exprand xline ; ( exponentially random exponential line. both ends are exponentially random between lo and hi )
