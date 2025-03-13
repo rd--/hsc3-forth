@@ -13,7 +13,7 @@
 : biexp { in lo hi } in biuni lo hi uniexp ; ( map [-1,1] input to exponential [lo, hi] )
 : biexpx { in lo hi } in biuni lo hi uniexpx ; ( map [-1,1] input to exponential [lo, hi] clip input to bounds )
 : bilin { in lo hi } in biuni lo hi unilin ; ( map a bipolar input to the linear interval [lo, hi] )
-: bilin { in lo hi } in biuni lo hi unilinc ; ( map a bipolar input to the linear interval [lo, hi] clip input to bounds )
+: bilinc { in lo hi } in biuni lo hi unilinc ; ( map a bipolar input to the linear interval [lo, hi] clip input to bounds )
 : biuni 0.5 * 0.5 + ; ( convert bipolar to unipolar )
 : brand -1 1 rand ; ( return a random number from -1 to 1 )
 : cdv { lo hi } hi lo avg2 hi lo neg avg2 ; ( convert lo and hi to center and deviation )
