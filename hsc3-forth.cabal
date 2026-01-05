@@ -1,16 +1,16 @@
 Cabal-Version:     2.4
 Name:              hsc3-forth
-Version:           0.22
+Version:           0.23
 Synopsis:          Forth SuperCollider
 Description:       Forth SuperCollider
 License:           GPL-3.0-only
 Category:          Sound
-Copyright:         (c) Rohan Drape, 2014-2025
+Copyright:         (c) Rohan Drape, 2014-2026
 Author:            Rohan Drape
 Maintainer:        rd@rohandrape.net
 Stability:         Experimental
 Homepage:          http://rohandrape.net/t/hsc3-forth
-Tested-With:       GHC == 9.12.1
+Tested-With:       GHC == 9.14.1
 Build-Type:        Simple
 
 Data-files:        README.md
@@ -33,13 +33,13 @@ executable hsc3-forth
                     directory,
                     filepath,
                     hashable,
-                    hosc == 0.22.*,
-                    hsc3 == 0.22.*,
-                    hsc3-db == 0.22.*,
-                    hsc3-dot == 0.22.*,
-                    hsc3-forth == 0.22.*,
-                    hsc3-lang == 0.22.*,
-                    hsc3-rw == 0.22.*,
+                    hosc == 0.23.*,
+                    hsc3 == 0.23.*,
+                    hsc3-db == 0.23.*,
+                    hsc3-dot == 0.23.*,
+                    hsc3-forth == 0.23.*,
+                    hsc3-lang == 0.23.*,
+                    hsc3-rw == 0.23.*,
                     mtl,
                     process
   hs-source-dirs:   cmd
